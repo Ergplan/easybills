@@ -1,0 +1,16 @@
+rules_version = '2';
+
+// EasyBills keeps ALL business data behind the server (Next.js route handlers using
+// the Firebase Admin SDK, which bypasses these rules). Browsers authenticate with
+// Firebase Auth and then talk only to our own API, never to Firestore directly.
+//
+// Therefore the correct client-side rule set is: deny everything. This is the
+// tenant-isolation backstop -- even a stolen Firebase Web API key (which is public
+// by design) cannot read or write another business's records.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

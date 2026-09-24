@@ -1,0 +1,30 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment: never commit real secrets
+.env
+.env.local
+.env*.local
+!.env.example
+
+# Firebase emulator artefacts
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+emulator-data/
+
+# Test + tooling output
+coverage/
+.vitest/
+test-results/
+/tmp-pdf/
+
+# Service account keys must never enter the repo
+*serviceAccount*.json
+*service-account*.json
