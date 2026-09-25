@@ -64,9 +64,27 @@ export function emptyParty(name = 'Walk-in customer'): InvoiceParty {
   };
 }
 
+/**
+ * Fill in fields added after a document was written.
+ *
+ * A Firestore read is a cast, so a document written by an earlier build arrives
+ * missing whatever has been added since, while the type says otherwise. Filling
+ * the gap in one place lets every caller trust the type rather than re-checking.
+ */
+function asInvoice(data: FirebaseFirestore.DocumentData): InvoiceRecord {
+  const rec = data as InvoiceRecord;
+  return {
+    ...rec,
+    // A line saved before the rate question existed counts as answered: an
+    // owner is not retrospectively accused of skipping a question we never
+    // asked, and their issued bills keep the rates they were issued with.
+    lines: rec.lines?.map((l) => ({ ...l, taxRateChosen: l.taxRateChosen ?? true })) ?? rec.lines,
+  };
+}
+
 export async function getInvoice(businessId: string, invoiceId: string): Promise<InvoiceRecord | null> {
   const snap = await invoicesCol(businessId).doc(invoiceId).get();
-  return snap.exists ? (snap.data() as InvoiceRecord) : null;
+  return snap.exists ? asInvoice(snap.data()!) : null;
 }
 
 /**
@@ -98,7 +116,7 @@ export async function saveDraft(args: {
 
   return db().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
-    const existing = snap.exists ? (snap.data() as InvoiceRecord) : null;
+    const existing = snap.exists ? asInvoice(snap.data()!) : null;
 
     if (existing && existing.status !== 'draft') {
       throw new InvoiceStateError('This bill has already been issued and cannot be edited.');
@@ -197,7 +215,7 @@ export async function issueInvoice(args: {
   return db().runTransaction(async (tx) => {
     const snap = await tx.get(invoiceRef);
     if (!snap.exists) throw new InvoiceStateError('This bill no longer exists.');
-    const draft = snap.data() as InvoiceRecord;
+    const draft = asInvoice(snap.data()!);
 
     if (draft.status === 'issued') {
       // Idempotent: a second tap, a retry or a duplicated request returns the
@@ -393,7 +411,7 @@ export async function cancelDraft(businessId: string, invoiceId: string): Promis
   await db().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists) return;
-    const inv = snap.data() as InvoiceRecord;
+    const inv = asInvoice(snap.data()!);
     if (inv.status !== 'draft') {
       throw new InvoiceStateError('An issued bill cannot be deleted. Use a credit note instead.');
     }
@@ -415,7 +433,7 @@ export async function listInvoices(businessId: string, filter: InvoiceListFilter
   if (filter.customerId) q = q.where('customer.customerId', '==', filter.customerId);
   q = q.orderBy('updatedAt', 'desc').limit(filter.limit ?? 100);
   const snap = await q.get();
-  return snap.docs.map((d) => d.data() as InvoiceRecord);
+  return snap.docs.map((d) => asInvoice(d.data()));
 }
 
 /** Recompute stored balance fields after a payment or adjustment changes. */

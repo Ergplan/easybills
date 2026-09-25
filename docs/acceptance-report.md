@@ -390,12 +390,25 @@ not showing, in the app and in the accountant pack alike.
 Verified in a real browser at 360px (`npm run e2e:gst`): the links reach the
 bills they name, every target clears 44px, nothing overflows, no client errors.
 
-**One defect found and not yet fixed.** A regular-GST business can issue a Tax
-Invoice with the rate select left empty. The editor says "We do not guess the
-rate," but nothing enforces it: an empty rate is coerced to 0 bp, so the bill
-prints 0%, charges no GST, and enters GSTR-1 as a nil-rated supply. A
-deliberate 0% (nil-rated) choice is legitimate and must stay allowed, so the
-fix has to carry "not chosen" through to issuance rather than reject zero.
+**A rate nobody chose.** That run also exposed a defect in issuance itself: a
+regular-GST business could issue a Tax Invoice with the rate select left empty.
+The editor said "We do not guess the rate," but nothing enforced it — an empty
+rate was coerced to 0 bp, so the bill printed 0%, charged no GST, and entered
+GSTR-1 as a nil-rated supply.
+
+The rate could not be judged by its value, because 0% is a legal answer: an
+unanswered select and a deliberate nil-rated supply both read as zero. Lines
+now carry whether the owner answered, derived on the server from the rate field
+the client sent rather than accepted as a separate claim, and issuance refuses a
+bill with an unanswered rate while still allowing a deliberate 0%. The review
+preview prints "not chosen" rather than "0%", and a rate saved as 0% now comes
+back as 0% in the editor instead of an empty select. Lines written before the
+flag existed count as answered, so no issued bill is retrospectively failed.
+
+**Return output is now order-independent.** The GSTR-1 tables were built by
+walking the query's result order, so the same period could render its rows — and
+the item names inside a grouped row — differently on each refresh. The
+documents are sorted by date, then number, then rate before any table is built.
 
 ---
 

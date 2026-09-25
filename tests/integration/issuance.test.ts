@@ -342,3 +342,89 @@ describe('duplicate', () => {
     expect(copy.lines[0]!.id).not.toBe(invoice.lines[0]!.id);
   });
 });
+
+// ---------------------------------------------------------------------------
+// A tax invoice that charges no GST because nobody answered the rate question
+// is a wrong document, and it goes on to enter GSTR-1 as a nil-rated supply.
+// 0% is a legal answer, so the rate cannot be judged by its value alone.
+// ---------------------------------------------------------------------------
+
+describe('a rate nobody chose', () => {
+  async function draftWithUnansweredRate() {
+    const business = await makeGstBusiness();
+    const uid = await ownerUidOf(business);
+    const draft = await saveDraft({
+      business,
+      uid,
+      invoiceId: newInvoiceId(),
+      kind: 'customer-invoice',
+      issueDate: todayIst(),
+      customer: { ...emptyParty('Sharma Electricals'), stateCode: '27' },
+      placeOfSupplyStateCode: '27',
+      supplyFlags: [],
+      lines: [line('Repair visit', '2', '800', '0', { taxRateChosen: false })],
+      notes: null,
+      baseRevision: 0,
+    });
+    return { business, uid, draft };
+  }
+
+  it('saves the draft, so nothing the owner typed is lost', async () => {
+    const { draft } = await draftWithUnansweredRate();
+    expect(draft.status).toBe('draft');
+    expect(draft.lines[0]!.taxRateChosen).toBe(false);
+  });
+
+  it('refuses to issue it, and says which item to fix', async () => {
+    const { business, uid, draft } = await draftWithUnansweredRate();
+    await expect(issueInvoice({ business, uid, invoiceId: draft.id })).rejects.toBeInstanceOf(IssuanceBlockedError);
+    try {
+      await issueInvoice({ business, uid, invoiceId: draft.id });
+    } catch (e) {
+      const blockers = (e as IssuanceBlockedError).blockers;
+      expect(blockers.map((b) => b.code)).toContain('rate-not-chosen');
+      expect(blockers.find((b) => b.code === 'rate-not-chosen')!.whatYouCanDo).toMatch(/choose 0%/i);
+    }
+  });
+
+  it('issues once the owner deliberately chooses 0%', async () => {
+    const { business, uid, draft } = await draftWithUnansweredRate();
+    const answered = await saveDraft({
+      business,
+      uid,
+      invoiceId: draft.id,
+      kind: 'customer-invoice',
+      issueDate: draft.issueDate,
+      customer: draft.customer,
+      placeOfSupplyStateCode: '27',
+      supplyFlags: [],
+      lines: [line('Repair visit', '2', '800', '0', { taxRateChosen: true })],
+      notes: null,
+      baseRevision: draft.revision,
+    });
+    const { invoice } = await issueInvoice({ business, uid, invoiceId: answered.id });
+    expect(invoice.status).toBe('issued');
+    expect(invoice.totals.totalTaxPaise).toBe(0);
+    expect(invoice.totals.grandTotalPaise).toBe(160000);
+  });
+
+  it('never asks a business that adds no GST', async () => {
+    const business = await makeUnregisteredBusiness();
+    const uid = await ownerUidOf(business);
+    const draft = await saveDraft({
+      business,
+      uid,
+      invoiceId: newInvoiceId(),
+      kind: 'quick-bill',
+      issueDate: todayIst(),
+      customer: emptyParty('Walk-in customer'),
+      placeOfSupplyStateCode: null,
+      supplyFlags: [],
+      lines: [line('Repair visit', '2', '800', '0', { taxRateChosen: false })],
+      notes: null,
+      baseRevision: 0,
+    });
+    const { invoice } = await issueInvoice({ business, uid, invoiceId: draft.id });
+    expect(invoice.status).toBe('issued');
+  });
+});

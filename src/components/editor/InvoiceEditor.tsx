@@ -44,7 +44,9 @@ function toEditorState(b: EditorBootstrap): EditorState {
           quantity: String(l.quantityMilli / 1000),
           unitPrice: l.unitPricePaise ? (l.unitPricePaise / 100).toFixed(2) : '',
           discount: l.discountPaise ? (l.discountPaise / 100).toFixed(2) : '',
-          taxRate: l.taxRateBp ? formatPercentPlain(l.taxRateBp) : '',
+          // A deliberate 0% must come back as 0%, not as an empty select --
+          // the rate is zero either way, so only the flag can tell them apart.
+          taxRate: l.taxRateChosen ? formatPercentPlain(l.taxRateBp) : '',
           unit: l.unit ?? '',
           hsnCode: l.hsnCode ?? '',
           priceIncludesTax: l.priceIncludesTax,
@@ -88,7 +90,9 @@ function toPayload(state: EditorState, invoiceId: string) {
         quantityMilli: l.quantity || '1',
         unitPricePaise: l.unitPrice || '0',
         discountPaise: l.discount || '0',
-        taxRateBp: l.taxRate || '0',
+        // Sent empty when unanswered. The server prices it as zero either way,
+        // but records that nobody chose it and refuses to issue on that basis.
+        taxRateBp: l.taxRate,
         cessRateBp: '0',
         priceIncludesTax: l.priceIncludesTax,
         unit: l.unit || null,

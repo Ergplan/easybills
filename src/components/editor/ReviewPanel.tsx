@@ -35,6 +35,11 @@ export function ReviewPanel({
   const { totals, computation, assessment } = priced;
   const blocked = blockers.length > 0 || !assessment.canIssue;
 
+  // Lines whose rate the owner has not answered. They price as zero, but the
+  // preview must not print "0%" as though that were their answer -- a
+  // deliberate nil-rated 0% and an unanswered select would then look identical.
+  const unanswered = new Set(state.lines.filter((l) => l.taxRate.trim() === '').map((l) => l.id));
+
   return (
     <div className="stack">
       <div className="row row--between">
@@ -106,7 +111,11 @@ export function ReviewPanel({
                   <td className="num">{formatQuantityPlain(l.quantityMilli)}{l.unit ? ` ${l.unit}` : ''}</td>
                   <td className="num">{formatMoneyIndian(l.unitPricePaise)}</td>
                   {computation.supplyType !== 'no-gst' && (
-                    <td className="num">{formatPercentPlain(l.taxRateBp)}%</td>
+                    <td className="num">
+                      {/* An unanswered rate prices as zero, but the preview must
+                          not print "0%" as though that were the owner's answer. */}
+                      {unanswered.has(l.id) ? <span className="muted">not chosen</span> : `${formatPercentPlain(l.taxRateBp)}%`}
+                    </td>
                   )}
                   <td className="num">{formatMoneyIndian(l.taxableValuePaise)}</td>
                 </tr>

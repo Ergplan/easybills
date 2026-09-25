@@ -179,6 +179,15 @@ export interface InvoiceLine {
   unitPricePaise: number;
   discountPaise: number;
   taxRateBp: number;
+  /**
+   * Whether the owner actually picked a rate.
+   *
+   * 0% is a real, legal choice (nil-rated supply), so a zero rate cannot be
+   * read as "not answered". This carries the difference from the editor to
+   * the issuance check, which refuses to print a tax invoice claiming 0% GST
+   * that nobody chose.
+   */
+  taxRateChosen: boolean;
   cessRateBp: number;
   priceIncludesTax: boolean;
   unit: string | null;

@@ -168,6 +168,42 @@ describe('hostile text', () => {
     expect(result.success).toBe(false);
   });
 
+  // An unanswered rate select and a deliberate nil-rated 0% both price as zero,
+  // so the difference has to be captured before percentString flattens it.
+  it.each([
+    ['', false],
+    [null, false],
+    [undefined, false],
+    ['0', true],
+    ['18', true],
+    [0, true],
+  ])('reads a rate of %o as chosen=%s', (raw, chosen) => {
+    const result = saveDraftInput.safeParse({
+      invoiceId: 'x', kind: 'quick-bill', issueDate: todayIst(),
+      customer: { name: 'A', phone: null, email: null, addressLine1: null, addressLine2: null, city: null, pincode: null, stateCode: null, gstin: null, pan: null, customerId: null },
+      placeOfSupplyStateCode: null, supplyFlags: [],
+      lines: [{ id: 'l', description: 'Item', quantityMilli: '1', unitPricePaise: '100', discountPaise: '0', taxRateBp: raw, cessRateBp: '0', priceIncludesTax: false, unit: null, hsnCode: null, savedItemId: null }],
+      notes: null, baseRevision: 0,
+    });
+    expect(result.success).toBe(true);
+    expect(result.data!.lines[0]!.taxRateChosen).toBe(chosen);
+    expect(result.data!.lines[0]!.taxRateBp).toBe(raw === '18' ? 1800 : 0);
+  });
+
+  // The flag is derived from the rate field the client sent, not accepted as a
+  // separate claim, so a client cannot assert a rate was chosen when it was not.
+  it('ignores a taxRateChosen the client tries to assert for itself', () => {
+    const result = saveDraftInput.safeParse({
+      invoiceId: 'x', kind: 'quick-bill', issueDate: todayIst(),
+      customer: { name: 'A', phone: null, email: null, addressLine1: null, addressLine2: null, city: null, pincode: null, stateCode: null, gstin: null, pan: null, customerId: null },
+      placeOfSupplyStateCode: null, supplyFlags: [],
+      lines: [{ id: 'l', description: 'Item', quantityMilli: '1', unitPricePaise: '100', discountPaise: '0', taxRateBp: '', taxRateChosen: true, cessRateBp: '0', priceIncludesTax: false, unit: null, hsnCode: null, savedItemId: null }],
+      notes: null, baseRevision: 0,
+    });
+    expect(result.success).toBe(true);
+    expect(result.data!.lines[0]!.taxRateChosen).toBe(false);
+  });
+
   it('rejects a malformed date rather than guessing one', () => {
     for (const bad of ['2026-13-01', '2026-02-30', 'yesterday', '01/01/2026', '2026-2-3', '']) {
       const result = saveDraftInput.safeParse({

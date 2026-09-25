@@ -33,6 +33,8 @@ const line = (description: string, qty: string, price: string, rate = '0'): Invo
   unitPricePaise: parseMoney(price),
   discountPaise: 0,
   taxRateBp: rate === '0' ? 0 : Math.round(Number(rate) * 100),
+  // Demo data is complete data: every rate here was chosen on purpose.
+  taxRateChosen: true,
   cessRateBp: 0,
   priceIncludesTax: false,
   unit: null,

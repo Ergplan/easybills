@@ -54,6 +54,12 @@ export interface IssuanceSubject {
   /** Whether the owner has confirmed e-invoicing does not apply to them. */
   eInvoicingSelfDeclaredNotApplicable: boolean;
   issueDate: CivilDate;
+  /**
+   * How many lines still have no rate chosen. Only meaningful for a business
+   * that charges GST. Absent means "not counted", which does not block -- the
+   * caller that knows the lines is the one that must supply it.
+   */
+  linesMissingRate?: number;
 }
 
 export interface Blocker {
@@ -187,6 +193,24 @@ export function assessIssuance(subject: IssuanceSubject, pack: RulePack = DEFAUL
         whatYouCanDo: 'Your drafts are saved. Please raise these bills through your e-invoice provider or accountant.',
       });
     }
+  }
+
+  // --- rates the owner has not answered -----------------------------------
+  // 0% is a legal choice, so the rate field cannot be checked by its value: an
+  // unanswered select and a deliberate nil-rated supply both read as zero. A
+  // tax invoice printing "0%" that nobody chose is a wrong document, and it
+  // goes on to enter GSTR-1 as a nil-rated supply, so it is refused here.
+  const missingRate = chargesGst ? (subject.linesMissingRate ?? 0) : 0;
+  if (missingRate > 0) {
+    blockers.push({
+      code: 'rate-not-chosen',
+      message:
+        missingRate === 1
+          ? 'One item has no GST rate chosen, so this bill would charge no GST on it.'
+          : `${missingRate} items have no GST rate chosen, so this bill would charge no GST on them.`,
+      whatYouCanDo:
+        'Go back to the bill and choose the rate for each item. If an item really is nil-rated, choose 0% so the bill says you meant it.',
+    });
   }
 
   const canIssue = blockers.length === 0 && documentKind !== 'blocked';

@@ -34,7 +34,7 @@ const email = `gstowner${Date.now()}@example.test`;
 // The bills are issued today, so they land in this month's return.
 const PERIOD = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 7);
 
-async function quickBill(desc, qty, price) {
+async function quickBill(desc, qty, price, ratePercent, { expectRateBlock = false } = {}) {
   await page.goto(`${BASE}/bills/new`, { waitUntil: 'networkidle' });
   await page.getByText('Quick bill', { exact: true }).click();
   await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 25000 });
@@ -45,6 +45,28 @@ async function quickBill(desc, qty, price) {
   await page.waitForTimeout(1500);
   await page.locator('.save-state').first().filter({ hasText: 'Saved' }).waitFor({ timeout: 20000 }).catch(() => {});
   const url = page.url();
+
+  // A tax invoice that charges no GST because nobody answered the rate question
+  // is a wrong document. Prove it is refused before answering it.
+  if (expectRateBlock) {
+    await page.getByRole('button', { name: 'Review' }).click();
+    await page.waitForTimeout(2000);
+    const blocked = await page.getByRole('button', { name: /^Issue/ }).isDisabled();
+    await shot('00-rate-block');
+    const why = await page.locator('main').innerText();
+    check('issuing is refused while an item has no GST rate chosen', blocked, `(text: ${why.slice(0, 200)})`);
+    check('the refusal names the fix, including a deliberate 0%', /choose 0%/i.test(why), `(text: ${why.slice(0, 400)})`);
+    // A preview that prints "0%" for an unanswered rate looks identical to a
+    // deliberate nil-rated supply, which is the confusion being fixed.
+    check('the preview says the rate is not chosen rather than showing 0%', /not chosen/i.test(why), `(text: ${why.slice(0, 500)})`);
+    await page.getByRole('button', { name: /Back to edit/ }).click();
+    await page.waitForTimeout(1200);
+  }
+
+  await page.locator('select[id^="rate-"]').first().selectOption(String(ratePercent));
+  await page.waitForTimeout(1500);
+  await page.locator('.save-state').first().filter({ hasText: 'Saved' }).waitFor({ timeout: 20000 }).catch(() => {});
+
   await page.getByRole('button', { name: 'Review' }).click();
   await page.waitForTimeout(2000);
   const issue = page.getByRole('button', { name: /^Issue/ });
@@ -89,9 +111,9 @@ try {
   await shot('01-settings');
 
   console.log('\n4. Issue two walk-in bills in this month');
-  const a = await quickBill('Cement bags', 4, 380);
+  const a = await quickBill('Cement bags', 4, 380, 18, { expectRateBlock: true });
   console.log('    bill A', a.number, a.id);
-  const b = await quickBill('Paint tins', 2, 725);
+  const b = await quickBill('Paint tins', 2, 725, 18);
   console.log('    bill B', b.number, b.id);
 
   console.log('\n5. Turn on GST returns');

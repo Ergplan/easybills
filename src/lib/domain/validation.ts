@@ -116,19 +116,36 @@ export const supplyFlag = z.enum([
   'non-gst-supply',
 ]);
 
-export const invoiceLineInput = z.object({
+const invoiceLineFields = z.object({
   id: z.string().min(1).max(64),
   description: z.string().trim().min(1, 'Add a description').max(300),
   quantityMilli: quantityString,
   unitPricePaise: moneyString,
   discountPaise: optionalMoneyString,
   taxRateBp: percentString,
+  /**
+   * Derived below from the raw rate field, never taken from the client as a
+   * separate claim -- so it cannot drift from the rate it describes.
+   */
+  taxRateChosen: z.boolean().default(true),
   cessRateBp: percentString,
   priceIncludesTax: z.boolean().default(false),
   unit: trimmedOrNull(20),
   hsnCode: trimmedOrNull(10),
   savedItemId: trimmedOrNull(64),
 });
+
+/**
+ * An empty rate field means the owner has not answered yet. `percentString`
+ * turns it into 0, which is indistinguishable from a deliberate nil-rated 0%,
+ * so the distinction is captured here before it is lost.
+ */
+export const invoiceLineInput = z.preprocess((v) => {
+  if (v === null || typeof v !== 'object') return v;
+  const raw = (v as Record<string, unknown>).taxRateBp;
+  const unanswered = raw === undefined || raw === null || (typeof raw === 'string' && raw.trim() === '');
+  return { ...(v as Record<string, unknown>), taxRateChosen: !unanswered };
+}, invoiceLineFields);
 
 export const invoicePartyInput = z.object({
   customerId: trimmedOrNull(64),

@@ -58,6 +58,7 @@ export async function saveDraftAction(
         unitPricePaise: l.unitPricePaise,
         discountPaise: l.discountPaise,
         taxRateBp: l.taxRateBp,
+        taxRateChosen: l.taxRateChosen,
         cessRateBp: l.cessRateBp,
         priceIncludesTax: l.priceIncludesTax,
         unit: l.unit,
@@ -137,6 +138,9 @@ export async function startDraftAction(kind: 'quick-bill' | 'customer-invoice'):
           unitPricePaise: 0,
           discountPaise: 0,
           taxRateBp: business.defaultTaxRateBp ?? 0,
+          // Only a configured default counts as an answer. With none, the rate
+          // select opens blank and issuing waits for the owner to fill it.
+          taxRateChosen: business.defaultTaxRateBp !== null,
           cessRateBp: 0,
           priceIncludesTax: false,
           unit: null,

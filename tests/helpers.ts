@@ -61,6 +61,8 @@ export function line(
     unitPricePaise: parseMoney(price),
     discountPaise: 0,
     taxRateBp: parsePercent(ratePercent),
+    // A fixture states its rate, so it counts as chosen unless a test overrides.
+    taxRateChosen: true,
     cessRateBp: 0,
     priceIncludesTax: false,
     unit: null,

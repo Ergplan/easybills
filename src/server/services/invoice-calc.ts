@@ -40,6 +40,9 @@ export function priceInvoice(args: {
       declaredAggregateTurnoverPaise: business.declaredAggregateTurnoverPaise,
       eInvoicingSelfDeclaredNotApplicable: business.eInvoicingSelfDeclaredNotApplicable,
       issueDate,
+      // A line saved before this field existed counts as answered: the owner
+      // is not retrospectively accused of skipping a question we never asked.
+      linesMissingRate: lines.filter((l) => l.taxRateChosen === false).length,
     },
     DEFAULT_RULE_PACK,
   );

@@ -47,7 +47,9 @@ Then:
    matter. A customer with no GST number is perfectly normal.
 2. **Items.** Type what you are billing for, the quantity (it starts at 1) and
    the price. Tap *+ Add another item* for more. If you charge GST, choose the
-   rate for each item — we do not guess it for you. Your saved items appear as
+   rate for each item — we do not guess it for you, and we will not let you
+   issue a bill with the rate left blank. If an item really is nil-rated,
+   choose 0% so the bill says you meant it. Your saved items appear as
    buttons above the first line; tap one to fill it in.
 3. **More, on any item.** Discount, unit, HSN code, "the price already includes
    GST", and *Save this item for next time*. Items are only saved when you ask.

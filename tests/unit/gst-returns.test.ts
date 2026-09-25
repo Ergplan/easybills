@@ -469,8 +469,9 @@ describe('GSTR-1 tables', () => {
     const t = buildGstr1({
       period: '2026-09',
       documents: [
-        outward({ id: 'a', documentNumber: 'INV-001', hsnLines: [line('Cement bags', 4000, 152000)] }),
+        // Handed in reverse: the row must still read in document order.
         outward({ id: 'b', documentNumber: 'INV-002', hsnLines: [line('Paint tins', 2000, 145000)] }),
+        outward({ id: 'a', documentNumber: 'INV-001', hsnLines: [line('Cement bags', 4000, 152000)] }),
       ],
     });
     expect(t.hsnSummary).toHaveLength(1);
@@ -490,6 +491,20 @@ describe('GSTR-1 tables', () => {
     expect(hsnRowLabel({ description: 'Cement bags', descriptions: ['Cement bags'], descriptionCount: 1 })).toBe(
       'Cement bags',
     );
+  });
+
+  // The same period must render the same way every time it is opened, whatever
+  // order the query happened to return the bills in.
+  it('orders the tables by document, not by whatever order it was handed', () => {
+    const docs = [
+      outward({ id: 'c', documentNumber: 'INV-003', documentDate: '2026-09-20', sourceInvoiceId: 'inv-c' }),
+      outward({ id: 'a', documentNumber: 'INV-001', documentDate: '2026-09-02', sourceInvoiceId: 'inv-a' }),
+      outward({ id: 'b', documentNumber: 'INV-002', documentDate: '2026-09-11', sourceInvoiceId: 'inv-b' }),
+    ];
+    const forwards = buildGstr1({ period: '2026-09', documents: docs });
+    const backwards = buildGstr1({ period: '2026-09', documents: [...docs].reverse() });
+    expect(forwards.b2cSummary[0]!.sourceInvoiceIds).toEqual(['inv-a', 'inv-b', 'inv-c']);
+    expect(backwards).toEqual(forwards);
   });
 
   it('marks imported sales as having no bill of their own', () => {

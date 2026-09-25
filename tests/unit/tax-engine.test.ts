@@ -271,4 +271,40 @@ describe('issuance assessment', () => {
       'missing-place-of-supply',
     );
   });
+
+  // 0% is a legal answer, so the rate cannot be checked by its value: an
+  // unanswered select and a deliberate nil-rated supply both read as zero.
+  it('refuses to print a tax invoice with a rate nobody chose', () => {
+    const a = assessIssuance({ ...base, linesMissingRate: 1 });
+    expect(a.canIssue).toBe(false);
+    expect(a.blockers.map((b) => b.code)).toContain('rate-not-chosen');
+    expect(a.blockers.find((b) => b.code === 'rate-not-chosen')!.message).toMatch(/One item/);
+  });
+
+  it('counts the items whose rate is still unanswered', () => {
+    const a = assessIssuance({ ...base, linesMissingRate: 3 });
+    expect(a.blockers.find((b) => b.code === 'rate-not-chosen')!.message).toMatch(/3 items/);
+  });
+
+  it('allows a bill where every rate was answered, including a deliberate 0%', () => {
+    expect(assessIssuance({ ...base, linesMissingRate: 0 }).canIssue).toBe(true);
+  });
+
+  // A business that adds no GST is never asked the question, so it can never
+  // fail it.
+  it('does not ask a business that charges no GST for a rate', () => {
+    const a = assessIssuance({
+      ...base,
+      registrationType: 'not-registered',
+      sellerGstin: null,
+      linesMissingRate: 2,
+    });
+    expect(a.canIssue).toBe(true);
+    expect(a.blockers.map((b) => b.code)).not.toContain('rate-not-chosen');
+  });
+
+  // Lines written before the question existed are not retrospectively failed.
+  it('does not block when the caller did not count the lines', () => {
+    expect(assessIssuance(base).canIssue).toBe(true);
+  });
 });

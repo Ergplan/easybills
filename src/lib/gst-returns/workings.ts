@@ -206,7 +206,20 @@ export function buildGstr1(args: {
   documents: readonly OutwardDocument[];
   cancelledNumbers?: readonly string[];
 }): Gstr1Tables {
-  const { period, documents } = args;
+  const { period } = args;
+
+  // Order the input rather than inheriting whatever order the query returned.
+  // Every table below is built by walking this list, so without it the same
+  // period can render its rows -- and the item names inside a grouped row -- in
+  // a different order on each refresh. A return that looks different each time
+  // you open it is a return you stop trusting.
+  const documents = [...args.documents].sort(
+    (a, b) =>
+      a.documentDate.localeCompare(b.documentDate) ||
+      a.documentNumber.localeCompare(b.documentNumber, 'en', { numeric: true }) ||
+      a.taxRateBp - b.taxRateBp ||
+      a.id.localeCompare(b.id),
+  );
 
   const invoices = documents.filter((d) => d.documentType === 'invoice');
   const notes = documents.filter((d) => d.documentType !== 'invoice');
