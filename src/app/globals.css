@@ -66,6 +66,13 @@
 
   --page-gutter: 16px;
   --nav-height: 64px;
+
+  /* Desktop. The rail is wide enough for the longest label ("Customers") plus
+     its icon without wrapping; the content widths are reading measures, not
+     whatever the window happens to be. */
+  --rail-width: 232px;
+  --page-measure: 860px;
+  --page-measure-wide: 1200px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -132,6 +139,10 @@ a { color: var(--accent); }
   border-radius: 4px;
 }
 
+/* Two renderings of the same thing, one per layout. Only ever one is in the
+   document's flow, so neither the eye nor a screen reader meets it twice. */
+.only-wide { display: none; }
+
 /* Screen-reader-only text for context a sighted user gets from layout. */
 .sr-only {
   position: absolute;
@@ -152,6 +163,11 @@ a { color: var(--accent); }
   padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
 }
 
+.app-shell__main { display: contents; }
+
+/* The side rail exists only at desktop widths; see the breakpoint below. */
+.sidenav { display: none; }
+
 .page {
   width: 100%;
   max-width: 720px;
@@ -163,6 +179,18 @@ a { color: var(--accent); }
 }
 
 .page--wide { max-width: 1080px; }
+
+/* A group of cards that each say one thing. On a phone this is exactly what
+   the page was already doing -- one column, same gap -- so the wrapper costs
+   nothing here. At a desktop width it becomes two columns; see the breakpoint
+   at the end of this file. */
+.deck {
+  display: flex;
+  flex-direction: column;
+  /* Takes the gap of whatever it was dropped into, so wrapping cards in a deck
+     leaves the phone layout pixel-identical to what it was before. */
+  gap: inherit;
+}
 
 .topbar {
   position: sticky;
@@ -444,6 +472,27 @@ a { color: var(--accent); }
 }
 
 .list__item:last-child { border-bottom: none; }
+
+/* The right-hand end of a list row: amount, status, and a note about what is
+   left to collect.
+   
+   On a phone these stack, because the row is only 360px wide and there is no
+   other way to fit them. The reading order is DOM order -- note, status,
+   amount -- and `column-reverse` puts the amount on top, where the eye lands
+   first, without reordering the markup. */
+.list__meta {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.list__meta-amount {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
 .list__item:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
 
 .empty {
@@ -618,7 +667,24 @@ table.data td.num, table.data th.num {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
-/* Desktop: the editor gains a live side preview. */
+/* ===================================================================
+   Desktop
+   ===================================================================
+
+   Everything above this line is the phone layout, and it stays exactly as it
+   is: a browser window narrower than the breakpoint gets the same app a phone
+   does, which is the one that has been tested at 360px.
+
+   What changes at a desktop width is only what the extra room makes possible:
+   the three destinations move from under the thumb to a rail beside the
+   content, the content stops stretching to whatever the monitor is, and things
+   that were folded away for want of space -- the bill preview, the four GST
+   steps, a list row's date and balance -- are simply shown.
+   =================================================================== */
+
+/* The bill editor gains a live side preview a little earlier than the rail
+   arrives: a tablet in landscape has room for it while still using the tab
+   bar. */
 @media (min-width: 900px) {
   .editor-layout {
     display: grid;
@@ -627,10 +693,183 @@ table.data td.num, table.data th.num {
     align-items: start;
   }
   .editor-preview { position: sticky; top: 72px; }
-  .sticky-total { position: static; box-shadow: none; border-top: 0; padding-inline: 0; }
+
+  /* The running total stops being a bar stuck to the bottom of the screen and
+     becomes the last thing in the column, so it needs none of the chrome that
+     made it read as floating above the page. */
+  .sticky-total {
+    position: static;
+    box-shadow: none;
+    border-top: 0;
+    padding-inline: 0;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .sticky-total__inner { max-width: none; }
   .editor-with-sticky { padding-bottom: 0; }
 }
 
 @media (max-width: 899px) {
   .editor-preview { display: none; }
+}
+
+@media (min-width: 1024px) {
+  /* --- the shell ------------------------------------------------------ */
+
+  .app-shell {
+    display: grid;
+    grid-template-columns: var(--rail-width) minmax(0, 1fr);
+    padding-bottom: 0;
+  }
+
+  .app-shell__main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  /* The bottom bar is the phone's navigation. Removing it rather than hiding
+     it keeps the three destinations to three for a keyboard and a screen
+     reader too. */
+  .tabbar { display: none; }
+
+  .sidenav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100dvh;
+    padding: 16px 12px;
+    background: var(--surface);
+    -webkit-backdrop-filter: var(--surface-blur);
+    backdrop-filter: var(--surface-blur);
+    border-right: 1px solid var(--line);
+  }
+
+  .sidenav__brand {
+    display: flex;
+    align-items: center;
+    min-height: var(--tap);
+    padding: 4px 10px 10px;
+  }
+
+  /* A business name is identity, so it wraps to a second line rather than
+     being cut off -- "Kulkarni Electricals &..." tells the owner their own
+     name is too long for us, which is not a message this app should send. */
+  .sidenav__name {
+    font-weight: 650;
+    font-size: 1.0625rem;
+    line-height: 1.3;
+    letter-spacing: -0.018em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .sidenav__links { display: flex; flex-direction: column; gap: 2px; }
+
+  .sidenav__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: var(--tap);
+    padding: 0 10px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .sidenav__item:hover { background: var(--paper-sunk); color: var(--ink); }
+
+  .sidenav__item[aria-current='page'] {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  /* --- the content column --------------------------------------------- */
+
+  .only-compact { display: none; }
+  .only-wide { display: inline; }
+
+  /* Left-aligned, not centred. With a rail down the side, centring the column
+     in what is left pushes it into the middle of the window and makes the eye
+     travel the width of the gap on every glance between nav and content. */
+  .page {
+    max-width: var(--page-measure);
+    margin-inline: 0 auto;
+    padding: 24px 32px 56px;
+    gap: 20px;
+  }
+  .page--wide { max-width: var(--page-measure-wide); }
+
+  .topbar { padding-inline: 32px; min-height: 64px; }
+  .topbar__title { font-size: 1.2rem; }
+
+  .demo-banner { text-align: center; }
+
+  /* --- home and settings: two columns of cards ------------------------- */
+
+  /* Cards that each say one thing sit badly in a single 860px column -- the
+     eye travels a long way for very little. Side by side, the page is read in
+     one glance. `masonry` is not needed: the rows are short enough that even
+     tops are the tidier answer. */
+  .deck {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    align-items: start;
+  }
+
+  .deck > .deck__full { grid-column: 1 / -1; }
+
+  /* A full-width bar is right on a phone, where the thumb needs the target and
+     the screen is 360px wide. Stretched across a desktop column it makes the
+     least important thing on the page the biggest -- so buttons that stand on
+     their own become buttons again. */
+  .page > .btn--block.btn--large { align-self: flex-start; min-width: 240px; width: auto; }
+  .deck > .btn--block { justify-self: start; min-width: 220px; width: auto; }
+
+  /* --- lists ----------------------------------------------------------- */
+
+  .list__item { padding: 14px 20px; }
+
+  /* A row that is 820px wide should not leave the customer at one end and
+     their money at the other with nothing in between. The trailing block
+     reads across instead of stacking, and the amount gets a fixed column, so
+     the figures line up down the list rather than raggedly following whatever
+     status pill happens to precede them. */
+  .list__meta {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .list__meta-note { order: -1; }
+  .list__meta-amount { min-width: 8.5ch; text-align: right; }
+
+  /* The status pill is the only variable-width thing in the row, so giving it
+     a column of its own is what keeps the amounts aligned. */
+  .list__meta > .pill { min-width: 84px; justify-content: center; }
+
+  /* --- forms ----------------------------------------------------------- */
+
+  /* A line item's fields go in one row rather than a 2x2 grid the eye has to
+     unpack. `auto-fit` rather than a fixed count because the number of fields
+     depends on the business: a line has a quantity and a price always, and a
+     GST rate only where the seller charges GST. Empty tracks collapse, so two
+     fields fill the row just as three do. */
+  .line-item__grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .line-item { padding: 16px; }
+
+  /* --- the GST guide --------------------------------------------------- */
+
+  /* The four steps fit side by side here, so the strip stops being a scroll
+     container -- which also stops it clipping a focus ring. */
+  .segmented { overflow: visible; }
 }

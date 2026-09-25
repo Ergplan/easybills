@@ -42,9 +42,9 @@ export default async function CustomersPage() {
                     {customer.phone && <span className="faint">{customer.phone}</span>}
                   </div>
                   {balance.outstandingPaise > 0 ? (
-                    <div className="stack" style={{ gap: 2, alignItems: 'flex-end' }}>
-                      <Money paise={balance.outstandingPaise} />
-                      <span className="tiny muted">to collect</span>
+                    <div className="list__meta">
+                      <span className="tiny muted list__meta-note">to collect</span>
+                      <span className="list__meta-amount"><Money paise={balance.outstandingPaise} /></span>
                     </div>
                   ) : (
                     <span className="pill pill--paid">Settled</span>

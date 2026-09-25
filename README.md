@@ -106,6 +106,25 @@ src/server/pdf/         A4 template, renderer, UPI QR
 src/app/                routes, server actions, API handlers
 ```
 
+### Screen sizes
+
+One app, two shapes, one stylesheet. The phone layout is the product: 360px
+first, three destinations along the bottom under the thumb, one column. From
+1024px the same markup becomes a browser layout — the three destinations move
+to a rail down the side, the content column stops stretching to whatever the
+monitor is, and things folded away for want of space are simply shown: the
+bill's live preview beside the form, all four GST steps at once, a list row's
+date and balance across the row instead of stacked. The bill editor picks up
+its side preview a little earlier, at 900px, where a tablet in landscape has
+room for it while still using the tab bar.
+
+Nothing is duplicated to achieve this. The three destinations are one list
+rendered twice, only ever one of them in the document, so they cannot drift
+apart. The rules that make the product what it is hold at every width, and are
+asserted at fourteen of them: exactly three destinations, one primary action,
+44px targets, no horizontal scrolling. `npm run e2e:desktop` checks the browser
+layout; `npm run e2e` checks the phone.
+
 ### Two decisions worth knowing about
 
 **No floating-point money, anywhere.** Every amount is an integer in paise,

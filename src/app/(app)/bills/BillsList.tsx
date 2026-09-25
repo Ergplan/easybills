@@ -114,14 +114,16 @@ export function BillsList({
                     </span>
                   )}
                 </div>
-                <div className="stack" style={{ gap: 4, alignItems: 'flex-end' }}>
-                  <Money paise={b.grandTotalPaise} />
-                  <StatusPill status={b.status === 'draft' ? 'draft' : b.status === 'cancelled' ? 'cancelled' : b.paymentStatus} />
+                {/* Stacked under the thumb on a phone, laid out across the
+                    row in a browser window -- see `.list__meta`. */}
+                <div className="list__meta">
                   {b.status === 'issued' && b.balancePaise > 0 && b.balancePaise !== b.grandTotalPaise && (
-                    <span className="tiny muted">
+                    <span className="tiny muted list__meta-note">
                       <Money paise={b.balancePaise} symbol={false} /> left
                     </span>
                   )}
+                  <StatusPill status={b.status === 'draft' ? 'draft' : b.status === 'cancelled' ? 'cancelled' : b.paymentStatus} />
+                  <span className="list__meta-amount"><Money paise={b.grandTotalPaise} /></span>
                 </div>
               </Link>
             ))}

@@ -105,6 +105,10 @@ export function SettingsForm({
         </div>
       )}
 
+      {/* Four settings cards, each about one thing. On a phone they stack; in
+          a browser window they sit two across, which turns a 2,300px scroll
+          into one screen. The reference material below stays full width. */}
+      <div className="deck">
       {/* ---------------------------------------------------------- identity */}
       <section className="card stack" aria-labelledby="s-identity">
         <h2 id="s-identity">Your business</h2>
@@ -438,7 +442,7 @@ export function SettingsForm({
       </section>
 
       {/* ------------------------------------------------------ what we support */}
-      <details className="card disclosure">
+      <details className="card disclosure deck__full">
         <summary>What this app can and cannot handle</summary>
         <div className="disclosure__body stack">
           <div className="stack stack--tight">
@@ -471,7 +475,7 @@ export function SettingsForm({
       </details>
 
       {/* ------------------------------------------------------------- status */}
-      <details className="card disclosure">
+      <details className="card disclosure deck__full">
         <summary>App status</summary>
         <div className="disclosure__body stack stack--tight small">
           <div className="row row--between"><span className="muted">Signed in as</span><span className="truncate">{userEmail ?? '—'}</span></div>
@@ -484,7 +488,7 @@ export function SettingsForm({
 
       <button
         type="button"
-        className="btn btn--secondary btn--block"
+        className="btn btn--secondary btn--block deck__full"
         onClick={async () => {
           // Clear any locally cached drafts so a shared device does not leak them.
           try {
@@ -499,6 +503,7 @@ export function SettingsForm({
       >
         Sign out
       </button>
+      </div>
     </div>
   );
 }

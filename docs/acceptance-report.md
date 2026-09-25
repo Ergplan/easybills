@@ -446,6 +446,41 @@ documents are sorted by date, then number, then rate before any table is built.
 
 ---
 
+## Browser layout, 25 September 2026
+
+The product was specified mobile-first at 360px and built that way. It also has
+to be usable on the laptop an owner does their accounts on, so the same app now
+has a second shape.
+
+From 1024px the three destinations move from a bar along the bottom to a rail
+down the side, the content column stops stretching to whatever the monitor is,
+and what was folded away for want of space is shown: the bill's live preview
+beside the form, all four GST steps at once instead of a strip that scrolls,
+and a list row's date, status and balance across the row rather than stacked.
+Home and Settings become two columns of cards — Settings goes from a 2,300px
+scroll to one screen. Nothing is duplicated to get there: the three
+destinations are one list rendered twice with only ever one of them in the
+document, so they cannot drift apart, and the phone layout below the breakpoint
+is byte-for-byte what it was.
+
+The simplicity rules are not width-dependent, so they are asserted at every
+width rather than at the one the layout was designed for: exactly three
+destinations and no more, one primary action on Home, 44px targets, no
+horizontal scrolling. `npm run e2e:desktop` checks those at fourteen widths
+from 320px to 2560px across three pages, including both pixels either side of
+the breakpoint, plus dark mode, keyboard reachability and a visible focus ring.
+The three phone suites were re-run at 360px unchanged.
+
+Three things the width change exposed, all fixed: the business name appeared
+twice across the top once the rail carried it, so Home's top bar says "Home"
+there instead; a full-width primary bar — right for a thumb on a 360px screen —
+made the least important thing on a desktop page the biggest, so buttons that
+stand on their own are buttons again; and a list row 820px wide put the
+customer at one end and their money at the other, so the trailing block reads
+across the row with the amounts in a column of their own.
+
+---
+
 ## Everything that is mocked or unverified
 
 | Thing | State |

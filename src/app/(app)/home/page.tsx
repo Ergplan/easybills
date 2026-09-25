@@ -22,7 +22,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <TopBar title={business.legalName} showProfile />
+      <TopBar title={business.legalName} wideTitle="Home" showProfile />
       <main className="page">
         {/* The one primary action. Nothing competes with it visually. */}
         <Link href="/bills/new" className="btn btn--primary btn--block btn--large">
@@ -44,6 +44,10 @@ export default async function HomePage() {
           </div>
         )}
 
+        {/* Four cards that each say one thing. On a phone they stack; in a
+            browser window they sit two across, so the whole of today is read
+            in one glance instead of a long scroll. */}
+        <div className="deck">
         {/* Monthly bills ready */}
         <section className="card stack" aria-labelledby="monthly-heading">
           <div className="row row--between">
@@ -115,7 +119,7 @@ export default async function HomePage() {
         )}
 
         {summary.recentDrafts.length > 0 && (
-          <section className="card card--flush" aria-labelledby="drafts-heading">
+          <section className="card card--flush deck__full" aria-labelledby="drafts-heading">
             <div className="card__header">
               <h2 id="drafts-heading">Your unfinished bills</h2>
             </div>
@@ -130,6 +134,7 @@ export default async function HomePage() {
             </div>
           </section>
         )}
+        </div>
       </main>
     </>
   );
