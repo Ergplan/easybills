@@ -7,8 +7,8 @@ Screenshots are not treated as verification, and a test count is not treated as
 correctness.
 
 ```
-npm test        233 tests, 16 files, all passing
-npm run e2e     26 browser checks at 360px, all passing
+npm test        255 tests, 18 files, all passing
+npm run e2e     27 browser checks at 360px, all passing
 npm run build   succeeds
 npm run typecheck  clean
 ```
@@ -27,6 +27,8 @@ npm run typecheck  clean
 | `integration/payments.test.ts` | 9 |
 | `integration/adjustments.test.ts` | 10 |
 | `unit/setup-status.test.ts` | 7 |
+| `integration/reconciliation.test.ts` | 5 |
+| `integration/boundaries.test.ts` | 17 |
 | `integration/recurrence.test.ts` | 13 |
 | `integration/pdf.test.ts` | 9 |
 | `integration/gst-flow.test.ts` | 12 |
@@ -321,6 +323,59 @@ Seven defects were found and fixed:
 
 ---
 
+## Functional testing, 25 September 2026
+
+Weighted towards the gap the usability pass exposed: logic that is correct but
+never wired to anything, and boundaries that unit tests structurally cannot
+reach.
+
+**Wiring audit.** Every field produced by a server module was cross-checked
+against what the UI reads. Of 381 fields, 185 are never referenced; most are
+legitimately internal (audit rows, job-queue bookkeeping, filing internals).
+Four were real gaps, all now fixed: the assistant's schedule-change intent was
+detected and discarded, proposed and uncertain values were not marked,
+`needsDateReview` was exported and never called, and a regression from the
+previous commit could leave the editor with no row to type into.
+
+One gap remains open and is not fixed: the GSTR-1 tables (B2B, B2C, HSN,
+document summary) are computed and written into the accountant pack but are not
+viewable in the app, so an owner cannot drill from a total to its documents.
+
+**Authorization at real HTTP boundaries.** Two unrelated businesses, both
+signed in, attacking each other's endpoints: the PDF route with the victim's
+business id and with the attacker's own, the GST pack route, the job runner
+with no secret and a wrong secret, the transcription route against another
+business's budget, and the bill page by URL — plus the same set signed out.
+All refused. Repository-level isolation was already tested; this covers the
+surface a browser can actually reach.
+
+**Money reconciliation.** The ledger invariant — balance = total + debit notes
+− credit notes − payments − deductions — is asserted after *every* operation
+through a full lifecycle: part payment, debit note, credit note, TDS-style
+deduction, settlement, reversal. The issued document is unchanged throughout.
+Separately, the GST return's outward tax is asserted equal to the tax on the
+invoices it was built from, across intra-state, inter-state and several rates,
+and a draft contributes nothing.
+
+**Adversarial input.** Amounts past exact integer arithmetic are refused rather
+than silently wrong; a 99,999,999.99 line prices exactly; negatives are
+refused; 100 lines of half-paise round per line and sum to the stored total;
+`1e9`, `Infinity`, `NaN`, `0x10` are rejected rather than coerced; Devanagari,
+Tamil, Arabic and CJK names survive to the document; over-long descriptions and
+300-line bills are refused; malformed dates are refused rather than guessed;
+bad CSV rows are reported individually with row numbers; a 200-line bill prices
+and renders without drift.
+
+Hostile text was tested by rendering the document in a real browser and
+counting live script elements and event handlers — zero — rather than by
+substring matching, which had produced a false positive on escaped text that
+merely *reads* like a handler.
+
+Two of the failures in this round were my own bad assertions, not defects, and
+were corrected rather than the code being changed to match them.
+
+---
+
 ## Everything that is mocked or unverified
 
 | Thing | State |
@@ -353,6 +408,8 @@ Seven defects were found and fixed:
 
 ## Known weaknesses
 
+- **The GSTR-1 tables have no in-app drill-down.** They are computed and
+  exported, but an owner cannot open a total and see the documents behind it.
 - **QRMP is unit-tested but has no end-to-end run.** The quarter maths, the
   obligation shape and IFF de-duplication are covered directly; a full
   three-month quarterly preparation has not been exercised against the database.

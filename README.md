@@ -66,7 +66,7 @@ bill. Full instructions, including how to run against a real Firebase project,
 are in **[docs/setup.md](docs/setup.md)**.
 
 ```bash
-npm test                          # 233 tests (unit + integration against the emulator)
+npm test                          # 255 tests (unit + integration against the emulator)
 npm run e2e                       # browser smoke test at 360px, needs dev + emulators running
 npm run typecheck
 npm run build
