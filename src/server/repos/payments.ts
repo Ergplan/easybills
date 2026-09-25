@@ -11,7 +11,7 @@ import type {
   PaymentRecord,
 } from '@/lib/domain/types';
 import { db } from '@/server/firebase/admin';
-import { adjustmentsCol, invoicesCol, paymentsCol } from '@/server/firebase/paths';
+import { adjustmentsCol, idempotentId, invoicesCol, paymentsCol } from '@/server/firebase/paths';
 import { recordAuditInTransaction } from '@/server/services/audit';
 import { computeBalance, paymentStatusFor } from '@/server/services/invoice-calc';
 
@@ -46,13 +46,27 @@ export async function recordPayment(args: {
   reference: string | null;
   note: string | null;
   allocations: PaymentAllocation[];
+  /**
+   * Fixed by the caller before the first attempt, so a double tap or a retry
+   * lands on the same document instead of taking the money twice. A part
+   * payment is the dangerous case: a second copy of it still fits inside the
+   * balance, so no amount check would catch it.
+   */
+  idempotencyKey?: string;
 }): Promise<PaymentRecord> {
   if (args.amountPaise <= 0) throw new PaymentError('Enter an amount greater than zero.');
 
-  const paymentRef = paymentsCol(args.businessId).doc(randomUUID());
+  const paymentRef = paymentsCol(args.businessId).doc(
+    args.idempotencyKey ? idempotentId('pay', args.idempotencyKey) : randomUUID(),
+  );
   const now = new Date().toISOString();
 
   return db().runTransaction(async (tx) => {
+    // Read first, so the losing side of a race sees the winner's row rather
+    // than writing its own.
+    const prior = await tx.get(paymentRef);
+    if (prior.exists) return prior.data() as PaymentRecord;
+
     const invoiceRefs = args.allocations.map((a) => invoicesCol(args.businessId).doc(a.invoiceId));
     const invoiceSnaps = invoiceRefs.length ? await tx.getAll(...invoiceRefs) : [];
 
@@ -227,13 +241,20 @@ export async function recordSettlementDeduction(args: {
   amountPaise: number;
   reason: string;
   onDate: CivilDate;
+  /** See `recordPayment`. */
+  idempotencyKey?: string;
 }): Promise<AdjustmentRecord> {
   if (args.amountPaise <= 0) throw new PaymentError('Enter an amount greater than zero.');
   const invoiceRef = invoicesCol(args.businessId).doc(args.invoiceId);
-  const adjRef = adjustmentsCol(args.businessId).doc(randomUUID());
+  const adjRef = adjustmentsCol(args.businessId).doc(
+    args.idempotencyKey ? idempotentId('deduct', args.idempotencyKey) : randomUUID(),
+  );
   const now = new Date().toISOString();
 
   return db().runTransaction(async (tx) => {
+    const prior = await tx.get(adjRef);
+    if (prior.exists) return prior.data() as AdjustmentRecord;
+
     const snap = await tx.get(invoiceRef);
     if (!snap.exists) throw new PaymentError('That bill no longer exists.');
     const invoice = snap.data() as InvoiceRecord;

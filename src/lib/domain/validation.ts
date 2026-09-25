@@ -217,6 +217,12 @@ export const paymentInput = z.object({
     .array(z.object({ invoiceId: z.string().min(1).max(64), amountPaise: moneyString }))
     .max(50)
     .default([]),
+  /**
+   * Fixed by the form before its first submit, so a double tap or a retry
+   * records one payment. Optional, because a caller that has not adopted it
+   * should still be able to record a payment.
+   */
+  idempotencyKey: trimmedOrNull(128),
 });
 
 /** Numbering prefix: kept to characters that are safe in a document number. */

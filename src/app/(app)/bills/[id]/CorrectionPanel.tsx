@@ -41,6 +41,15 @@ export function CorrectionPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Identifies this submission, so a double tap raises one note rather than
+   * two. It is the note's contents plus a nonce fixed when the panel mounted:
+   * a retry of the same note is deduplicated, while a second note the owner
+   * deliberately types is a different key and is raised. It is renewed after
+   * each success, so raising the identical note twice on purpose still works.
+   */
+  const [nonce, setNonce] = useState(() => crypto.randomUUID());
+
   const notes = adjustments.filter((a) => a.kind !== 'settlement-deduction');
 
   return (
@@ -147,9 +156,11 @@ export function CorrectionPanel({
                   amountPaise: paise,
                   reason,
                   affectsTaxLiability: affectsTax,
+                  idempotencyKey: [nonce, kind, amount, reason, affectsTax].join('|'),
                 });
                 setBusy(false);
                 if (r.ok) {
+                  setNonce(crypto.randomUUID());
                   setOpen(false);
                   setAmount('');
                   setReason('');

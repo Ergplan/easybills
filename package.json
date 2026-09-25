@@ -17,6 +17,7 @@
     "emulators": "firebase emulators:start --only auth,firestore --project easybills-dev",
     "e2e": "node scripts/e2e-smoke.mjs",
     "e2e:gst": "node scripts/e2e-gst-drilldown.mjs",
+    "e2e:concurrency": "node scripts/e2e-concurrency.mjs",
     "gst:audit-rules": "tsx --tsconfig tsconfig.scripts.json scripts/audit-rule-pack.ts"
   },
   "dependencies": {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { formatDateShort, todayIst } from '@/lib/dates';
 import { formatMoneyIndian, formatPercentPlain } from '@/lib/money';
@@ -140,13 +140,16 @@ export function InvoiceEditor({ bootstrap }: { bootstrap: EditorBootstrap }) {
   });
 
   // Offer to restore a local copy left behind by a closed tab on this device.
-  useState(() => {
-    if (typeof window === 'undefined') return;
+  //
+  // After hydration, not during render: local storage does not exist on the
+  // server, so deciding this while rendering makes the first client markup
+  // differ from the server's and React throws the whole tree away.
+  useEffect(() => {
     const local = readLocalDraft<EditorState>(localKey);
     if (local && local.at > new Date(bootstrap.invoice.updatedAt).getTime() + 1000) {
       setRecovered({ at: local.at });
     }
-  });
+  }, [localKey, bootstrap.invoice.updatedAt]);
 
   const update = useCallback(<K extends keyof EditorState>(key: K, value: EditorState[K]) => {
     setState((prev) => ({ ...prev, [key]: value }));

@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { financialYearOf, todayIst, type CivilDate } from '@/lib/dates';
 import type { AdjustmentRecord, BusinessRecord, InvoiceRecord } from '@/lib/domain/types';
 import { db } from '@/server/firebase/admin';
-import { adjustmentsCol, countersCol, invoicesCol } from '@/server/firebase/paths';
+import { adjustmentsCol, countersCol, idempotentId, invoicesCol } from '@/server/firebase/paths';
 import { recordAuditInTransaction } from '@/server/services/audit';
 import { computeBalance, paymentStatusFor } from '@/server/services/invoice-calc';
 
@@ -46,6 +46,12 @@ export async function createAdjustment(args: {
   affectsTaxLiability: boolean;
   /** Tax split, required when it does affect liability. */
   tax?: { taxableValuePaise: number; cgstPaise: number; sgstPaise: number; igstPaise: number; cessPaise: number };
+  /**
+   * Fixed by the caller before the first attempt, so a double tap raises one
+   * note rather than two. Two deliberate notes remain two notes: they arrive
+   * with different keys.
+   */
+  idempotencyKey?: string;
 }): Promise<AdjustmentRecord> {
   if (args.amountPaise <= 0) throw new AdjustmentError('Enter an amount greater than zero.');
   if (!args.reason.trim()) throw new AdjustmentError('Please say why this note is being raised.');
@@ -54,11 +60,18 @@ export async function createAdjustment(args: {
   const issueDate = args.issueDate ?? todayIst();
   const fy = financialYearOf(issueDate);
   const invoiceRef = invoicesCol(businessId).doc(args.invoiceId);
-  const adjRef = adjustmentsCol(businessId).doc(randomUUID());
+  const adjRef = adjustmentsCol(businessId).doc(
+    args.idempotencyKey ? idempotentId('adj', args.idempotencyKey) : randomUUID(),
+  );
   const prefix = args.kind === 'credit-note' ? 'CN-' : 'DN-';
   const counterRef = countersCol(businessId).doc(`${args.kind}__${fy}`);
 
   return db().runTransaction(async (tx) => {
+    // Read first, so the losing side of a race returns the note the winner
+    // raised instead of raising a second one against the same bill.
+    const prior = await tx.get(adjRef);
+    if (prior.exists) return prior.data() as AdjustmentRecord;
+
     const invoiceSnap = await tx.get(invoiceRef);
     if (!invoiceSnap.exists) throw new AdjustmentError('That bill no longer exists.');
     const invoice = invoiceSnap.data() as InvoiceRecord;

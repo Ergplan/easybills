@@ -215,6 +215,7 @@ export async function recordPaymentAction(businessId: string, raw: unknown): Pro
       reference: input.reference,
       note: input.note,
       allocations: input.allocations,
+      idempotencyKey: input.idempotencyKey ?? undefined,
     });
     revalidatePath('/home');
     revalidatePath('/bills');
@@ -245,6 +246,7 @@ export async function recordDeductionAction(
   invoiceId: string,
   amountPaise: number,
   reason: string,
+  idempotencyKey?: string,
 ): Promise<ActionResult<null>> {
   try {
     const { user } = await requireBusiness(businessId);
@@ -255,6 +257,7 @@ export async function recordDeductionAction(
       amountPaise,
       reason: reason.trim() || 'Deduction recorded by owner',
       onDate: todayIst(),
+      idempotencyKey,
     });
     revalidatePath('/bills');
     return ok(null);
@@ -288,6 +291,7 @@ export async function createAdjustmentAction(
     reason: string;
     affectsTaxLiability: boolean;
     tax?: { taxableValuePaise: number; cgstPaise: number; sgstPaise: number; igstPaise: number; cessPaise: number };
+    idempotencyKey?: string;
   },
 ): Promise<ActionResult<{ number: string }>> {
   try {
@@ -301,6 +305,7 @@ export async function createAdjustmentAction(
       reason: input.reason,
       affectsTaxLiability: input.affectsTaxLiability,
       tax: input.tax,
+      idempotencyKey: input.idempotencyKey,
     });
     revalidatePath(`/bills/${input.invoiceId}`);
     revalidatePath('/home');

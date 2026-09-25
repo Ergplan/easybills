@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { createHash } from 'node:crypto';
+
 import { db } from './admin';
 
 /**
@@ -52,3 +54,18 @@ export const jobsCol = () => db().collection('jobs');
 export const occurrenceId = (scheduleId: string, period: string) => `${scheduleId}__${period}`;
 export const counterId = (financialYear: string, seriesId: string) => `${seriesId}__${financialYear}`;
 export const returnPeriodId = (gstin: string, form: string, period: string) => `${gstin}__${form}__${period}`;
+
+/**
+ * The document id for a write the owner may submit more than once.
+ *
+ * A slow screen gets tapped twice, a flaky connection gets retried, a form gets
+ * resubmitted by the back button. Deriving the id from a key the client fixes
+ * before the first attempt means the second attempt lands on the same document
+ * instead of creating a second payment or a second credit note -- the database
+ * refuses the duplicate rather than the code remembering to check for it.
+ *
+ * The key is hashed because it comes from a client and a document id may not
+ * contain a slash, may not be `.` or `..`, and may not exceed 1500 bytes.
+ */
+export const idempotentId = (prefix: string, key: string) =>
+  `${prefix}__${createHash('sha256').update(key).digest('hex').slice(0, 40)}`;

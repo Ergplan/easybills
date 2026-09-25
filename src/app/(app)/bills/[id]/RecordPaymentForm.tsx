@@ -44,6 +44,18 @@ export function RecordPaymentForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Identifies this submission, so a double tap or a retry after a dropped
+   * response records the money once.
+   *
+   * It is the form's contents plus a nonce fixed when the form opened: the same
+   * submission retried carries the same key and is deduplicated, while a second
+   * payment the owner deliberately types is a different key and is recorded.
+   * It is renewed after each success, so two identical payments still work.
+   */
+  const [nonce, setNonce] = useState(() => crypto.randomUUID());
+  const submissionKey = () => [nonce, mode, amount, receivedOn, method, reference, reason].join('|');
+
   async function submit() {
     setBusy(true);
     setError(null);
@@ -58,13 +70,24 @@ export function RecordPaymentForm({
           reference: reference || null,
           note: null,
           allocations: [{ invoiceId: invoice.id, amountPaise: formatMoneyPlain(Math.min(paise, invoice.balancePaise)) }],
+          idempotencyKey: submissionKey(),
         });
-        if (r.ok) onDone();
-        else setError(r.error);
+        if (r.ok) {
+          setNonce(crypto.randomUUID());
+          onDone();
+        } else setError(r.error);
       } else {
-        const r = await recordDeductionAction(businessId, invoice.id, Math.round(Number(amount) * 100), reason);
-        if (r.ok) onDone();
-        else setError(r.error);
+        const r = await recordDeductionAction(
+          businessId,
+          invoice.id,
+          Math.round(Number(amount) * 100),
+          reason,
+          submissionKey(),
+        );
+        if (r.ok) {
+          setNonce(crypto.randomUUID());
+          onDone();
+        } else setError(r.error);
       }
     } finally {
       setBusy(false);

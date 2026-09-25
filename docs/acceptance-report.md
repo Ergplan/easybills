@@ -405,6 +405,40 @@ preview prints "not chosen" rather than "0%", and a rate saved as 0% now comes
 back as 0% in the editor instead of an empty select. Lines written before the
 flag existed count as answered, so no issued bill is retrospectively failed.
 
+**Concurrency and state transitions.** Two things happening at once to the same
+bill, in the repository and then in a real browser.
+
+The transactions held: a stale tab's save is refused rather than losing the
+newer edit, a save or a delete arriving after the bill was issued elsewhere is
+refused and the issued document is untouched, five simultaneous taps on *Issue*
+produce one bill and advance the counter once, and two full settlements of the
+same bill leave one payment and a zero balance. In the browser, the back button
+after issuing lands on the issued bill with no second *Issue* to press, and a
+second tab left open on a bill issued elsewhere says its edit was not saved and
+then lands on the bill that already exists — two bills were opened, two bills
+were issued.
+
+Two defects came out of it.
+
+The first was a genuine double charge. A payment had no idempotency key, so the
+same submission arriving twice recorded twice. The full-settlement case was
+already safe by accident — a second copy exceeds the balance — but a *part*
+payment is small enough that a second copy still fits, and nothing in the
+amounts says "wrong". Recording ₹50 twice took ₹100. Payments, settlement
+deductions and credit notes now take a key fixed by the form before its first
+submit, derived from its contents plus a nonce, and the write lands on a
+document id derived from that key: the second attempt returns the first record
+instead of creating another. Two deliberate identical notes still work, because
+the nonce is renewed after each success. Verified by replaying the page's own
+request (`npm run e2e:concurrency`): with the key removed the bill shows ₹100
+taken and two credit notes, with it ₹50 and one.
+
+The second was a hydration mismatch. The editor decided whether to offer a
+recovered local draft *during render*, reading local storage that does not
+exist on the server, so the first client markup disagreed with the server's and
+React discarded and re-rendered the whole tree. It is now decided after
+hydration.
+
 **Return output is now order-independent.** The GSTR-1 tables were built by
 walking the query's result order, so the same period could render its rows — and
 the item names inside a grouped row — differently on each refresh. The
