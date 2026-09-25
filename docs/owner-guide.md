@@ -111,6 +111,24 @@ and it does not change the bill or the GST on it.
 say why. The original entry stays in the history — you will see that money came
 in and was later reversed, which is what you want if anyone ever asks.
 
+### If something was wrong
+
+An issued bill cannot be edited — that is deliberate, because your customer
+already has it. Instead, tap **Raise a credit or debit note** on the bill:
+
+- *Customer owes less* — a credit note. Use it if you overcharged, billed
+  something twice, or agreed a reduction afterwards.
+- *Customer owes more* — a debit note.
+
+Say why. The reason is kept and printed on the note. The original bill stays
+exactly as it was, and the note is linked to it, so anyone looking later can see
+both.
+
+If you charge GST there is one more question: **does this change the GST you
+owe?** Leave it unticked if you are only adjusting what your customer owes you.
+They are not the same thing, and only that box affects your return. Ask your
+accountant if you are unsure.
+
 ---
 
 ## Repeat it every month

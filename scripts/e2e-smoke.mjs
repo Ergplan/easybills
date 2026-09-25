@@ -160,13 +160,38 @@ try {
   const bytes = await res.body();
   check('PDF has real content', bytes.length > 5000 && bytes.subarray(0, 4).toString() === '%PDF');
 
-  console.log('\n9. Bills list and search');
+  console.log('\n9. Correct the bill with a credit note');
+  await page.getByRole('button', { name: 'Raise a credit or debit note' }).click();
+  await page.waitForTimeout(400);
+  await page.locator('#adj-amount').fill('50');
+  await page.locator('#adj-reason').fill('One item was billed twice');
+  await page.getByRole('button', { name: /Raise credit note/ }).click();
+  await page.waitForTimeout(3000);
+  await shot('08-credit-note');
+  const correctedText = await page.locator('main').innerText();
+  check('credit note is listed with its own number', /CN-001/.test(correctedText));
+  check('credit note is recorded as balance-only by default', /GST unchanged/i.test(correctedText));
+  check('balance drops by the credit note', correctedText.includes('1,000.00'), '(expected 1,050 - 50)');
+
+  console.log('\n10. Turn on monthly repeat');
+  // A quick bill has no saved customer, so the monthly option must say so
+  // rather than silently failing.
+  await page.getByRole('button', { name: 'Repeat every month' }).click();
+  await page.waitForTimeout(500);
+  await shot('09-repeat');
+  const repeatText = await page.locator('main').innerText();
+  check('monthly setup states that a draft is prepared for review', /prepare a draft for you to review/i.test(repeatText));
+  check('monthly setup explains a saved customer is needed for a walk-in bill', /needs a saved customer/i.test(repeatText));
+  const turnOn = page.getByRole('button', { name: 'Turn on monthly bills' });
+  check('monthly cannot be turned on without a customer', await turnOn.isDisabled());
+
+  console.log('\n11. Bills list and search');
   await page.goto(`${BASE}/bills`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);
   await shot('07-bills');
   check('bills list shows the issued bill', (await page.locator('.list__item').count()) >= 1);
 
-  console.log('\n10. No uncaught page errors');
+  console.log('\n12. No uncaught page errors');
   check('no uncaught client errors', pageErrors.length === 0, pageErrors.slice(0, 2).join(' | '));
 } finally {
   await browser.close();

@@ -32,6 +32,11 @@ later profile edit cannot rewrite a bill already issued.
 and settlement deductions (such as owner-confirmed TDS) that reduce what is owed
 without counting as cash or changing the invoice.
 
+**Correcting.** An issued bill is never edited. A linked credit or debit note
+carries the correction, with its own number and the owner's reason. Whether it
+changes GST liability is a separate, explicit answer — adjusting what a customer
+owes and adjusting a tax return are not the same act.
+
 **Monthly drafts.** "Repeat every month" prepares a draft for review. Never
 issues, never sends, never collects. Runs in a durable background job, so it
 does not depend on anyone having the app open.
@@ -61,7 +66,7 @@ bill. Full instructions, including how to run against a real Firebase project,
 are in **[docs/setup.md](docs/setup.md)**.
 
 ```bash
-npm test                          # 210 tests (unit + integration against the emulator)
+npm test                          # 220 tests (unit + integration against the emulator)
 npm run e2e                       # browser smoke test at 360px, needs dev + emulators running
 npm run typecheck
 npm run build

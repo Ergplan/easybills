@@ -68,7 +68,7 @@ PLAYWRIGHT_CHROMIUM_PATH=/path/to/chrome
 ## Tests
 
 ```bash
-npm test          # 210 tests; integration tests need the emulators running
+npm test          # 220 tests; integration tests need the emulators running
 npm run typecheck
 npm run e2e       # browser smoke test; needs `npm run dev` and the emulators
 ```

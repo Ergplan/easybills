@@ -7,8 +7,8 @@ Screenshots are not treated as verification, and a test count is not treated as
 correctness.
 
 ```
-npm test        210 tests, 14 files, all passing
-npm run e2e     20 browser checks at 360px, all passing
+npm test        220 tests, 15 files, all passing
+npm run e2e     26 browser checks at 360px, all passing
 npm run build   succeeds
 npm run typecheck  clean
 ```
@@ -25,6 +25,7 @@ npm run typecheck  clean
 | `integration/issuance.test.ts` | 13 |
 | `integration/tenancy.test.ts` | 4 |
 | `integration/payments.test.ts` | 9 |
+| `integration/adjustments.test.ts` | 10 |
 | `integration/recurrence.test.ts` | 13 |
 | `integration/pdf.test.ts` | 9 |
 | `integration/gst-flow.test.ts` | 12 |
@@ -93,6 +94,15 @@ row survives, marked as reversed, with a mirror row beside it and an audit
 event. Overpayment is rejected at allocation and retained as visible unapplied
 credit; a settlement deduction reduces the balance without counting as cash or
 changing the invoice total.
+
+**Gate: basic adjustments.** Met. `integration/adjustments.test.ts` covers
+credit and debit notes: each has its own number sequence within the financial
+year, each is refused against a draft or without a reason, a credit note cannot
+exceed the bill it corrects, and the issued invoice's total, number and snapshot
+are untouched throughout. Crucially, *correcting a customer's balance* and
+*changing GST liability* are separate assertions — `affectsTaxLiability` is an
+explicit, owner-confirmed field, and a note raised without it carries no tax
+split at all. Reason, actor and time are audited.
 
 **Gate: PDF readable across single and multipage examples.** Met. Three-line and
 45-line invoices both render; the long one is asserted to span more than one

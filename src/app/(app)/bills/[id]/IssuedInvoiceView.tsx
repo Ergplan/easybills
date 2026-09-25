@@ -6,11 +6,13 @@ import { useState } from 'react';
 import { formatDateShort, todayIst } from '@/lib/dates';
 import { formatMoneyIndian, formatPercentPlain, formatQuantityPlain } from '@/lib/money';
 import { stateName } from '@/lib/gst/state-codes';
-import type { InvoiceRecord, PaymentRecord } from '@/lib/domain/types';
+import type { AdjustmentRecord, InvoiceRecord, PaymentRecord, RecurringScheduleRecord } from '@/lib/domain/types';
 import { Money, StatusPill } from '@/components/Money';
 import { duplicateInvoiceAction, recordPaymentAction, reversePaymentAction } from '@/app/actions/invoices';
 
+import { CorrectionPanel } from './CorrectionPanel';
 import { RecordPaymentForm } from './RecordPaymentForm';
+import { RepeatMonthly } from './RepeatMonthly';
 import { ShareActions } from './ShareActions';
 
 /**
@@ -24,10 +26,14 @@ export function IssuedInvoiceView({
   businessId,
   invoice,
   payments,
+  adjustments,
+  schedule,
 }: {
   businessId: string;
   invoice: InvoiceRecord;
   payments: PaymentRecord[];
+  adjustments: AdjustmentRecord[];
+  schedule: RecurringScheduleRecord | null;
 }) {
   const router = useRouter();
   const [showPayment, setShowPayment] = useState(false);
@@ -160,6 +166,18 @@ export function IssuedInvoiceView({
             <Money paise={invoice.amountPaidPaise} />
           </div>
         )}
+        {invoice.creditAppliedPaise > 0 && (
+          <div className="row row--between small">
+            <span className="muted">Credit notes</span>
+            <span>− <Money paise={invoice.creditAppliedPaise} symbol={false} /></span>
+          </div>
+        )}
+        {invoice.debitAppliedPaise > 0 && (
+          <div className="row row--between small">
+            <span className="muted">Debit notes</span>
+            <span>+ <Money paise={invoice.debitAppliedPaise} symbol={false} /></span>
+          </div>
+        )}
         {invoice.settlementDeductionPaise > 0 && (
           <div className="row row--between small">
             <span className="muted">Deducted at settlement (not cash received)</span>
@@ -233,6 +251,21 @@ export function IssuedInvoiceView({
       </section>
 
       <ShareActions businessId={businessId} invoice={invoice} />
+
+      <CorrectionPanel
+        businessId={businessId}
+        invoice={invoice}
+        adjustments={adjustments}
+        chargesGst={snap.supplyType !== 'no-gst'}
+      />
+
+      <RepeatMonthly
+        businessId={businessId}
+        invoiceId={invoice.id}
+        issueDate={invoice.issueDate}
+        hasCustomer={Boolean(invoice.customer.customerId)}
+        existing={schedule}
+      />
 
       <button
         type="button"

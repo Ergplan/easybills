@@ -19,6 +19,7 @@ import {
 import { markBilled } from '@/server/repos/customers';
 import { createItem } from '@/server/repos/items';
 import { recordPayment, recordSettlementDeduction, reversePayment } from '@/server/repos/payments';
+import { createAdjustment } from '@/server/repos/adjustments';
 import { priceInvoice } from '@/server/services/invoice-calc';
 
 import { ok, toActionError, type ActionResult } from './common';
@@ -262,6 +263,44 @@ export async function loadInvoiceAction(businessId: string, invoiceId: string): 
   try {
     await requireBusiness(businessId);
     return ok(await getInvoice(businessId, invoiceId));
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
+ * Raise a credit or debit note against an issued bill.
+ *
+ * Whether the note changes GST liability is a separate, explicit answer from
+ * the owner — correcting a customer's balance and adjusting a tax return are
+ * not the same act, and conflating them is how a wrong return gets filed.
+ */
+export async function createAdjustmentAction(
+  businessId: string,
+  input: {
+    invoiceId: string;
+    kind: 'credit-note' | 'debit-note';
+    amountPaise: number;
+    reason: string;
+    affectsTaxLiability: boolean;
+    tax?: { taxableValuePaise: number; cgstPaise: number; sgstPaise: number; igstPaise: number; cessPaise: number };
+  },
+): Promise<ActionResult<{ number: string }>> {
+  try {
+    const { business, user } = await requireBusiness(businessId);
+    const adjustment = await createAdjustment({
+      business,
+      uid: user.uid,
+      invoiceId: input.invoiceId,
+      kind: input.kind,
+      amountPaise: input.amountPaise,
+      reason: input.reason,
+      affectsTaxLiability: input.affectsTaxLiability,
+      tax: input.tax,
+    });
+    revalidatePath(`/bills/${input.invoiceId}`);
+    revalidatePath('/home');
+    return ok({ number: adjustment.number! });
   } catch (error) {
     return toActionError(error);
   }
