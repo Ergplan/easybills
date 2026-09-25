@@ -157,7 +157,9 @@ export const saveDraftInput = z.object({
   customer: invoicePartyInput,
   placeOfSupplyStateCode: stateCode,
   supplyFlags: z.array(supplyFlag).max(7).default([]),
-  lines: z.array(invoiceLineInput).min(1, 'Add at least one item').max(200),
+  // Deliberately allows zero lines: a draft may be incomplete. Issuance
+  // requires at least one line, and enforces it inside the issue transaction.
+  lines: z.array(invoiceLineInput).max(200),
   notes: trimmedOrNull(2000),
   /** The revision the client last saw. Rejects a stale overwrite. */
   baseRevision: z.number().int().min(0),

@@ -9,7 +9,17 @@ import { SettingsForm } from './SettingsForm';
 
 export const dynamic = 'force-dynamic';
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const params = await searchParams;
+  // Only ever an in-app path, never an arbitrary URL somebody could hand us.
+  const returnTo = typeof params.next === 'string' && /^\/bills\/[A-Za-z0-9-]{1,64}$/.test(params.next)
+    ? params.next
+    : null;
+
   const { business, user } = await requireCurrentContext();
   const audit = auditRulePack();
   const ai = describeAiConfiguration();
@@ -17,9 +27,10 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <TopBar title="Business details" back={{ href: '/home' }} showProfile={false} />
+      <TopBar title="Business details" back={{ href: returnTo ?? '/home' }} showProfile={false} />
       <main className="page">
         <SettingsForm
+          returnTo={returnTo}
           business={business}
           userEmail={user.email}
           ruleAudit={audit}

@@ -12,6 +12,7 @@ import { listPaymentsForInvoice } from '@/server/repos/payments';
 import { listAdjustmentsForInvoice } from '@/server/repos/adjustments';
 import { getSchedule, listSchedules } from '@/server/repos/schedules';
 import { assessIssuance } from '@/lib/gst/scenarios';
+import { profileSetupStatus } from '@/lib/domain/setup-status';
 
 import { IssuedInvoiceView } from './IssuedInvoiceView';
 import { ScheduledDraftBanner } from './ScheduledDraftBanner';
@@ -94,6 +95,7 @@ export default async function BillPage({ params }: { params: Promise<{ id: strin
             savedItems: items,
             sellerStateCode: business.stateCode,
             chargesGst: assessment.chargesGst,
+            setupBlockers: profileSetupStatus(business, invoice.issueDate).blockers,
             selectableRatesBp: [...DEFAULT_RULE_PACK.selectableRates.value],
             defaultTaxRateBp: business.defaultTaxRateBp,
             aiEnabled: aiConfig().enabled,

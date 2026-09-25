@@ -108,6 +108,9 @@ export function InvoiceEditor({ bootstrap }: { bootstrap: EditorBootstrap }) {
   const [issueError, setIssueError] = useState<string | null>(null);
   const [blockers, setBlockers] = useState<Array<{ code: string; message: string; whatYouCanDo: string }>>([]);
   const [recovered, setRecovered] = useState<{ at: number } | null>(null);
+  // While the assistant is asking which customer was meant, the customer
+  // section hides its own list so the same names are not offered twice.
+  const [awaitingCustomerChoice, setAwaitingCustomerChoice] = useState(false);
 
   const invoiceId = bootstrap.invoice.id;
   const localKey = `eb:draft:${bootstrap.businessId}:${invoiceId}`;
@@ -152,6 +155,14 @@ export function InvoiceEditor({ bootstrap }: { bootstrap: EditorBootstrap }) {
   const goReview = useCallback(async () => {
     setIssueError(null);
     setBlockers([]);
+
+    // Caught here, when the owner asks to review -- not while they are still
+    // filling the form in.
+    if (!payload.lines.length) {
+      setIssueError('Add at least one item before you review this bill.');
+      return;
+    }
+
     await saveNow();
     const result = await priceDraftAction(bootstrap.businessId, payload);
     setPriced(result);
@@ -266,10 +277,27 @@ export function InvoiceEditor({ bootstrap }: { bootstrap: EditorBootstrap }) {
           </div>
         )}
 
+        {bootstrap.setupBlockers.length > 0 && (
+          <div className="notice notice--warn" role="status">
+            <span className="notice__icon" aria-hidden="true">!</span>
+            <div className="stack" style={{ gap: 6 }}>
+              <span className="strong">{bootstrap.setupBlockers[0]!.message}</span>
+              <span className="small">{bootstrap.setupBlockers[0]!.whatYouCanDo}</span>
+              <span className="tiny">
+                You can carry on filling this bill in — it will be saved. You just cannot issue it yet.
+              </span>
+              <a className="strong" href={`/settings?next=${encodeURIComponent(`/bills/${invoiceId}`)}`}>
+                Sort this out now →
+              </a>
+            </div>
+          </div>
+        )}
+
         {bootstrap.aiEnabled && (
           <AiInstructionBox
             businessId={bootstrap.businessId}
             invoiceId={invoiceId}
+            onDisambiguating={setAwaitingCustomerChoice}
             onProposal={(proposal) => {
               // AI proposes; the owner reviews. Existing typing is preserved --
               // proposed lines are appended, never a silent replacement.
@@ -288,6 +316,7 @@ export function InvoiceEditor({ bootstrap }: { bootstrap: EditorBootstrap }) {
           <CustomerPicker
             businessId={bootstrap.businessId}
             isQuickBill={isQuickBill}
+            suppressList={awaitingCustomerChoice}
             recent={bootstrap.recentCustomers}
             value={state.customer}
             chargesGst={bootstrap.chargesGst}

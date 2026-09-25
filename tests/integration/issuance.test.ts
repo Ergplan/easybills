@@ -58,6 +58,49 @@ describe('draft lifecycle', () => {
     expect(draft.totals.taxableValuePaise).toBe(205000);
   });
 
+  /**
+   * A draft is allowed to be unfinished. Requiring a line to SAVE meant the
+   * autosave of an untouched form failed, and the failure rendered as a red
+   * error in the save-status slot before the owner had typed anything.
+   */
+  it('saves a draft that has no items yet', async () => {
+    const business = await makeGstBusiness();
+    const uid = await ownerUidOf(business);
+    const id = newInvoiceId();
+
+    const draft = await saveDraft({
+      business,
+      uid,
+      invoiceId: id,
+      kind: 'customer-invoice',
+      issueDate: todayIst(),
+      customer: emptyParty('Someone I just picked'),
+      placeOfSupplyStateCode: '27',
+      supplyFlags: [],
+      lines: [],
+      notes: null,
+      baseRevision: 0,
+    });
+
+    expect(draft.status).toBe('draft');
+    expect(draft.lines).toHaveLength(0);
+    expect(draft.totals.grandTotalPaise).toBe(0);
+    // The customer they picked is safely stored.
+    expect((await getInvoice(business.id, id))!.customer.name).toBe('Someone I just picked');
+  });
+
+  it('still refuses to ISSUE a bill with no items', async () => {
+    const business = await makeGstBusiness();
+    const uid = await ownerUidOf(business);
+    const id = newInvoiceId();
+    await saveDraft({
+      business, uid, invoiceId: id, kind: 'customer-invoice', issueDate: todayIst(),
+      customer: emptyParty('Someone'), placeOfSupplyStateCode: '27', supplyFlags: [],
+      lines: [], notes: null, baseRevision: 0,
+    });
+    await expect(issueInvoice({ business, uid, invoiceId: id })).rejects.toThrow(/at least one item/i);
+  });
+
   it('refuses a stale overwrite instead of losing the newer edit', async () => {
     const business = await makeGstBusiness();
     const uid = await ownerUidOf(business);

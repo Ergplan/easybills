@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { formatPeriodLong, monthPeriodOf, todayIst } from '@/lib/dates';
+import { profileSetupStatus } from '@/lib/domain/setup-status';
 import { Money } from '@/components/Money';
 import { TopBar } from '@/components/TopBar';
 import { requireCurrentContext } from '@/server/auth/current';
@@ -15,7 +16,9 @@ export default async function HomePage() {
   const gst = gstModuleVisibility(business);
   const today = todayIst();
 
-  const setupIncomplete = business.registrationType === 'not-sure' || !business.numberingConfirmed;
+  // Asks the same question issuance asks, so the banner cannot outlive the
+  // problem it describes.
+  const setup = profileSetupStatus(business, today);
 
   return (
     <>
@@ -26,13 +29,14 @@ export default async function HomePage() {
           + Create bill
         </Link>
 
-        {setupIncomplete && (
+        {!setup.complete && (
           <div className="notice notice--warn">
             <span className="notice__icon" aria-hidden="true">!</span>
             <div className="stack" style={{ gap: 6 }}>
               <span>
-                You can start a bill now. Before you issue your first one, we need a couple of details.
+                You can start a bill now. Before you can issue one, we need a couple of details.
               </span>
+              <span className="small">{setup.headline}</span>
               <Link href="/settings" className="strong">Finish business setup →</Link>
             </div>
           </div>

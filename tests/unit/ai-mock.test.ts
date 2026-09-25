@@ -53,6 +53,40 @@ describe('mock interpretation of the brief’s example instructions', () => {
     expect(r.lines.some((l) => l.unitPriceQuoted === '800')).toBe(true);
   });
 
+  /**
+   * The failure this guards against: the owner says "...and some lining
+   * material", the parser has no pattern for it, and the phrase is dropped --
+   * producing a bill that is quietly missing an item, with nothing on screen
+   * to say so. Anything substantive we did not understand must come back.
+   */
+  it('reports the part of the instruction it could not read', async () => {
+    const r = await mockInterpret({
+      ...ctx,
+      instruction: 'Bill Sharma Electricals for two repair visits at 800 each and some lining material',
+    });
+    expect(r.lines).toHaveLength(1);
+    const said = r.ambiguities.join(' ');
+    expect(said).toMatch(/could not read/i);
+    expect(said).toMatch(/lining material/i);
+  });
+
+  it('says nothing when the whole instruction was understood', async () => {
+    const r = await mockInterpret({
+      ...ctx,
+      instruction: 'Bill Sharma Electricals for two repair visits at 800 each and spare parts of 450.',
+    });
+    expect(r.lines).toHaveLength(2);
+    expect(r.ambiguities.join(' ')).not.toMatch(/could not read/i);
+  });
+
+  it('does not mistake connecting words or the customer name for a lost item', async () => {
+    const r = await mockInterpret({
+      ...ctx,
+      instruction: 'Please bill Sharma Electricals for two repair visits at 800 each',
+    });
+    expect(r.ambiguities.join(' ')).not.toMatch(/could not read/i);
+  });
+
   it('proposes a schedule change rather than making one', async () => {
     const r = await mockInterpret({ ...ctx, instruction: 'Bill Ravi Kumar 5000 every month for accounting' });
     expect(r.intent).toBe('propose-schedule-change');

@@ -26,6 +26,7 @@ export function CustomerPicker({
   recent,
   value,
   chargesGst,
+  suppressList = false,
   onChange,
 }: {
   businessId: string;
@@ -33,6 +34,8 @@ export function CustomerPicker({
   recent: CustomerRecord[];
   value: CustomerState;
   chargesGst: boolean;
+  /** True while the assistant is asking which customer was meant. */
+  suppressList?: boolean;
   onChange: (next: CustomerState) => void;
 }) {
   const [mode, setMode] = useState<'picked' | 'search' | 'new'>(value.customerId ? 'picked' : isQuickBill ? 'picked' : 'search');
@@ -245,7 +248,11 @@ export function CustomerPicker({
         />
       </div>
 
-      {results.length > 0 && (
+      {suppressList && (
+        <p className="field__hint">Choose a customer in the box above, or search here instead.</p>
+      )}
+
+      {results.length > 0 && !suppressList && (
         <div className="card card--flush">
           <div className="list">
             {results.slice(0, 6).map((c) => (

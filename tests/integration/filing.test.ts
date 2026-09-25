@@ -61,7 +61,20 @@ describe('provider selection', () => {
     expect(cap.available).toBe(false);
     // The one claim we must never make without a real connection.
     expect(cap.productionVerified).toBe(false);
-    expect(cap.reason).toMatch(/no gst filing provider is configured/i);
+  });
+
+  /**
+   * An owner has no use for a variable name. The reason they see says what is
+   * true and what to do instead; the configuration detail is kept for whoever
+   * runs the app, and must never leak into an owner-facing screen.
+   */
+  it('keeps configuration names out of the owner-facing reason', () => {
+    const cap = describeFilingCapability();
+    expect(cap.reason).toBeTruthy();
+    expect(cap.reason).not.toMatch(/GSP_|_URL|_ID|_SECRET|env|docs\//i);
+    expect(cap.reason).toMatch(/gst portal|accountant/i);
+    // ...while the operator still gets what they need.
+    expect(cap.operatorDetail).toMatch(/GSP_MODE/);
   });
 
   it('refuses to file when unconfigured rather than quietly using the sandbox', async () => {

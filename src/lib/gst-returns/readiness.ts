@@ -204,9 +204,9 @@ export function assessReadiness(input: ReadinessInput): ReadinessResult {
   if (!input.rulePackFullyVerified) {
     blockers.push({
       code: 'rules-unverified',
-      message: 'Some GST rules this return depends on have not been confirmed against the official source in this installation.',
+      message: 'We cannot call this return ready, because some GST rules have not been checked against the official source yet.',
       whatYouCanDo:
-        'This is a setup step for whoever runs this app. Until it is done, we will not tell you a return is ready to file.',
+        'This is a job for whoever looks after this app for you. In the meantime you can still download the pack below and give it to your accountant.',
     });
   }
   if (!input.dueDateVerified) {

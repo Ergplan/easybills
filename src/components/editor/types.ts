@@ -47,6 +47,12 @@ export interface EditorState {
 }
 
 export interface EditorBootstrap {
+  /**
+   * Profile problems that would stop this bill being issued, known before the
+   * owner types anything. Surfaced at the top of the editor so the wall is not
+   * discovered only at the review step, after the work is done.
+   */
+  setupBlockers: Array<{ code: string; message: string; whatYouCanDo: string }>;
   businessId: string;
   invoice: InvoiceRecord;
   recentCustomers: CustomerRecord[];

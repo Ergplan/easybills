@@ -7,7 +7,7 @@ Screenshots are not treated as verification, and a test count is not treated as
 correctness.
 
 ```
-npm test        220 tests, 15 files, all passing
+npm test        233 tests, 16 files, all passing
 npm run e2e     26 browser checks at 360px, all passing
 npm run build   succeeds
 npm run typecheck  clean
@@ -26,6 +26,7 @@ npm run typecheck  clean
 | `integration/tenancy.test.ts` | 4 |
 | `integration/payments.test.ts` | 9 |
 | `integration/adjustments.test.ts` | 10 |
+| `unit/setup-status.test.ts` | 7 |
 | `integration/recurrence.test.ts` | 13 |
 | `integration/pdf.test.ts` | 9 |
 | `integration/gst-flow.test.ts` | 12 |
@@ -269,6 +270,54 @@ carries the approved payload hash and refuses if the version's hash has moved.
 tells the owner filing from inside the app is unavailable. With no credentials
 the adapter **refuses rather than quietly using the sandbox**. No live filing or
 payment was attempted at any point.
+
+---
+
+## Usability pass, 25 September 2026
+
+A structured walkthrough of the protocol's tasks was run against a fresh
+account with no seeded data, interacting only through visible controls.
+**This is not a substitute for testing with real owners** — it was run by the
+same author who wrote the application, so it cannot measure discoverability for
+someone encountering it cold. [usability-protocol.md](usability-protocol.md)
+remains outstanding.
+
+Interactions were counted rather than timed, because an automated click is not
+a human's speed.
+
+| Task | Before | After |
+|---|---|---|
+| Sign-up to usable Home | 6 | 6 |
+| First invoice | 15, **8 wasted** | **13, none wasted** |
+| Walk-in bill, paid cash | 10 | 10 |
+| Duplicate and adjust | 6 | 6 |
+| Monthly schedule | 5 | 5 |
+| Interrupted draft to part payment | 11 | 11 |
+
+Seven defects were found and fixed:
+
+1. **A red error on an untouched form.** Requiring at least one line to *save*
+   meant autosaving an empty draft failed, and the failure rendered in the
+   save-status slot as "Add at least one item" before the owner had typed
+   anything. Drafts may now be incomplete; the rule is enforced at issue time,
+   where it already was.
+2. **The first-issue wall cost eight interactions.** The GST-status requirement
+   surfaced only at review, after the bill was written, and Settings offered no
+   way back. The editor now warns before any work, and Settings carries a
+   "Back to your bill" link.
+3. **The Home setup banner never cleared.** It keyed off `numberingConfirmed`,
+   which nothing in the billing flow sets, so it kept telling owners who had
+   issued several bills to finish setting up. Home and the editor now both ask
+   the same question issuance asks, through `profileSetupStatus`.
+4. **The assistant silently dropped what it could not parse.** "...and some
+   lining material" vanished with no warning, producing a bill missing an item.
+   Two causes: the parser discarded unmatched fragments, and the pipeline's
+   "please check this" notes were computed and never rendered. Both fixed; the
+   unit tests had covered the pipeline but not the wiring.
+5. **Duplicate customer choices** during assistant disambiguation.
+6. **Environment variable names shown to owners.** The provider's unavailable
+   reason is now split into an owner sentence and an operator detail.
+7. **Operator jargon and nine stacked notices** on the GST screen.
 
 ---
 

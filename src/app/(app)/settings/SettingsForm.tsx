@@ -21,6 +21,7 @@ const REGISTRATION_OPTIONS: Array<{ key: GstRegistrationType; label: string; hin
 ];
 
 export function SettingsForm({
+  returnTo,
   business,
   userEmail,
   ruleAudit,
@@ -29,6 +30,8 @@ export function SettingsForm({
   supported,
   unsupported,
 }: {
+  /** The bill the owner was interrupted from, if any. */
+  returnTo: string | null;
   business: BusinessRecord;
   userEmail: string | null;
   ruleAudit: RulePackAudit;
@@ -90,6 +93,11 @@ export function SettingsForm({
 
   return (
     <div className="stack stack--loose">
+      {returnTo && (
+        <a className="btn btn--secondary btn--block" href={returnTo}>
+          ← Back to your bill
+        </a>
+      )}
       {error && (
         <div className="notice notice--danger" role="alert">
           <span className="notice__icon" aria-hidden="true">!</span>
@@ -453,9 +461,9 @@ export function SettingsForm({
             <div className="notice notice--warn">
               <span className="notice__icon" aria-hidden="true">!</span>
               <span className="small">
-                {ruleAudit.unverified.length} tax rule {ruleAudit.unverified.length === 1 ? 'setting has' : 'settings have'} not
-                been confirmed against an official source in this installation. Features that depend on them are
-                switched off rather than guessed.
+                {ruleAudit.unverified.length} tax {ruleAudit.unverified.length === 1 ? 'rule has' : 'rules have'} not been
+                checked against the official source yet. Anything that depends on them is switched off rather than
+                guessed at. Whoever looks after this app for you can finish that off.
               </span>
             </div>
           )}

@@ -24,16 +24,20 @@ export function AiInstructionBox({
   businessId,
   invoiceId,
   onProposal,
+  onDisambiguating,
 }: {
   businessId: string;
   invoiceId: string;
   onProposal: (proposal: AiProposal) => void;
+  /** Lets the editor hide its own customer list while a choice is pending. */
+  onDisambiguating: (pending: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [questions, setQuestions] = useState<string[]>([]);
+  const [notes, setNotes] = useState<string[]>([]);
   const [customerChoices, setCustomerChoices] = useState<Array<{ id: string; name: string }>>([]);
   const [recording, setRecording] = useState(false);
   const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
@@ -44,7 +48,9 @@ export function AiInstructionBox({
     setBusy(true);
     setError(null);
     setQuestions([]);
+    setNotes([]);
     setCustomerChoices([]);
+    onDisambiguating(false);
     try {
       const result = await interpretInstructionAction(businessId, {
         intent: 'create-draft',
@@ -60,9 +66,16 @@ export function AiInstructionBox({
       if (data.customerChoices.length > 1) {
         setCustomerChoices(data.customerChoices);
         setQuestions(['Which customer did you mean?']);
+        setNotes(data.notes);
+        onDisambiguating(true);
         return;
       }
       setQuestions(data.questions);
+      // These are the "please check this" lines the pipeline produces. They were
+      // being computed and thrown away; without them the owner never learns that
+      // a price came from the catalogue, or that part of what they said was not
+      // understood.
+      setNotes(data.notes);
       onProposal({
         customer: data.customer ?? undefined,
         lines: data.lines.map((l: { description: string; quantity: string; unitPrice: string; taxRate: string | null }) => ({
@@ -196,11 +209,30 @@ export function AiInstructionBox({
         </p>
       )}
 
+      {notes.length > 0 && (
+        <div className="notice notice--warn" role="status">
+          <span className="notice__icon" aria-hidden="true">!</span>
+          <div className="stack" style={{ gap: 4 }}>
+            {notes.map((note) => (
+              <span key={note} className="small">{note}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {customerChoices.length > 0 && (
         <div className="stack stack--tight">
           <span className="field__label">Which customer did you mean?</span>
           {customerChoices.map((c) => (
-            <button key={c.id} type="button" className="btn btn--secondary" onClick={() => void submit(text, c.id)}>
+            <button
+              key={c.id}
+              type="button"
+              className="btn btn--secondary"
+              onClick={() => {
+                onDisambiguating(false);
+                void submit(text, c.id);
+              }}
+            >
               {c.name}
             </button>
           ))}

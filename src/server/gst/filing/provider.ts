@@ -54,8 +54,13 @@ export interface GstFilingProvider {
   readonly environment: 'sandbox' | 'production';
   /** Whether this adapter can actually reach a provider right now. */
   readonly available: boolean;
-  /** Why it is unavailable, for an operator. */
+  /**
+   * Why it is unavailable, in plain language, for the BUSINESS OWNER.
+   * Never contains configuration names -- an owner has no use for those.
+   */
   readonly unavailableReason: string | null;
+  /** The same thing for whoever runs the app. Never shown in owner screens. */
+  readonly operatorDetail: string | null;
   submit(request: FilingRequest): Promise<FilingResponse>;
   /** Query an outcome. Used BEFORE any resubmission after a timeout. */
   queryStatus(request: StatusRequest): Promise<FilingResponse>;
@@ -87,6 +92,7 @@ export class SandboxFilingProvider implements GstFilingProvider {
   readonly environment = 'sandbox' as const;
   readonly available = true;
   readonly unavailableReason = null;
+  readonly operatorDetail = null;
 
   /** Submissions seen, keyed by idempotency key, so a retry returns the same answer. */
   private readonly seen = new Map<string, FilingResponse>();
@@ -184,16 +190,21 @@ export class UnconfiguredFilingProvider implements GstFilingProvider {
   readonly name = 'unconfigured';
   readonly environment = 'sandbox' as const;
   readonly available = false;
+  /** For the owner: what is true, and what to do instead. */
   readonly unavailableReason =
-    'No GST filing provider is configured. Set GSP_MODE, GSP_BASE_URL, GSP_CLIENT_ID and GSP_CLIENT_SECRET. ' +
-    'Until then, use the export path and file through the GST portal.';
+    'Filing straight from this app has not been set up. Download the pack below and file on the GST portal, ' +
+    'or send the pack to your accountant.';
+  /** For the operator: how to change that. Never rendered in owner screens. */
+  readonly operatorDetail =
+    'No GST filing provider is configured. Set GSP_MODE, GSP_BASE_URL, GSP_CLIENT_ID and GSP_CLIENT_SECRET, ' +
+    'and see docs/provider-configuration.md.';
 
   async submit(): Promise<FilingResponse> {
-    throw new FilingProviderError(this.unavailableReason!, false);
+    throw new FilingProviderError(this.unavailableReason, false);
   }
 
   async queryStatus(): Promise<FilingResponse> {
-    throw new FilingProviderError(this.unavailableReason!, false);
+    throw new FilingProviderError(this.unavailableReason, false);
   }
 }
 
@@ -229,7 +240,10 @@ export function describeFilingCapability(): {
   available: boolean;
   environment: string;
   productionVerified: boolean;
+  /** Plain language, safe to show a business owner. */
   reason: string | null;
+  /** Configuration detail, for operator-facing screens and logs only. */
+  operatorDetail: string | null;
 } {
   const provider = selectFilingProvider();
   const config = gspConfig();
@@ -240,5 +254,6 @@ export function describeFilingCapability(): {
     // Never claimed without a real provider connection that has been exercised.
     productionVerified: false,
     reason: provider.unavailableReason,
+    operatorDetail: provider.operatorDetail,
   };
 }

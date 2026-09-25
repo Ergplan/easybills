@@ -85,6 +85,15 @@ export async function mockInterpret(req: InterpretRequest): Promise<AiInterpreta
 
   // --- line items ---------------------------------------------------------
   const lines: AiInterpretation['lines'] = [];
+  /**
+   * Character ranges of the instruction that produced something.
+   *
+   * Without this, a fragment the patterns do not match -- "and some lining
+   * material" -- is simply dropped, and the owner gets a bill missing an item
+   * with nothing on screen to tell them. Anything substantive left unconsumed
+   * is reported back as an ambiguity.
+   */
+  const consumed: Array<[number, number]> = [];
 
   // Pattern A: "<qty-word|number> <description> at <amount> each"
   const atEach = new RegExp(
@@ -92,6 +101,7 @@ export async function mockInterpret(req: InterpretRequest): Promise<AiInterpreta
     'gi',
   );
   for (const m of text.matchAll(atEach)) {
+    if (m.index !== undefined) consumed.push([m.index, m.index + m[0].length]);
     const qty = /^\d+$/.test(m[1]!) ? Number(m[1]) : wordToNumber(m[1]!);
     const amount = cleanAmount(m[3]!);
     if (qty === null || amount === null) continue;
@@ -112,6 +122,7 @@ export async function mockInterpret(req: InterpretRequest): Promise<AiInterpreta
   );
   const harMatch = harPattern.exec(text);
   if (harMatch && !lines.length) {
+    if (harMatch.index !== undefined) consumed.push([harMatch.index, harMatch.index + harMatch[0].length]);
     const qty = /^\d+$/.test(harMatch[1]!) ? Number(harMatch[1]) : wordToNumber(harMatch[1]!);
     const amount = cleanAmount(harMatch[3]!);
     if (qty !== null && amount !== null) {
@@ -127,6 +138,7 @@ export async function mockInterpret(req: InterpretRequest): Promise<AiInterpreta
   // Pattern C: "<description> of <amount>" / "<description> <amount>" as a flat total
   const ofPattern = /\b(?:and|plus|aur)\s+([a-z][a-z\s]{2,40}?)\s+(?:of|for|worth)\s+(?:rs\.?\s*|₹\s*)?([\d,]+(?:\.\d{1,2})?)/gi;
   for (const m of text.matchAll(ofPattern)) {
+    if (m.index !== undefined) consumed.push([m.index, m.index + m[0].length]);
     const amount = cleanAmount(m[2]!);
     if (amount === null) continue;
     lines.push({
@@ -141,6 +153,7 @@ export async function mockInterpret(req: InterpretRequest): Promise<AiInterpreta
   const extraPattern = /\badd\s+(\d+|[a-z]+)?\s*(?:extra\s+)?([a-z][a-z\s]{2,40}?)\s+(?:for|at|@)\s+(?:rs\.?\s*|₹\s*)?([\d,]+(?:\.\d{1,2})?)/i;
   const extraMatch = extraPattern.exec(text);
   if (extraMatch) {
+    if (extraMatch.index !== undefined) consumed.push([extraMatch.index, extraMatch.index + extraMatch[0].length]);
     const qty = extraMatch[1] ? (/^\d+$/.test(extraMatch[1]) ? Number(extraMatch[1]) : wordToNumber(extraMatch[1])) : 1;
     const amount = cleanAmount(extraMatch[3]!);
     if (amount !== null && !lines.some((l) => l.description.toLowerCase() === titleCase(extraMatch[2]!.trim()).toLowerCase())) {
@@ -157,6 +170,7 @@ export async function mockInterpret(req: InterpretRequest): Promise<AiInterpreta
   if (!lines.length) {
     const bare = /(?:bill|charge|invoice)\s+(?:[A-Za-z][\w'.&-]*\s+)*?for\s+([a-z][a-z\s]{2,60})/i.exec(text);
     if (bare?.[1]) {
+      if (bare.index !== undefined) consumed.push([bare.index, bare.index + bare[0].length]);
       lines.push({ description: titleCase(bare[1].trim()), quantity: '1', unitPriceQuoted: null, amountIsLineTotal: false });
       missingFields.push(`Price for "${titleCase(bare[1].trim())}"`);
     }
@@ -164,6 +178,12 @@ export async function mockInterpret(req: InterpretRequest): Promise<AiInterpreta
 
   for (const l of lines) {
     if (l.unitPriceQuoted === null) missingFields.push(`Price for "${l.description}"`);
+  }
+
+  for (const leftover of unconsumedFragments(text, consumed, customerHint)) {
+    ambiguities.push(
+      `we could not read "${leftover}" \u2014 add it by hand if it belongs on this bill`,
+    );
   }
   if (!lines.length) ambiguities.push('We could not pick out any items from that instruction.');
   if (!customerHint) missingFields.push('Customer name');
@@ -196,6 +216,49 @@ export async function mockInterpret(req: InterpretRequest): Promise<AiInterpreta
     ambiguities,
     referencesPreviousInvoice,
   };
+}
+
+/**
+ * Substantive parts of the instruction that no pattern matched.
+ *
+ * Filters out the connecting words and the customer's own name, so only text
+ * that looks like it was meant to be billed is reported back.
+ */
+const FILLER = new Set([
+  'bill', 'for', 'to', 'ko', 'and', 'plus', 'aur', 'the', 'a', 'an', 'of', 'please', 'charge',
+  'invoice', 'ka', 'ke', 'ki', 'se', 'this', 'month', 'also', 'with', 'some', 'my', 'our',
+]);
+
+function unconsumedFragments(
+  text: string,
+  consumed: ReadonlyArray<[number, number]>,
+  customerHint: string | null,
+): string[] {
+  if (!consumed.length) return [];
+  const covered = [...consumed].sort((a, b) => a[0] - b[0]);
+
+  const gaps: string[] = [];
+  let cursor = 0;
+  for (const [start, end] of covered) {
+    if (start > cursor) gaps.push(text.slice(cursor, start));
+    cursor = Math.max(cursor, end);
+  }
+  if (cursor < text.length) gaps.push(text.slice(cursor));
+
+  const hint = (customerHint ?? '').toLowerCase();
+  const out: string[] = [];
+
+  for (const raw of gaps) {
+    const fragment = raw.replace(/[.,;]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!fragment) continue;
+    const words = fragment.split(' ').filter(Boolean);
+    const meaningful = words.filter(
+      (w) => !FILLER.has(w.toLowerCase()) && !hint.includes(w.toLowerCase()) && /[a-z]/i.test(w),
+    );
+    // Two or more real words is a phrase somebody meant, not leftover grammar.
+    if (meaningful.length >= 2) out.push(meaningful.join(' '));
+  }
+  return out.slice(0, 3);
 }
 
 function titleCase(s: string): string {

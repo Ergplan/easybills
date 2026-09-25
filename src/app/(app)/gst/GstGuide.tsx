@@ -141,7 +141,7 @@ export function GstGuide({
         <p className="tiny muted">
           {prepared.dueDateVerified
             ? `Due date: ${prepared.dueDate}`
-            : 'We are not showing a due date because we do not have a confirmed rule for it in this installation. Please check the portal or your accountant.'}
+            : 'We are not showing a due date, because we could not confirm it from the official source. Please check the GST portal, or ask your accountant.'}
           {' · '}
           {summary.salesCount} sales · {summary.purchaseCount} purchases
         </p>
@@ -506,7 +506,7 @@ export function GstGuide({
                   need{readiness.blockers.length === 1 ? 's' : ''} sorting out.
                 </span>
               </div>
-              {readiness.blockers.map((b) => (
+              {readiness.blockers.slice(0, 3).map((b) => (
                 <div key={b.code} className="notice notice--warn">
                   <span className="notice__icon" aria-hidden="true">•</span>
                   <div className="stack" style={{ gap: 4 }}>
@@ -515,6 +515,22 @@ export function GstGuide({
                   </div>
                 </div>
               ))}
+              {readiness.blockers.length > 3 && (
+                <details className="disclosure">
+                  <summary>{readiness.blockers.length - 3} more to deal with</summary>
+                  <div className="disclosure__body stack stack--tight">
+                    {readiness.blockers.slice(3).map((b) => (
+                      <div key={b.code} className="notice notice--warn">
+                        <span className="notice__icon" aria-hidden="true">•</span>
+                        <div className="stack" style={{ gap: 4 }}>
+                          <span className="small strong">{b.message}</span>
+                          <span className="tiny">{b.whatYouCanDo}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
             </div>
           ) : (
             <div className="notice notice--ok">
@@ -523,15 +539,24 @@ export function GstGuide({
             </div>
           )}
 
-          {readiness.warnings.map((w) => (
-            <div key={w.code} className="notice notice--warn">
-              <span className="notice__icon" aria-hidden="true">?</span>
-              <div className="stack" style={{ gap: 4 }}>
-                <span className="small">{w.message}</span>
-                <span className="tiny">{w.whatYouCanDo}</span>
+          {readiness.warnings.length > 0 && (
+            <details className="disclosure">
+              <summary>
+                {readiness.warnings.length} thing{readiness.warnings.length === 1 ? '' : 's'} worth knowing
+              </summary>
+              <div className="disclosure__body stack stack--tight">
+                {readiness.warnings.map((w) => (
+                  <div key={w.code} className="notice notice--warn">
+                    <span className="notice__icon" aria-hidden="true">?</span>
+                    <div className="stack" style={{ gap: 4 }}>
+                      <span className="small">{w.message}</span>
+                      <span className="tiny">{w.whatYouCanDo}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
+            </details>
+          )}
 
           <hr className="divider" />
 
@@ -574,7 +599,7 @@ export function GstGuide({
               <span className="small strong">Filing from inside this app is not available yet.</span>
               <span className="tiny">
                 {filingCapability.reason ??
-                  'No filing provider is connected. Download the pack above and file on the GST portal.'}
+                  'Download the pack above and file on the GST portal, or send it to your accountant.'}
               </span>
             </div>
           </div>
