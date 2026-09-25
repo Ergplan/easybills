@@ -55,8 +55,15 @@ let dbInstance: Firestore | null = null;
 
 export function db(): Firestore {
   if (!dbInstance) {
-    dbInstance = getFirestore(adminApp());
-    dbInstance.settings({ ignoreUndefinedProperties: true });
+    const instance = getFirestore(adminApp());
+    try {
+      instance.settings({ ignoreUndefinedProperties: true });
+    } catch {
+      // `settings()` may only be called once per Firestore instance. In dev the
+      // module is re-evaluated by hot reload while the instance survives, so a
+      // second call throws -- and the settings from the first call still apply.
+    }
+    dbInstance = instance;
   }
   return dbInstance;
 }

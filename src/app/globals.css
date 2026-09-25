@@ -295,7 +295,7 @@ a { color: var(--accent); }
 }
 
 .checkbox-row input[type='checkbox'], .checkbox-row input[type='radio'] {
-  width: 22px; height: 22px;
+  width: 24px; height: 24px;
   margin-top: 2px;
   flex-shrink: 0;
   accent-color: var(--accent);
@@ -493,7 +493,7 @@ table.data td.num, table.data th.num { text-align: right; font-family: var(--fon
 
 .segmented__option {
   flex: 1;
-  min-height: 40px;
+  min-height: 44px;
   min-width: max-content;
   padding: 8px 14px;
   border: 0;

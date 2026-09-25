@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import { requireCurrentContext } from '@/server/auth/current';
 
 import { TabBar } from '@/components/TabBar';
@@ -18,9 +16,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       )}
       {children}
       <TabBar />
-      <span className="sr-only">
-        <Link href="/settings">Business settings</Link>
-      </span>
     </div>
   );
 }

@@ -1,0 +1,176 @@
+/**
+ * End-to-end smoke test against a running dev server and Firebase emulators.
+ *
+ *   Terminal 1: npm run emulators
+ *   Terminal 2: npm run dev
+ *   Terminal 3: node scripts/e2e-smoke.mjs
+ *
+ * It drives a real browser at 360px -- the width the product must work at -- and
+ * walks the whole journey: sign up, name the business, quick bill, settle GST
+ * status, issue, record a payment, download the PDF. It asserts the things that
+ * would be embarrassing to get wrong, and fails loudly rather than logging.
+ */
+import { chromium } from 'playwright-core';
+import { mkdirSync } from 'node:fs';
+
+const OUT = process.env.E2E_OUT ?? './e2e-output';
+const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
+const CHROMIUM = process.env.PLAYWRIGHT_CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+
+mkdirSync(OUT, { recursive: true });
+
+const failures = [];
+function check(label, condition, detail = '') {
+  if (condition) console.log(`  ok   ${label}`);
+  else {
+    console.log(`  FAIL ${label} ${detail}`);
+    failures.push(label);
+  }
+}
+
+const browser = await chromium.launch({ executablePath: CHROMIUM, args: ['--no-sandbox'] });
+const page = await browser.newPage({ viewport: { width: 360, height: 780 }, deviceScaleFactor: 2 });
+const pageErrors = [];
+page.on('pageerror', (e) => pageErrors.push(String(e)));
+
+const shot = (n) => page.screenshot({ path: `${OUT}/${n}.png` });
+const email = `owner${Date.now()}@example.test`;
+
+try {
+  console.log('\n1. Sign up');
+  await page.goto(`${BASE}/signin`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await page.locator('#email').fill(email);
+  await page.locator('#password').fill('testpassword123');
+  await page.getByRole('button', { name: 'Create account', exact: true }).last().click();
+  await page.waitForURL('**/start', { timeout: 20000 });
+  check('reaches business setup after sign up', true);
+
+  console.log('\n2. Name the business');
+  await page.locator('#biz-name').fill('Kumar Electrical Repairs');
+  await page.getByRole('button', { name: 'Start billing' }).click();
+  await page.waitForURL('**/home', { timeout: 20000 });
+  await page.waitForTimeout(600);
+  await shot('01-home');
+  check('Home shows one primary action', await page.getByRole('link', { name: '+ Create bill' }).isVisible());
+  check('Home has exactly three navigation destinations', (await page.locator('.tabbar__item').count()) === 3);
+  check('Home shows no chart', (await page.locator('canvas, svg.chart').count()) === 0);
+
+  console.log('\n3. Quick bill at 360px');
+  await page.getByRole('link', { name: '+ Create bill' }).click();
+  await page.waitForURL('**/bills/new', { timeout: 15000 });
+  await page.getByText('Quick bill', { exact: true }).click();
+  await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 20000 });
+  await page.waitForTimeout(1000);
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  check('no horizontal scrolling at 360px', overflow <= 0, `(overflow ${overflow}px)`);
+
+  const smallTargets = await page.evaluate(() => {
+    const isHidden = (el) => {
+      const s = getComputedStyle(el);
+      return s.visibility === 'hidden' || s.display === 'none' || el.closest('.sr-only') !== null;
+    };
+    // A checkbox or radio inside a label is tapped via the LABEL, so the label
+    // is the real target; measure that rather than the 24px box inside it.
+    const effective = (el) => {
+      if ((el.type === 'checkbox' || el.type === 'radio') && el.closest('label')) return el.closest('label');
+      return el;
+    };
+    return [...document.querySelectorAll('button, a, input, select, textarea')]
+      .filter((el) => !isHidden(el))
+      .map(effective)
+      .filter((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) return false;
+        return r.height < 44;
+      })
+      .map((el) => `${el.tagName}.${el.className}`.slice(0, 40));
+  });
+  check('all visible touch targets are at least 44px', smallTargets.length === 0, `(${smallTargets.join(', ')})`);
+
+  console.log('\n4. Enter the worked example (2 visits at 800 + parts 450)');
+  await page.locator('input[id^="desc-"]').first().fill('Repair visit');
+  await page.locator('input[id^="qty-"]').first().fill('2');
+  await page.locator('input[id^="price-"]').first().fill('800');
+  await page.getByRole('button', { name: '+ Add another item' }).click();
+  await page.waitForTimeout(300);
+  await page.locator('input[id^="desc-"]').nth(1).fill('Spare parts');
+  await page.locator('input[id^="qty-"]').nth(1).fill('1');
+  await page.locator('input[id^="price-"]').nth(1).fill('450');
+  await page.waitForTimeout(1200);
+  await shot('02-editor');
+
+  const total = (await page.locator('.sticky-total .amount').first().textContent())?.trim();
+  check('sticky total is the expected 2,050 before tax', total === '₹2,050.00', `(saw ${total})`);
+
+  // Wait for autosave to settle rather than assuming a fixed delay.
+  await page.locator('.save-state').first().filter({ hasText: 'Saved' }).waitFor({ timeout: 15000 }).catch(() => {});
+  const saveState = (await page.locator('.save-state').first().textContent())?.trim();
+  check('autosave reports Saved once the server has it', saveState === 'Saved', `(saw "${saveState}")`);
+
+  console.log('\n5. Review blocks while GST status is unconfirmed');
+  await page.getByRole('button', { name: 'Review' }).click();
+  await page.waitForTimeout(1500);
+  await shot('03-review-blocked');
+  const reviewText = await page.locator('main').innerText();
+  check('review explains why it cannot issue', /GST status/i.test(reviewText));
+  const issueBtn = page.getByRole('button', { name: /^Issue/ });
+  check('issue button is disabled while blocked', await issueBtn.isDisabled());
+
+  console.log('\n6. Settle GST status, then issue');
+  const billUrl = page.url();
+  await page.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
+  await page.getByText('Not registered for GST', { exact: true }).click();
+  await page.getByRole('button', { name: /Save GST status/ }).click();
+  await page.waitForTimeout(1500);
+  await page.goto(billUrl, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1200);
+  await page.getByRole('button', { name: 'Review' }).click();
+  await page.waitForTimeout(2000);
+  await shot('04-review-ok');
+  const issueNow = page.getByRole('button', { name: /^Issue/ });
+  check('issue button is enabled once GST status is settled', await issueNow.isEnabled());
+
+  await issueNow.click();
+  await page.waitForTimeout(3500);
+  await shot('05-issued');
+  const issuedText = await page.locator('main').innerText();
+  check('issued bill shows a number', /INV-\d+/.test(issuedText), `(text: ${issuedText.slice(0, 80)})`);
+  check('issued bill shows the total', issuedText.includes('2,050.00'));
+  check('issued bill shows it is unpaid', /Unpaid/i.test(issuedText));
+
+  console.log('\n7. Record a part payment');
+  await page.getByRole('button', { name: 'Payment received' }).click();
+  await page.waitForTimeout(500);
+  await page.locator('#pay-amount').fill('1000');
+  await page.getByRole('button', { name: 'Record payment' }).click();
+  await page.waitForTimeout(3000);
+  await shot('06-part-paid');
+  const paidText = await page.locator('main').innerText();
+  check('bill now shows as part paid', /Part paid/i.test(paidText));
+  check('remaining balance is 1,050', paidText.includes('1,050.00'), `(text: ${paidText.slice(0, 200)})`);
+
+  console.log('\n8. PDF downloads');
+  const pdfResponse = await page.request.get(`${BASE}${new URL(page.url()).pathname.replace('/bills/', '/api/invoices/')}/pdf?b=${await page.evaluate(() => document.cookie ? '' : '')}`).catch(() => null);
+  // The PDF link in the page carries the right business id; use it directly.
+  const pdfHref = await page.locator('a:has-text("View PDF")').getAttribute('href');
+  const res = await page.request.get(`${BASE}${pdfHref}`);
+  check('PDF endpoint returns a PDF', res.ok() && res.headers()['content-type']?.includes('pdf'), `(status ${res.status()})`);
+  const bytes = await res.body();
+  check('PDF has real content', bytes.length > 5000 && bytes.subarray(0, 4).toString() === '%PDF');
+
+  console.log('\n9. Bills list and search');
+  await page.goto(`${BASE}/bills`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(800);
+  await shot('07-bills');
+  check('bills list shows the issued bill', (await page.locator('.list__item').count()) >= 1);
+
+  console.log('\n10. No uncaught page errors');
+  check('no uncaught client errors', pageErrors.length === 0, pageErrors.slice(0, 2).join(' | '));
+} finally {
+  await browser.close();
+}
+
+console.log(`\n${failures.length === 0 ? 'ALL CHECKS PASSED' : `${failures.length} CHECK(S) FAILED: ${failures.join(', ')}`}`);
+process.exit(failures.length === 0 ? 0 : 1);

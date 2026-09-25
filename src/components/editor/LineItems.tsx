@@ -84,7 +84,7 @@ export function LineItems({
                 key={item.id}
                 type="button"
                 className="btn btn--secondary"
-                style={{ minHeight: 40, padding: '8px 14px', whiteSpace: 'nowrap' }}
+                style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}
                 onClick={() => addSaved(item)}
               >
                 {item.description} · {formatMoneyIndian(item.unitPricePaise, { withSymbol: true })}
@@ -164,7 +164,7 @@ export function LineItems({
             <button
               type="button"
               className="btn btn--ghost"
-              style={{ minHeight: 36, paddingInline: 6, fontSize: '0.875rem' }}
+              style={{ paddingInline: 8, fontSize: '0.875rem' }}
               aria-expanded={Boolean(expanded[l.id])}
               onClick={() => setExpanded((p) => ({ ...p, [l.id]: !p[l.id] }))}
             >
