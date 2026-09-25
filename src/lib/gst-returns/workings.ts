@@ -23,6 +23,8 @@ import { reviewedEligibleItc } from './reconcile';
 export interface OutwardDocument {
   id: string;
   source: 'app' | 'external';
+  /** The bill this came from, when it was raised here. Null for imports. */
+  sourceInvoiceId: string | null;
   documentNumber: string;
   documentDate: string;
   documentType: 'invoice' | 'credit-note' | 'debit-note';
@@ -75,6 +77,7 @@ export function outwardDocumentsFromInvoices(invoices: readonly InvoiceRecord[])
       docs.push({
         id: `${inv.id}__${rateBp}`,
         source: 'app',
+        sourceInvoiceId: inv.id,
         documentNumber: inv.number!,
         documentDate: inv.issueDate,
         documentType: 'invoice',
@@ -99,6 +102,7 @@ export function outwardDocumentsFromExternal(sales: readonly ExternalSaleRecord[
   return sales.map((s) => ({
     id: s.id,
     source: 'external' as const,
+    sourceInvoiceId: null,
     documentNumber: s.documentNumber,
     documentDate: s.documentDate,
     documentType: s.documentType,
@@ -133,6 +137,8 @@ export interface Gstr1Tables {
       invoiceValuePaise: number;
       lines: Array<{ taxRateBp: number; taxableValuePaise: number; cgstPaise: number; sgstPaise: number; igstPaise: number; cessPaise: number }>;
       sourceIds: string[];
+      /** The bill behind this document, when it was raised here. */
+      sourceInvoiceId: string | null;
     }>;
   }>;
   /** Supplies to unregistered persons, summarised by place of supply and rate. */
@@ -145,6 +151,10 @@ export interface Gstr1Tables {
     igstPaise: number;
     cessPaise: number;
     sourceIds: string[];
+    /** How many documents rolled into this summary row. */
+    documentCount: number;
+    /** The bills behind it, so a summary line can still be opened up. */
+    sourceInvoiceIds: string[];
   }>;
   /** Credit and debit notes. */
   creditDebitNotes: Array<{
@@ -162,7 +172,15 @@ export interface Gstr1Tables {
   /** HSN/SAC summary. */
   hsnSummary: Array<{
     hsnCode: string | null;
+    /** The first description seen in this group. Kept for exports that want one. */
     description: string;
+    /**
+     * Every distinct description rolled into this row. Items with no HSN code
+     * all land in the same "no code" group, so one name would misrepresent it.
+     */
+    descriptions: string[];
+    /** How many distinct descriptions there really are, including any not listed. */
+    descriptionCount: number;
     unit: string | null;
     quantityMilli: number;
     taxRateBp: number;
@@ -207,6 +225,7 @@ export function buildGstr1(args: {
         invoiceValuePaise: 0,
         lines: [],
         sourceIds: [],
+        sourceInvoiceId: doc.sourceInvoiceId,
       };
       bucket.documents.push(entry);
     }
@@ -236,6 +255,8 @@ export function buildGstr1(args: {
       igstPaise: 0,
       cessPaise: 0,
       sourceIds: [],
+      documentCount: 0,
+      sourceInvoiceIds: [],
     };
     existing.taxableValuePaise += doc.taxableValuePaise;
     existing.cgstPaise += doc.cgstPaise;
@@ -243,17 +264,24 @@ export function buildGstr1(args: {
     existing.igstPaise += doc.igstPaise;
     existing.cessPaise += doc.cessPaise;
     existing.sourceIds.push(doc.id);
+    existing.documentCount += 1;
+    if (doc.sourceInvoiceId && !existing.sourceInvoiceIds.includes(doc.sourceInvoiceId)) {
+      existing.sourceInvoiceIds.push(doc.sourceInvoiceId);
+    }
     b2cByKey.set(key, existing);
   }
 
   // --- HSN summary --------------------------------------------------------
   const hsnByKey = new Map<string, Gstr1Tables['hsnSummary'][number]>();
+  const seenDescriptions = new Map<string, Set<string>>();
   for (const doc of documents) {
     for (const l of doc.hsnLines) {
       const key = `${l.hsnCode ?? 'none'}|${l.taxRateBp}|${l.unit ?? 'none'}`;
       const existing = hsnByKey.get(key) ?? {
         hsnCode: l.hsnCode,
         description: l.description,
+        descriptions: [] as string[],
+        descriptionCount: 0,
         unit: l.unit,
         quantityMilli: 0,
         taxRateBp: l.taxRateBp,
@@ -263,6 +291,16 @@ export function buildGstr1(args: {
         igstPaise: 0,
         cessPaise: 0,
       };
+      // Cap the list: a busy month can have hundreds of names, and a row that
+      // prints all of them helps nobody. The count is of the real total, so a
+      // capped row still says how much it is hiding.
+      const seen = seenDescriptions.get(key) ?? new Set<string>();
+      if (!seen.has(l.description)) {
+        seen.add(l.description);
+        seenDescriptions.set(key, seen);
+        if (existing.descriptions.length < 20) existing.descriptions.push(l.description);
+      }
+      existing.descriptionCount = seen.size;
       existing.quantityMilli += l.quantityMilli;
       existing.taxableValuePaise += l.taxableValuePaise;
       existing.cgstPaise += l.cgstPaise;
@@ -321,6 +359,27 @@ export function buildGstr1(args: {
     documentSummary,
     totals,
   };
+}
+
+/**
+ * What to print for a grouped HSN row.
+ *
+ * Items with no HSN code all fall into one group, so the row can cover several
+ * unrelated things. Printing the first item's name would say the month held six
+ * tins of paint when half of them were cement. Name what is there, and say how
+ * much is not named.
+ */
+export function hsnRowLabel(row: {
+  description: string;
+  descriptions?: readonly string[];
+  descriptionCount?: number;
+}): string {
+  const names = row.descriptions?.length ? [...row.descriptions] : [row.description];
+  const total = row.descriptionCount && row.descriptionCount > 0 ? row.descriptionCount : names.length;
+  if (total <= 1) return names[0] ?? row.description;
+  if (total === 2 && names.length === 2) return `${names[0]} and ${names[1]}`;
+  const shown = names.slice(0, 2);
+  return `${shown.join(', ')} and ${total - shown.length} more`;
 }
 
 // ---------------------------------------------------------------------------

@@ -10,6 +10,7 @@ import type { CompletenessDeclaration } from '@/lib/gst-returns/types';
 import type { PreparedPeriod } from '@/server/gst/prepare';
 import type { FilingFrequency } from '@/lib/domain/types';
 import { Money } from '@/components/Money';
+import { SalesBreakdown } from './SalesBreakdown';
 import {
   approveForFilingAction,
   attachFilingEvidenceAction,
@@ -187,6 +188,8 @@ export function GstGuide({
             <span className="muted">GST on sales</span>
             <Money paise={gstr1.totals.cgstPaise + gstr1.totals.sgstPaise + gstr1.totals.igstPaise + gstr1.totals.cessPaise} />
           </div>
+
+          <SalesBreakdown tables={gstr1} />
 
           <hr className="divider" />
 

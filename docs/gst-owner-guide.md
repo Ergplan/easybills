@@ -67,6 +67,13 @@ We then ask you three questions, and we need honest answers:
 Sales invoices on their own are not a complete return. And if the app is empty
 we will *not* assume you had no business — we ask you to say so explicitly.
 
+If a figure looks wrong, open **See every sale behind these figures**. It shows
+the bills behind each total: sales to GST-registered customers one by one,
+everything else grouped by state and rate but still openable to the individual
+bills, your credit and debit notes, what you sold by HSN/SAC code, and the bill
+numbers you used. Anything you imported from a CSV or the portal says so,
+because there is no bill in this app to open.
+
 ### 2. Check purchases
 
 Two uploads:

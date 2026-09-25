@@ -7,10 +7,17 @@ import {
   applyCreditToLiability,
   buildGstr1,
   buildGstr3b,
+  hsnRowLabel,
+  outwardDocumentsFromExternal,
   type LedgerBalances,
   type OutwardDocument,
 } from '@/lib/gst-returns/workings';
-import type { CompletenessDeclaration, GstStatementSnapshotRecord, SupplierBillRecord } from '@/lib/gst-returns/types';
+import type {
+  CompletenessDeclaration,
+  ExternalSaleRecord,
+  GstStatementSnapshotRecord,
+  SupplierBillRecord,
+} from '@/lib/gst-returns/types';
 
 const NOW = '2026-10-05T10:00:00.000Z';
 
@@ -87,6 +94,7 @@ function outward(over: Partial<OutwardDocument> = {}): OutwardDocument {
   return {
     id: 'out-1',
     source: 'app',
+    sourceInvoiceId: 'inv-1',
     documentNumber: 'INV-001',
     documentDate: '2026-09-15',
     documentType: 'invoice',
@@ -103,6 +111,31 @@ function outward(over: Partial<OutwardDocument> = {}): OutwardDocument {
     hsnLines: [],
     ...over,
   };
+}
+
+function externalSale(over: Partial<ExternalSaleRecord> = {}): ExternalSaleRecord {
+  const base: ExternalSaleRecord = {
+    id: 'ext-1',
+    documentNumber: 'OLD/2026/77',
+    matchKey: matchKey('OLD/2026/77'),
+    documentDate: '2026-09-04',
+    period: '2026-09',
+    customerGstin: null,
+    customerName: 'Walk-in customer',
+    placeOfSupplyStateCode: '27',
+    documentType: 'invoice',
+    taxableValuePaise: 100000,
+    cgstPaise: 9000,
+    sgstPaise: 9000,
+    igstPaise: 0,
+    cessPaise: 0,
+    taxRateBp: 1800,
+    source: 'csv-import',
+    importBatchId: 'batch-1',
+    createdAt: NOW,
+  };
+  const merged = { ...base, ...over };
+  return { ...merged, matchKey: matchKey(merged.documentNumber) };
 }
 
 const LEDGER_UNAVAILABLE: LedgerBalances = {
@@ -365,6 +398,104 @@ describe('GSTR-1 tables', () => {
   it('keeps every figure traceable to its source documents', () => {
     const t = buildGstr1({ period: '2026-09', documents: [outward({ id: 'src-1' })] });
     expect(t.b2cSummary[0]!.sourceIds).toContain('src-1');
+  });
+
+  // The owner approving a return has to be able to get from a figure back to
+  // the bill that caused it, or "check your sales" means "trust our total".
+  it('carries the bill behind every B2B document', () => {
+    const t = buildGstr1({
+      period: '2026-09',
+      documents: [
+        outward({ id: 'a', documentNumber: 'INV-001', customerGstin: '29AAGCB7383J1Z4', sourceInvoiceId: 'inv-a' }),
+      ],
+    });
+    expect(t.b2b[0]!.documents[0]!.sourceInvoiceId).toBe('inv-a');
+  });
+
+  it('carries the bills behind a B2C summary row and counts them', () => {
+    const t = buildGstr1({
+      period: '2026-09',
+      documents: [
+        outward({ id: 'a', taxRateBp: 1800, sourceInvoiceId: 'inv-a' }),
+        outward({ id: 'b', taxRateBp: 1800, sourceInvoiceId: 'inv-b' }),
+      ],
+    });
+    const row = t.b2cSummary.find((s) => s.taxRateBp === 1800)!;
+    expect(row.documentCount).toBe(2);
+    expect(row.sourceInvoiceIds).toEqual(['inv-a', 'inv-b']);
+  });
+
+  // An imported sale has no bill in this app. Saying so is the honest answer;
+  // inventing a link would send the owner to a 404.
+  it('does not invent a bill for an imported sale', () => {
+    const t = buildGstr1({
+      period: '2026-09',
+      documents: [
+        outward({ id: 'a', source: 'external', sourceInvoiceId: null }),
+        outward({ id: 'b', sourceInvoiceId: 'inv-b' }),
+      ],
+    });
+    const row = t.b2cSummary[0]!;
+    expect(row.documentCount).toBe(2);
+    expect(row.sourceInvoiceIds).toEqual(['inv-b']);
+  });
+
+  it('lists a bill once even when it lands in the row twice', () => {
+    const t = buildGstr1({
+      period: '2026-09',
+      documents: [
+        outward({ id: 'a__1800', sourceInvoiceId: 'inv-a' }),
+        outward({ id: 'a__1800-again', sourceInvoiceId: 'inv-a' }),
+      ],
+    });
+    expect(t.b2cSummary[0]!.sourceInvoiceIds).toEqual(['inv-a']);
+  });
+
+  // Items with no HSN code all land in one group. Printing the first item's
+  // name would tell the owner they sold six tins of paint when half were cement.
+  it('does not name a mixed HSN group after one of its items', () => {
+    const line = (description: string, quantityMilli: number, taxableValuePaise: number) => ({
+      hsnCode: null,
+      description,
+      quantityMilli,
+      unit: null,
+      taxableValuePaise,
+      taxRateBp: 1800,
+      cgstPaise: 0,
+      sgstPaise: 0,
+      igstPaise: 0,
+      cessPaise: 0,
+    });
+    const t = buildGstr1({
+      period: '2026-09',
+      documents: [
+        outward({ id: 'a', documentNumber: 'INV-001', hsnLines: [line('Cement bags', 4000, 152000)] }),
+        outward({ id: 'b', documentNumber: 'INV-002', hsnLines: [line('Paint tins', 2000, 145000)] }),
+      ],
+    });
+    expect(t.hsnSummary).toHaveLength(1);
+    const row = t.hsnSummary[0]!;
+    expect(row.quantityMilli).toBe(6000);
+    expect(row.descriptions).toEqual(['Cement bags', 'Paint tins']);
+    expect(hsnRowLabel(row)).toBe('Cement bags and Paint tins');
+  });
+
+  it('says how many item names a capped HSN row is hiding', () => {
+    expect(
+      hsnRowLabel({ description: 'Cement bags', descriptions: ['Cement bags', 'Paint tins'], descriptionCount: 9 }),
+    ).toBe('Cement bags, Paint tins and 7 more');
+  });
+
+  it('leaves a single-item HSN row named after its item', () => {
+    expect(hsnRowLabel({ description: 'Cement bags', descriptions: ['Cement bags'], descriptionCount: 1 })).toBe(
+      'Cement bags',
+    );
+  });
+
+  it('marks imported sales as having no bill of their own', () => {
+    const docs = outwardDocumentsFromExternal([externalSale()]);
+    expect(docs[0]!.sourceInvoiceId).toBeNull();
+    expect(docs[0]!.source).toBe('external');
   });
 
   it('reports cancelled documents without counting them as sales', () => {

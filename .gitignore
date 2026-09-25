@@ -33,3 +33,6 @@ test-results/
 # Service account keys must never enter the repo
 *serviceAccount*.json
 *service-account*.json
+
+# End-to-end screenshots
+e2e-output/

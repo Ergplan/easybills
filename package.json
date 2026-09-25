@@ -16,6 +16,7 @@
     "worker:once": "tsx --tsconfig tsconfig.scripts.json src/worker/main.ts --once",
     "emulators": "firebase emulators:start --only auth,firestore --project easybills-dev",
     "e2e": "node scripts/e2e-smoke.mjs",
+    "e2e:gst": "node scripts/e2e-gst-drilldown.mjs",
     "gst:audit-rules": "tsx --tsconfig tsconfig.scripts.json scripts/audit-rule-pack.ts"
   },
   "dependencies": {

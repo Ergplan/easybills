@@ -16,6 +16,7 @@ import { formatPeriodLong, type MonthPeriod } from '@/lib/dates';
 import { stateName } from '@/lib/gst/state-codes';
 
 import type { ReconciliationFindingRecord, SupplierBillRecord } from './types';
+import { hsnRowLabel } from './workings';
 import type { Gstr1Tables, Gstr3bWorkings, OutwardDocument } from './workings';
 
 export interface ExportFile {
@@ -197,7 +198,7 @@ export function buildAccountantPack(args: {
       ['HSN/SAC', 'Description', 'Unit', 'Quantity', 'Rate %', 'Taxable', 'CGST', 'SGST/UTGST', 'IGST', 'Cess'],
       ...args.gstr1.hsnSummary.map((h) => [
         h.hsnCode ?? '',
-        h.description,
+        hsnRowLabel(h),
         h.unit ?? '',
         formatQuantityPlain(h.quantityMilli),
         formatPercentPlain(h.taxRateBp),

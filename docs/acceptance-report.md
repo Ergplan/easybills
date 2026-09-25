@@ -337,9 +337,7 @@ detected and discarded, proposed and uncertain values were not marked,
 `needsDateReview` was exported and never called, and a regression from the
 previous commit could leave the editor with no row to type into.
 
-One gap remains open and is not fixed: the GSTR-1 tables (B2B, B2C, HSN,
-document summary) are computed and written into the accountant pack but are not
-viewable in the app, so an owner cannot drill from a total to its documents.
+That audit left one gap open, now closed. See **GSTR-1 drill-down** below.
 
 **Authorization at real HTTP boundaries.** Two unrelated businesses, both
 signed in, attacking each other's endpoints: the PDF route with the victim's
@@ -373,6 +371,31 @@ merely *reads* like a handler.
 
 Two of the failures in this round were my own bad assertions, not defects, and
 were corrected rather than the code being changed to match them.
+
+**GSTR-1 drill-down.** The outward tables were computed and exported but not
+viewable, so an owner asked to approve a return had to take the totals on
+trust. Step 1 now carries a *See every sale behind these figures* disclosure:
+sales to registered customers grouped by customer with each document linking to
+its bill, the unregistered summary expandable per state and rate into the bills
+behind it, credit and debit notes, the HSN summary, the numbers used, and a
+reconciling total. Rows built from a CSV or portal import say so instead of
+offering a link that would go nowhere.
+
+Building it exposed a second defect. Items with no HSN code all fall into one
+summary group, and the row was named after whichever item was seen first — a
+month of four cement bags and two tins of paint reported as "Paint tins, qty
+6". The row now carries every distinct description and states how many it is
+not showing, in the app and in the accountant pack alike.
+
+Verified in a real browser at 360px (`npm run e2e:gst`): the links reach the
+bills they name, every target clears 44px, nothing overflows, no client errors.
+
+**One defect found and not yet fixed.** A regular-GST business can issue a Tax
+Invoice with the rate select left empty. The editor says "We do not guess the
+rate," but nothing enforces it: an empty rate is coerced to 0 bp, so the bill
+prints 0%, charges no GST, and enters GSTR-1 as a nil-rated supply. A
+deliberate 0% (nil-rated) choice is legitimate and must stay allowed, so the
+fix has to carry "not chosen" through to issuance rather than reject zero.
 
 ---
 
@@ -408,8 +431,6 @@ were corrected rather than the code being changed to match them.
 
 ## Known weaknesses
 
-- **The GSTR-1 tables have no in-app drill-down.** They are computed and
-  exported, but an owner cannot open a total and see the documents behind it.
 - **QRMP is unit-tested but has no end-to-end run.** The quarter maths, the
   obligation shape and IFF de-duplication are covered directly; a full
   three-month quarterly preparation has not been exercised against the database.
