@@ -6,6 +6,8 @@
  * Requires the Firebase emulators (or a configured project). Every business it
  * creates is flagged as a demo and is labelled as such throughout the app.
  */
+import './load-env';
+
 import { seedDemoBusiness, type DemoProfile } from '../src/server/services/seed';
 
 function arg(name: string): string | undefined {

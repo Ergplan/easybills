@@ -11,12 +11,12 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:seed": "tsx scripts/seed.ts",
-    "worker": "tsx src/worker/main.ts",
-    "worker:once": "tsx src/worker/main.ts --once",
+    "db:seed": "tsx --tsconfig tsconfig.scripts.json scripts/seed.ts",
+    "worker": "tsx --tsconfig tsconfig.scripts.json src/worker/main.ts",
+    "worker:once": "tsx --tsconfig tsconfig.scripts.json src/worker/main.ts --once",
     "emulators": "firebase emulators:start --only auth,firestore --project easybills-dev",
     "e2e": "node scripts/e2e-smoke.mjs",
-    "gst:audit-rules": "tsx scripts/audit-rule-pack.ts"
+    "gst:audit-rules": "tsx --tsconfig tsconfig.scripts.json scripts/audit-rule-pack.ts"
   },
   "dependencies": {
     "firebase": "^12.19.0",

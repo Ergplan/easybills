@@ -38,14 +38,21 @@ immediately.
 
 ### Sample data
 
-Sign up first, copy your uid from the Auth emulator UI at
+Sign up in the app first, copy your uid from the Auth emulator UI at
 http://127.0.0.1:4000/auth, then:
 
 ```bash
 npm run db:seed -- --uid <your-uid> --profile repair
 ```
 
-`--profile` is one of `repair`, `consultant` or `home-food`. Each creates a
+`--profile` is one of `repair`, `consultant` or `home-food`. The `repair`
+profile reproduces the brief's worked example: two visits at 800 plus parts of
+450, subtotalling 2,050 before tax, part paid.
+
+The CLI entry points (`db:seed`, `worker`, `gst:audit-rules`) run through
+`tsconfig.scripts.json`, which loads `.env.local` and resolves the `server-only`
+build guard to a no-op — that guard exists for the Next bundler, and plain Node
+would otherwise refuse to import server modules at all. Each creates a
 business flagged as a demo — the app labels it on every screen so sample records
 can never be mistaken for real ones. Identities are obviously fictitious, and
 their GSTINs are structurally valid but generated, not real registrations.

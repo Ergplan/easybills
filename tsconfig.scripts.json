@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@/*": ["./src/*"],
+      // `server-only` is a build-time guard for the Next bundler: importing it
+      // from plain Node throws. CLI entry points (the seed script, the job
+      // worker) legitimately run server code outside Next, so they resolve it
+      // to a no-op. The guard still protects the application build, which is
+      // where it matters -- this mapping is used only by the CLI scripts.
+      "server-only": ["./scripts/server-only-shim.ts"]
+    }
+  },
+  "include": ["scripts/**/*.ts", "src/**/*.ts"]
+}

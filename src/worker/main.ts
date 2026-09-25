@@ -8,6 +8,8 @@
  * In production, prefer the HTTP endpoint driven by a managed scheduler: it
  * needs no always-on process and survives deploys.
  */
+import '../../scripts/load-env';
+
 import { queueDailySweep, runDueJobs } from '@/server/jobs/runner';
 
 const INTERVAL_MS = Number(process.env.WORKER_INTERVAL_MS ?? 60_000);
