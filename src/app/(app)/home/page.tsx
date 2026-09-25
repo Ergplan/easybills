@@ -33,11 +33,13 @@ export default async function HomePage() {
           <div className="notice notice--warn">
             <span className="notice__icon" aria-hidden="true">!</span>
             <div className="stack" style={{ gap: 6 }}>
-              <span>
-                You can start a bill now. Before you can issue one, we need a couple of details.
+              <span>{setup.headline}</span>
+              <span className="small">
+                You can carry on writing bills in the meantime — you just cannot issue one yet.
               </span>
-              <span className="small">{setup.headline}</span>
-              <Link href="/settings" className="strong">Finish business setup →</Link>
+              <Link href="/settings" className="btn btn--secondary" style={{ alignSelf: 'flex-start' }}>
+                Finish business setup
+              </Link>
             </div>
           </div>
         )}

@@ -3,12 +3,18 @@
 import { useState } from 'react';
 
 import { interpretInstructionAction } from '@/app/actions/ai';
+import { Icon } from '@/components/Icon';
 
 import { emptyLine, type LineDraft } from './types';
 
 export interface AiProposal {
   customer?: { name: string; customerId: string | null };
   lines: LineDraft[];
+  /**
+   * A monthly arrangement the owner asked for in words. Shown as a PROPOSAL
+   * with an explicit preview -- the assistant never sets one up itself.
+   */
+  recurring?: { action: string; note: string | null } | null;
 }
 
 /**
@@ -38,6 +44,7 @@ export function AiInstructionBox({
   const [error, setError] = useState<string | null>(null);
   const [questions, setQuestions] = useState<string[]>([]);
   const [notes, setNotes] = useState<string[]>([]);
+  const [recurring, setRecurring] = useState<{ action: string; note: string | null } | null>(null);
   const [customerChoices, setCustomerChoices] = useState<Array<{ id: string; name: string }>>([]);
   const [recording, setRecording] = useState(false);
   const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
@@ -49,6 +56,7 @@ export function AiInstructionBox({
     setError(null);
     setQuestions([]);
     setNotes([]);
+    setRecurring(null);
     setCustomerChoices([]);
     onDisambiguating(false);
     try {
@@ -71,6 +79,7 @@ export function AiInstructionBox({
         return;
       }
       setQuestions(data.questions);
+      setRecurring(data.recurringProposal);
       // These are the "please check this" lines the pipeline produces. They were
       // being computed and thrown away; without them the owner never learns that
       // a price came from the catalogue, or that part of what they said was not
@@ -78,13 +87,24 @@ export function AiInstructionBox({
       setNotes(data.notes);
       onProposal({
         customer: data.customer ?? undefined,
-        lines: data.lines.map((l: { description: string; quantity: string; unitPrice: string; taxRate: string | null }) => ({
-          ...emptyLine(),
-          description: l.description,
-          quantity: l.quantity,
-          unitPrice: l.unitPrice,
-          taxRate: l.taxRate ?? '',
-        })),
+        recurring: data.recurringProposal,
+        lines: data.lines.map(
+          (l: {
+            description: string;
+            quantity: string;
+            unitPrice: string;
+            taxRate: string | null;
+            priceMissing: boolean;
+          }) => ({
+            ...emptyLine(),
+            description: l.description,
+            quantity: l.quantity,
+            unitPrice: l.unitPrice,
+            taxRate: l.taxRate ?? '',
+            proposed: true,
+            priceMissing: l.priceMissing,
+          }),
+        ),
       });
       if (data.lines.length) setText('');
     } catch {
@@ -138,7 +158,8 @@ export function AiInstructionBox({
   if (!open) {
     return (
       <button type="button" className="btn btn--secondary btn--block" onClick={() => setOpen(true)}>
-        🎤 Speak or type your bill
+        <Icon name="mic" size={18} />
+        Speak or type your bill
       </button>
     );
   }
@@ -179,7 +200,8 @@ export function AiInstructionBox({
       <div className="row row--tight">
         {!recording ? (
           <button type="button" className="btn btn--secondary" onClick={() => void startRecording()} disabled={busy}>
-            🎤 Record
+            <Icon name="mic" size={18} />
+            Record
           </button>
         ) : (
           <button
@@ -207,6 +229,34 @@ export function AiInstructionBox({
         <p className="small" role="status" style={{ color: 'var(--danger)', fontWeight: 650 }}>
           ● Recording — press stop when you are done
         </p>
+      )}
+
+      {recurring?.action === 'start' && (
+        <div className="notice notice--info" role="status">
+          <span className="notice__icon" aria-hidden="true">🗓</span>
+          <div className="stack" style={{ gap: 4 }}>
+            <span className="small strong">You asked for this every month.</span>
+            <span className="tiny">
+              We have not set anything up. Issue this bill first, then use “Repeat every month” on it — you will see
+              the exact date and what each bill covers before anything is turned on.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {recurring && recurring.action !== 'start' && (
+        <div className="notice notice--info" role="status">
+          <span className="notice__icon" aria-hidden="true">🗓</span>
+          <div className="stack" style={{ gap: 4 }}>
+            <span className="small strong">
+              You asked to {recurring.action === 'skip-one' ? 'skip a month' : recurring.action} a monthly bill.
+            </span>
+            <span className="tiny">
+              We cannot change a monthly arrangement from here. Open the bill it was set up on and change it there,
+              so you can see what you are changing.
+            </span>
+          </div>
+        </div>
       )}
 
       {notes.length > 0 && (

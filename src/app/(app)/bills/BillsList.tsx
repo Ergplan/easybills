@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { formatDateShort } from '@/lib/dates';
 import { Money, StatusPill } from '@/components/Money';
+import { Icon } from '@/components/Icon';
 import type { BillFilter, BillListItem } from '@/server/services/bill-search';
 
 const FILTERS: Array<{ key: BillFilter; label: string }> = [
@@ -87,7 +88,7 @@ export function BillsList({
 
       {initialBills.length === 0 ? (
         <div className="card empty">
-          <span className="empty__icon" aria-hidden="true">🧾</span>
+          <Icon name="bills" size={40} className="empty__icon" />
           <p>{q ? 'No bills match that search.' : 'No bills yet.'}</p>
           {!q && (
             <Link href="/bills/new" className="btn btn--primary" style={{ marginTop: 12 }}>

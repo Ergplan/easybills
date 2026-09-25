@@ -12,10 +12,22 @@
 :root {
   /* Ink and paper. Warm greys read as less clinical than pure neutrals. */
   --paper: #ffffff;
-  --paper-sunk: #f6f5f3;
+  --paper-sunk: #f4f5f7;
   --paper-raised: #ffffff;
-  --line: #e2dfda;
-  --line-strong: #c9c5be;
+  --line: rgb(23 26 33 / 9%);
+  --line-strong: rgb(23 26 33 / 18%);
+
+  /* Surfaces are translucent and sit over a soft page wash, so cards read as
+     panes of glass rather than flat rectangles. Opacity stays high enough that
+     text contrast is unaffected -- see the @supports fallback below. */
+  --surface: rgb(255 255 255 / 76%);
+  --surface-strong: rgb(255 255 255 / 88%);
+  --surface-blur: saturate(1.6) blur(18px);
+
+  /* The wash the blur has something to reveal. Very low saturation: this is a
+     billing app, not a dashboard demo. */
+  --wash-a: rgb(47 74 158 / 11%);
+  --wash-b: rgb(31 107 69 / 8%);
 
   --ink: #1c1a17;          /* 15.8:1 on paper */
   --ink-soft: #5a554d;     /* 7.1:1  on paper */
@@ -35,15 +47,22 @@
   --danger: #a32c25;
   --danger-soft: #fbeceb;
 
-  --radius: 12px;
-  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-sm: 10px;
   --tap: 44px;
 
-  --shadow-sm: 0 1px 2px rgb(28 26 23 / 8%);
-  --shadow-md: 0 4px 16px rgb(28 26 23 / 10%);
+  /* Two layers: a tight contact shadow that grounds the card, and a broad
+     ambient one that gives it height. One blurry shadow alone reads muddy. */
+  --shadow-sm: 0 1px 1px rgb(16 20 28 / 4%), 0 2px 8px rgb(16 20 28 / 5%);
+  --shadow-md: 0 1px 2px rgb(16 20 28 / 6%), 0 12px 32px rgb(16 20 28 / 10%);
 
-  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-num: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* Inter is self-hosted by next/font; the stack behind it covers the moment
+     before it loads and any environment where it cannot. */
+  --font: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+  /* Amounts use the same family with tabular figures, not a monospace face:
+     columns still align, without looking like a terminal. */
+  --font-num: var(--font);
 
   --page-gutter: 16px;
   --nav-height: 64px;
@@ -51,14 +70,18 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --paper: #171614;
-    --paper-sunk: #1f1e1b;
-    --paper-raised: #23211e;
-    --line: #35322d;
-    --line-strong: #4a463f;
-    --ink: #f4f2ef;
-    --ink-soft: #bdb8b0;
-    --ink-faint: #97918a;
+    --paper: #101319;
+    --paper-sunk: #0b0e13;
+    --paper-raised: #161a22;
+    --line: rgb(255 255 255 / 10%);
+    --line-strong: rgb(255 255 255 / 20%);
+    --surface: rgb(28 33 43 / 72%);
+    --surface-strong: rgb(28 33 43 / 88%);
+    --wash-a: rgb(110 140 230 / 10%);
+    --wash-b: rgb(80 190 140 / 6%);
+    --ink: #f2f4f8;
+    --ink-soft: #b9c0cd;
+    --ink-faint: #8d95a5;
     --accent: #9db0ee;
     --accent-ink: #12203f;
     --accent-soft: #232a3d;
@@ -69,8 +92,8 @@
     --warn-soft: #2c2415;
     --danger: #ef9a93;
     --danger-soft: #2e1b19;
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
-    --shadow-md: 0 4px 16px rgb(0 0 0 / 45%);
+    --shadow-sm: 0 1px 1px rgb(0 0 0 / 30%), 0 2px 8px rgb(0 0 0 / 35%);
+    --shadow-md: 0 1px 2px rgb(0 0 0 / 35%), 0 12px 32px rgb(0 0 0 / 45%);
   }
 }
 
@@ -81,16 +104,22 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   background: var(--paper-sunk);
+  background-image:
+    radial-gradient(1200px 620px at 12% -8%, var(--wash-a), transparent 60%),
+    radial-gradient(900px 520px at 92% 6%, var(--wash-b), transparent 62%);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font);
   font-size: 16px;           /* never smaller: iOS zooms inputs below 16px */
-  line-height: 1.5;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-synthesis-weight: none;
   overflow-x: hidden;
 }
 
-h1, h2, h3 { margin: 0; line-height: 1.25; font-weight: 650; letter-spacing: -0.01em; }
-h1 { font-size: 1.4rem; }
+h1, h2, h3 { margin: 0; line-height: 1.22; font-weight: 600; letter-spacing: -0.018em; }
+h1 { font-size: 1.45rem; letter-spacing: -0.025em; }
 h2 { font-size: 1.1rem; }
 h3 { font-size: 1rem; }
 p { margin: 0; }
@@ -144,7 +173,9 @@ a { color: var(--accent); }
   gap: 12px;
   min-height: 56px;
   padding: 8px var(--page-gutter);
-  background: var(--paper);
+  background: var(--surface-strong);
+  -webkit-backdrop-filter: var(--surface-blur);
+  backdrop-filter: var(--surface-blur);
   border-bottom: 1px solid var(--line);
 }
 
@@ -157,7 +188,9 @@ a { color: var(--accent); }
   z-index: 30;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  background: var(--paper);
+  background: var(--surface-strong);
+  -webkit-backdrop-filter: var(--surface-blur);
+  backdrop-filter: var(--surface-blur);
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -176,16 +209,27 @@ a { color: var(--accent); }
 }
 
 .tabbar__item[aria-current='page'] { color: var(--accent); }
-.tabbar__icon { font-size: 1.25rem; line-height: 1; }
+.tabbar__icon { display: block; }
 
 /* ----------------------------------------------------------------- cards */
 
 .card {
+  /* Opaque first, so a browser without color-mix or backdrop-filter still gets
+     a solid, readable card. */
   background: var(--paper-raised);
+  background: var(--surface);
+  -webkit-backdrop-filter: var(--surface-blur);
+  backdrop-filter: var(--surface-blur);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 16px;
   box-shadow: var(--shadow-sm);
+}
+
+/* Without backdrop blur, translucency just looks like washed-out text. Go
+   solid instead -- legibility is not negotiable for a bill. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .card, .topbar, .tabbar, .sticky-total { background: var(--paper-raised); }
 }
 
 .card--flush { padding: 0; overflow: hidden; }
@@ -207,8 +251,14 @@ a { color: var(--accent); }
 .strong { font-weight: 650; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.amount { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 600; }
-.amount--big { font-size: 1.75rem; letter-spacing: -0.02em; }
+.amount {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'cv05' 1;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.amount--big { font-size: 1.9rem; letter-spacing: -0.03em; font-weight: 650; }
 
 /* --------------------------------------------------------------- buttons */
 
@@ -228,15 +278,21 @@ a { color: var(--accent); }
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 80ms ease;
 }
+
+.btn:active:not(:disabled) { transform: translateY(1px); }
 
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
-.btn--primary { background: var(--accent); color: var(--accent-ink); }
+.btn--primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 1px 2px rgb(16 20 28 / 10%), 0 4px 14px color-mix(in srgb, var(--accent) 28%, transparent);
+}
 .btn--primary:hover:not(:disabled) { filter: brightness(1.08); }
 
-.btn--secondary { border-color: var(--line-strong); }
+.btn--secondary { border-color: var(--line-strong); background: var(--surface-strong); }
 .btn--secondary:hover:not(:disabled) { background: var(--paper-sunk); }
 
 .btn--ghost { background: transparent; color: var(--accent); padding-inline: 10px; }
@@ -245,6 +301,7 @@ a { color: var(--accent); }
 .btn--danger { background: var(--danger-soft); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
 
 .btn--block { width: 100%; }
+.btn svg { flex-shrink: 0; }
 .btn--large { min-height: 56px; font-size: 1.0625rem; }
 
 /* ----------------------------------------------------------------- forms */
@@ -268,18 +325,29 @@ a { color: var(--accent); }
 .input, .select, .textarea {
   width: 100%;
   min-height: var(--tap);
-  padding: 10px 12px;
+  padding: 11px 13px;
   font: inherit;
   font-size: 16px;
   color: var(--ink);
   background: var(--paper);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.input:focus, .select:focus, .textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .input:disabled, .select:disabled { background: var(--paper-sunk); color: var(--ink-faint); }
 
-.input--numeric { font-family: var(--font-num); text-align: right; font-variant-numeric: tabular-nums; }
+.input--numeric {
+  font-family: var(--font-num);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
 
 .textarea { min-height: 88px; resize: vertical; }
 
@@ -376,7 +444,7 @@ a { color: var(--accent); }
 }
 
 .list__item:last-child { border-bottom: none; }
-.list__item:hover { background: var(--paper-sunk); }
+.list__item:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
 
 .empty {
   padding: 32px 16px;
@@ -384,7 +452,7 @@ a { color: var(--accent); }
   color: var(--ink-soft);
 }
 
-.empty__icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+.empty__icon { display: block; margin: 0 auto 10px; color: var(--ink-faint); opacity: 0.7; }
 
 /* -------------------------------------------------------- sticky footer */
 
@@ -394,8 +462,10 @@ a { color: var(--accent); }
   left: 0; right: 0;
   bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
   z-index: 25;
-  background: var(--paper);
-  border-top: 1px solid var(--line-strong);
+  background: var(--surface-strong);
+  -webkit-backdrop-filter: var(--surface-blur);
+  backdrop-filter: var(--surface-blur);
+  border-top: 1px solid var(--line);
   box-shadow: var(--shadow-md);
   padding: 12px var(--page-gutter);
 }
@@ -431,6 +501,11 @@ a { color: var(--accent); }
   border-radius: var(--radius-sm);
   padding: 12px;
   background: var(--paper);
+}
+
+.line-item--proposed {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
 }
 
 .line-item__grid {
@@ -478,7 +553,12 @@ table.data th, table.data td {
 }
 
 table.data th { font-weight: 650; color: var(--ink-soft); background: var(--paper-sunk); }
-table.data td.num, table.data th.num { text-align: right; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+table.data td.num, table.data th.num {
+  text-align: right;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
 
 /* ------------------------------------------------------------ segmented */
 

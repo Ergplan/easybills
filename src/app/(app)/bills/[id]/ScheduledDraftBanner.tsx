@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { formatDateShort, formatPeriodLong, monthPeriodOf } from '@/lib/dates';
+import { formatDateShort, formatPeriodLong, monthPeriodOf, todayIst } from '@/lib/dates';
+import { needsDateReview } from '@/server/services/recurrence';
 import { applyToFutureInvoicesAction } from '@/app/actions/schedules';
 
 /**
@@ -32,7 +33,26 @@ export function ScheduledDraftBanner({
   const [result, setResult] = useState<{ changedFields: string[]; effectiveFromPeriod: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // A draft prepared for August and issued in November is not automatically
+  // wrong -- but it is never silently back-dated. The owner is asked.
+  const staleDate = needsDateReview(issueDate, todayIst());
+
   return (
+    <>
+    {staleDate && (
+      <section className="notice notice--warn" role="status" aria-label="Check this bill's date">
+        <span className="notice__icon" aria-hidden="true">!</span>
+        <div className="stack" style={{ gap: 4 }}>
+          <span className="small strong">
+            This draft was prepared for {formatDateShort(issueDate)}, which has passed.
+          </span>
+          <span className="tiny">
+            Check the date before you issue it. We will not change it for you — open “More options” to set the bill
+            date you actually want.
+          </span>
+        </div>
+      </section>
+    )}
     <section className="notice notice--info" aria-label="Monthly draft">
       <span className="notice__icon" aria-hidden="true">🗓</span>
       <div className="stack" style={{ gap: 8 }}>
@@ -86,5 +106,6 @@ export function ScheduledDraftBanner({
         {error && <span className="tiny" style={{ color: 'var(--danger)' }}>{error}</span>}
       </div>
     </section>
+    </>
   );
 }

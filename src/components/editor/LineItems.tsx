@@ -36,8 +36,9 @@ export function LineItems({
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
+  // Any edit by the owner means the line is theirs now, not a proposal.
   const update = (id: string, patch: Partial<LineDraft>) =>
-    onChange(lines.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+    onChange(lines.map((l) => (l.id === id ? { ...l, ...patch, proposed: false } : l)));
 
   const remove = (id: string) => {
     const next = lines.filter((l) => l.id !== id);
@@ -95,7 +96,12 @@ export function LineItems({
       )}
 
       {lines.map((l, index) => (
-        <div key={l.id} className="line-item stack stack--tight">
+        <div key={l.id} className={`line-item stack stack--tight${l.proposed ? ' line-item--proposed' : ''}`}>
+          {l.proposed && (
+            <span className="pill pill--info" style={{ alignSelf: 'flex-start' }}>
+              We filled this in — please check it
+            </span>
+          )}
           <div className="field">
             <label className="field__label" htmlFor={`desc-${l.id}`}>
               Item {index + 1}
@@ -130,7 +136,11 @@ export function LineItems({
                 value={l.unitPrice}
                 onChange={(e) => update(l.id, { unitPrice: e.target.value, savedItemId: null })}
                 placeholder="0.00"
+                aria-invalid={l.priceMissing && !l.unitPrice ? true : undefined}
               />
+              {l.priceMissing && !l.unitPrice && (
+                <span className="field__error">You did not say a price for this — please add it.</span>
+              )}
             </div>
           </div>
 

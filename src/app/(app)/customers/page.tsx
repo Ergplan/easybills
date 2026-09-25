@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { Money } from '@/components/Money';
+import { Icon } from '@/components/Icon';
 import { TopBar } from '@/components/TopBar';
 import { requireCurrentContext } from '@/server/auth/current';
 import { listCustomers } from '@/server/repos/customers';
@@ -22,7 +23,7 @@ export default async function CustomersPage() {
       <main className="page">
         {customers.length === 0 ? (
           <div className="card empty">
-            <span className="empty__icon" aria-hidden="true">👥</span>
+            <Icon name="customers" size={40} className="empty__icon" />
             <p>No customers yet.</p>
             <p className="small">
               You do not need to add customers first — you can add one while making a bill.

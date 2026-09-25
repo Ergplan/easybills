@@ -212,6 +212,7 @@ export function InvoiceEditor({ bootstrap }: { bootstrap: EditorBootstrap }) {
     }
   }, [bootstrap.businessId, invoiceId, localKey, router, saveNow, state.lines]);
 
+  const defaultRate = bootstrap.defaultTaxRateBp ? formatPercentPlain(bootstrap.defaultTaxRateBp) : '';
   const label = saveStateLabel(saveState);
   const isQuickBill = state.kind === 'quick-bill';
 
@@ -286,8 +287,12 @@ export function InvoiceEditor({ bootstrap }: { bootstrap: EditorBootstrap }) {
               <span className="tiny">
                 You can carry on filling this bill in — it will be saved. You just cannot issue it yet.
               </span>
-              <a className="strong" href={`/settings?next=${encodeURIComponent(`/bills/${invoiceId}`)}`}>
-                Sort this out now →
+              <a
+                className="btn btn--secondary"
+                style={{ alignSelf: 'flex-start' }}
+                href={`/settings?next=${encodeURIComponent(`/bills/${invoiceId}`)}`}
+              >
+                Sort this out now
               </a>
             </div>
           </div>
@@ -301,11 +306,18 @@ export function InvoiceEditor({ bootstrap }: { bootstrap: EditorBootstrap }) {
             onProposal={(proposal) => {
               // AI proposes; the owner reviews. Existing typing is preserved --
               // proposed lines are appended, never a silent replacement.
-              setState((prev) => ({
-                ...prev,
-                customer: proposal.customer ? { ...prev.customer, ...proposal.customer } : prev.customer,
-                lines: [...prev.lines.filter((l) => l.description.trim() || l.unitPrice.trim()), ...proposal.lines],
-              }));
+              setState((prev) => {
+                const kept = prev.lines.filter((l) => l.description.trim() || l.unitPrice.trim());
+                const merged = [...kept, ...proposal.lines];
+                return {
+                  ...prev,
+                  customer: proposal.customer ? { ...prev.customer, ...proposal.customer } : prev.customer,
+                  // Never leave the form with nothing to type into. If the
+                  // assistant understood nothing and the form was empty, the
+                  // owner still needs a row to fill in by hand.
+                  lines: merged.length ? merged : [emptyLine(defaultRate)],
+                };
+              });
             }}
           />
         )}

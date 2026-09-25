@@ -20,6 +20,14 @@ export interface LineDraft {
   priceIncludesTax: boolean;
   savedItemId: string | null;
   saveForNextTime: boolean;
+  /**
+   * Filled in by the assistant rather than typed. Shown differently so the
+   * owner can see at a glance what they are being asked to check, and cleared
+   * the moment they edit the field themselves.
+   */
+  proposed?: boolean;
+  /** The assistant produced this line but could not find a price for it. */
+  priceMissing?: boolean;
 }
 
 export interface EditorState {

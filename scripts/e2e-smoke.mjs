@@ -56,6 +56,17 @@ try {
   check('Home has exactly three navigation destinations', (await page.locator('.tabbar__item').count()) === 3);
   check('Home shows no chart', (await page.locator('canvas, svg.chart').count()) === 0);
 
+  // The 44px floor applies on every screen, not only the editor.
+  const homeSmall = await page.evaluate(() => {
+    const eff = (e) => ((e.type === 'checkbox' || e.type === 'radio') && e.closest('label') ? e.closest('label') : e);
+    return [...document.querySelectorAll('button, a, input, select, textarea')]
+      .filter((e) => e.checkVisibility?.({ checkVisibilityCSS: true }) && !e.closest('.sr-only'))
+      .map(eff)
+      .filter((e) => e.getBoundingClientRect().height < 44)
+      .map((e) => `${e.tagName}.${e.className}`.slice(0, 40));
+  });
+  check('Home touch targets are at least 44px', homeSmall.length === 0, `(${homeSmall.join(', ')})`);
+
   console.log('\n3. Quick bill at 360px');
   await page.getByRole('link', { name: '+ Create bill' }).click();
   await page.waitForURL('**/bills/new', { timeout: 15000 });
