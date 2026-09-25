@@ -1,0 +1,5 @@
+supplier_gstin,supplier_name,document_number,document_date,document_type,taxable_value,cgst,sgst,igst,cess,reverse_charge
+27AAPFU0939F1ZV,Parts Supplier Pvt Ltd,PS/2026/001,2026-09-05,invoice,10000.00,900.00,900.00,0,0,no
+27AAPFU0939F1ZV,Parts Supplier Pvt Ltd,PS/2026/002,2026-09-12,invoice,5000.00,450.00,450.00,0,0,no
+29AAGCB7383J1Z4,Interstate Tools Ltd,IT-990,2026-09-18,invoice,20000.00,0,0,3600.00,0,no
+24AAACC1206D1ZM,Office Rentals,OR/09/26,2026-09-20,invoice,8000.00,720.00,720.00,0,0,no

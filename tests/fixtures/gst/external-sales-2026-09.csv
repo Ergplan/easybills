@@ -1,0 +1,2 @@
+document_number,document_date,document_type,customer_gstin,customer_name,place_of_supply_state_code,tax_rate_percent,taxable_value,cgst,sgst,igst,cess
+LEGACY/2026/44,2026-09-08,invoice,29AAGCB7383J1Z4,Old System Customer,29,18,15000.00,0,0,2700.00,0

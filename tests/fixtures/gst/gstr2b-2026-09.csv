@@ -1,0 +1,5 @@
+supplier_gstin,supplier_name,document_number,document_date,document_type,taxable_value,cgst,sgst,igst,cess,itc_available
+27AAPFU0939F1ZV,Parts Supplier Pvt Ltd,PS/2026/001,2026-09-05,invoice,10000.00,900.00,900.00,0,0,Y
+27AAPFU0939F1ZV,Parts Supplier Pvt Ltd,PS/2026/002,2026-09-12,invoice,5000.00,500.00,500.00,0,0,Y
+29AAGCB7383J1Z4,Interstate Tools Ltd,IT-990,2026-09-18,invoice,20000.00,0,0,3600.00,0,Y
+32AAACC1206D1ZP,Unknown Vendor,UV/77,2026-09-25,invoice,3000.00,270.00,270.00,0,0,Y
