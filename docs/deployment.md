@@ -217,9 +217,8 @@ Firebase Console › **Firestore Database** › **Create database**:
 
   **Already created in the wrong region?** Nothing needs deleting. Create a
   *second* database in `asia-south1` with a name of its own, set
-  `FIRESTORE_DATABASE_ID` in `apphosting.yaml` to that name, and push. Deploy
-  the rules and indexes to it with
-  `firebase deploy --only firestore --database <name>`. Anything already in the
+  `FIRESTORE_DATABASE_ID` in `apphosting.yaml` to that name, name it in the
+  `firestore` block of `firebase.json` too, and push. Anything already in the
   old one has to be copied across by hand, which is why doing this while it is
   still empty costs nothing at all.
 - Start in production mode; the rules deployed in the next step replace
@@ -250,7 +249,16 @@ App Hosting deploys the application. It does not touch Firestore, so this is a
 separate, one-time command — and it is not optional:
 
 ```bash
-firebase deploy --only firestore:rules,firestore:indexes
+firebase deploy --only firestore
+```
+
+There is no `--database` flag. A database that is not `(default)` is named in
+`firebase.json`, which is where this project names `ekbill`:
+
+```json
+"firestore": [
+  { "database": "ekbill", "rules": "firestore.rules", "indexes": "firestore.indexes.json" }
+]
 ```
 
 Expect two things in the output: *firestore: released rules firestore.rules to
