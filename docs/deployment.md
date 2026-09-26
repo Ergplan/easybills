@@ -9,6 +9,29 @@ the handful of things only the account owner can do.
 
 ---
 
+## Moving to a new Firebase project
+
+The app is pointed at project **`ekbill-1918b`** (`apphosting.yaml`,
+`.firebaserc`). A fresh project has nothing in it, so in this order:
+
+1. **Firestore Database › Create database** — Native mode, `asia-south1`, the
+   `(default)` database (see 2a below). Nothing works before this exists.
+2. **App Hosting › Create backend** in the new project — connect the GitHub
+   repo, branch `claude/admiring-wright-5w8x4g`, root directory `/`, region
+   `asia-south1` if offered (the database is there). The first rollout starts
+   on its own once the branch is connected.
+3. From Cloud Shell, `firebase use production && firebase deploy --only firestore`
+   (section 2) for the rules and the indexes.
+4. Open `/api/health` on the new `*.hosted.app` address: it should say
+   `"projectId":"ekbill-1918b"`, `"database":"(default)"`, `"firestore":"ok"`.
+
+Sign-in stays switched off (`AUTH_BYPASS`) until the app itself is done, so
+nothing under Authentication needs doing yet. The console's snippet also
+offers Analytics; it is deliberately not used -- see the note in
+`apphosting.yaml`.
+
+---
+
 ## Before you start
 
 **The app root is the repository root.** `package.json`, `next.config.ts` and
@@ -76,7 +99,7 @@ sample records, so nothing real is ever mixed into it.
    `auth/configuration-not-found` — which the app reports, in words, as
    "Phone se login abhi chalu nahi hai".
 3. In **Authentication › Settings › Authorized domains**, make sure the
-   App Hosting domain (`easybills--ekbill.us-east4.hosted.app`) is listed. The
+   App Hosting domain (the `*.hosted.app` address shown on the backend) is listed. The
    invisible reCAPTCHA that guards the SMS refuses a domain that is not.
 
 Nothing else changes: the bypass is a single branch in `currentUser()`, the one
@@ -157,7 +180,7 @@ git clone https://github.com/Ergplan/easybills.git
 cd easybills
 git checkout claude/admiring-wright-5w8x4g
 firebase login --no-localhost     # prints a link; paste the code back
-firebase use production           # the alias for ekbill, in .firebaserc
+firebase use production           # the alias for ekbill-1918b, in .firebaserc
 ```
 
 `--no-localhost` matters in Cloud Shell: the ordinary `firebase login` tries to
@@ -267,12 +290,14 @@ separate, one-time command — and it is not optional:
 firebase deploy --only firestore
 ```
 
-There is no `--database` flag. A database that is not `(default)` is named in
-`firebase.json`, which is where this project names `ekbill`:
+There is no `--database` flag. The database is named in `firebase.json`;
+this project uses the project's `(default)` database. If yours was created
+with a name, put that name here and in `FIRESTORE_DATABASE_ID` in
+`apphosting.yaml`:
 
 ```json
 "firestore": [
-  { "database": "ekbill", "rules": "firestore.rules", "indexes": "firestore.indexes.json" }
+  { "database": "(default)", "rules": "firestore.rules", "indexes": "firestore.indexes.json" }
 ]
 ```
 

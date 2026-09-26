@@ -50,16 +50,16 @@ env:
   # explicitly here anyway: an explicit value wins, and sign-in then does not
   # depend on whether a platform variable turned up.
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    value: ekbill
+    value: ekbill-1918b
     availability: [BUILD, RUNTIME]
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: ekbill.firebaseapp.com
+    value: ekbill-1918b.firebaseapp.com
     availability: [BUILD, RUNTIME]
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: AIzaSyDcmIdVh3AIAtG3EbIX-ZkhGOEJJKUDo7o
+    value: AIzaSyDc_SvB3fL8XsZa1JBqMaycAAHgWczGnFA
     availability: [BUILD, RUNTIME]
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    value: "1:286759361840:web:c7582d023b21502e8e3cf5"
+    value: "1:296821837341:web:13c5dfe21ded4672f100f4"
     availability: [BUILD, RUNTIME]
 
   # Storage, Messaging and Analytics appear in the console's snippet and are
@@ -70,15 +70,17 @@ env:
 
   # Which Firestore database to use.
   #
-  # This project's database is NAMED `ekbill` rather than being the project's
-  # `(default)`, so it has to be said explicitly -- without this the app asks
-  # for `(default)`, which does not exist here, and every page fails.
+  # `(default)` is what a project's first database is called unless it was
+  # given a name when it was created. If this project's database was created
+  # with a name, put that name here and in firebase.json -- with the wrong
+  # name the app asks for a database that does not exist and every page
+  # fails; /api/health says so in words.
   #
-  # Its location is asia-south1 (Mumbai), which is right for an Indian business
-  # and cannot be changed afterwards: every screen reads Firestore before it
-  # renders, so that round trip is in front of the owner on every tap.
+  # Create it in asia-south1 (Mumbai): right for an Indian business, and the
+  # location cannot be changed afterwards. Every screen reads Firestore before
+  # it renders, so that round trip is in front of the owner on every tap.
   - variable: FIRESTORE_DATABASE_ID
-    value: ekbill
+    value: "(default)"
     availability: [RUNTIME]
 
   # ===========================================================================
@@ -119,9 +121,9 @@ env:
   # quietly. Create it, then uncomment:
   #
   #   openssl rand -hex 32
-  #   firebase apphosting:secrets:set job-runner-secret --project ekbill
+  #   firebase apphosting:secrets:set job-runner-secret --project ekbill-1918b
   #   firebase apphosting:secrets:grantaccess job-runner-secret \
-  #     --project ekbill --backend easybills
+  #     --project ekbill-1918b --backend easybills
   #
   # - variable: JOB_RUNNER_SECRET
   #   secret: job-runner-secret
