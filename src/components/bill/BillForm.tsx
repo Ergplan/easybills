@@ -19,6 +19,8 @@ import {
 } from '@/lib/domain/bill-form';
 import type { InvoiceLine } from '@/lib/domain/types';
 import { PREFILL_KEY } from '@/lib/voice/intents';
+import { rateOddities, type DuplicateHit, type RateOddity } from '@/lib/domain/bill-guard';
+import Link from 'next/link';
 
 export interface LastTime {
   /** "Aug" -- the month of the last bill, for the offer. */
@@ -41,6 +43,12 @@ export interface BillFormProps {
   lastTime: LastTime | null;
   /** Things that stop a bill going out, from the profile. English from the engine for now. */
   blockers: Array<{ message: string; whatYouCanDo: string }>;
+  /** What this customer already owes across other bills, in paise. */
+  outstandingPaise: number;
+  /** True when the chip picked up a bill the owner had started earlier. */
+  resumed: boolean;
+  /** Lines already on this draft: a resumed bill, or one redone from a cancelled bill. */
+  initialLines: LineDraft[];
 }
 
 let counter = 0;
@@ -61,13 +69,15 @@ export function BillForm(props: BillFormProps) {
     customerName: props.customer.name,
     customerPhone: props.customer.phone ?? '',
     customerGstin: '',
-    lines: [blankLine(newId())],
+    lines: props.initialLines.length ? props.initialLines : [blankLine(newId())],
     gstRateBp: props.chargesGst ? props.defaultGstRateBp : null,
   });
   const [problem, setProblem] = useState<{ problem: BillProblem; message: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [offerLastTime, setOfferLastTime] = useState(Boolean(props.lastTime));
+  const [duplicate, setDuplicate] = useState<DuplicateHit | null>(null);
+  const [oddities, setOddities] = useState<RateOddity[] | null>(null);
+  const [offerLastTime, setOfferLastTime] = useState(Boolean(props.lastTime) && props.initialLines.length === 0);
   const [spoken, setSpoken] = useState(false);
 
   // A bill started by voice arrives with its lines waiting in session storage.
@@ -96,15 +106,26 @@ export function BillForm(props: BillFormProps) {
   const subtotal = subtotalOf(draft.lines);
   const gst = props.chargesGst && draft.gstRateBp ? Math.round((subtotal * draft.gstRateBp) / 10000) : 0;
 
-  async function make() {
+  async function make(opts: { force?: boolean; ratesConfirmed?: boolean } = {}) {
     const checked = checkBill(draft, { needsCustomerName: isNewCustomer, chargesGst: props.chargesGst });
     if (!checked.ok) {
       setProblem({ problem: checked.problem, message: checked.message });
       return;
     }
+    // A rate four times off what the same thing cost last time is usually a
+    // zero too many or too few. Shown once; the owner's second tap is the answer.
+    if (!opts.ratesConfirmed && props.lastTime) {
+      const odd = rateOddities(draft.lines, props.lastTime.lines);
+      if (odd.length) {
+        setOddities(odd);
+        return;
+      }
+    }
+    setOddities(null);
     setBusy(true);
     setError(null);
     const r = await makeBillAction(props.businessId, {
+      force: opts.force,
       invoiceId: props.invoiceId,
       baseRevision: props.baseRevision,
       issueDate: props.issueDate,
@@ -118,6 +139,10 @@ export function BillForm(props: BillFormProps) {
     });
     setBusy(false);
     if (!r.ok) {
+      if ('duplicate' in r) {
+        setDuplicate(r.duplicate);
+        return;
+      }
       setError(r.blockers?.length ? `${r.error} ${r.blockers.map((b) => b.whatYouCanDo).join(' ')}` : r.error);
       return;
     }
@@ -133,6 +158,16 @@ export function BillForm(props: BillFormProps) {
 
   return (
     <div className="stack">
+      {props.resumed && (
+        <div className="notice notice--info" role="status">
+          <span className="notice__icon" aria-hidden="true">i</span>
+          <span className="small">{t('bill.resumed')}</span>
+        </div>
+      )}
+      {props.outstandingPaise > 0 && (
+        <p className="faint">{t('owing.note', { name: props.customer.name, amount: moneyForMessage(props.outstandingPaise) })}</p>
+      )}
+
       {props.blockers.length > 0 && (
         <div className="notice notice--warn">
           <span className="notice__icon" aria-hidden="true">!</span>
@@ -347,11 +382,47 @@ export function BillForm(props: BillFormProps) {
         </div>
       )}
 
+      {oddities && (
+        <div className="notice notice--warn" role="alert">
+          <span className="notice__icon" aria-hidden="true">!</span>
+          <div className="stack stack--tight">
+            <strong>{t('odd.title')}</strong>
+            {oddities.map((o) => (
+              <span key={o.what} className="small">
+                {t('odd.line', { what: o.what, last: moneyForMessage(o.lastRatePaise).slice(1), now: moneyForMessage(o.nowRatePaise).slice(1) })}
+              </span>
+            ))}
+            <div className="row row--tight">
+              <button type="button" className="btn btn--secondary btn--small" onClick={() => setOddities(null)}>{t('common.back')}</button>
+              <button type="button" className="btn btn--primary btn--small" onClick={() => void make({ ratesConfirmed: true })}>{t('odd.ok')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {duplicate && (
+        <div className="notice notice--warn" role="alert">
+          <span className="notice__icon" aria-hidden="true">!</span>
+          <div className="stack stack--tight">
+            <strong>{t('dup.title')}</strong>
+            <span className="small">
+              {t('dup.body', { number: duplicate.number, date: formatDateShort(duplicate.issueDate), amount: moneyForMessage(duplicate.grandTotalPaise) })}
+            </span>
+            <div className="row row--tight">
+              <Link href={`/bills/${duplicate.id}`} className="btn btn--secondary btn--small">{t('dup.view')}</Link>
+              <button type="button" className="btn btn--primary btn--small" disabled={busy} onClick={() => void make({ force: true, ratesConfirmed: true })}>
+                {t('dup.anyway')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="stack stack--tight">
         <button
           type="button"
           className="btn btn--primary btn--block btn--large"
-          disabled={busy || props.blockers.length > 0}
+          disabled={busy || props.blockers.length > 0 || Boolean(duplicate) || Boolean(oddities)}
           onClick={() => void make()}
         >
           {busy ? <span className="spinner" aria-hidden="true" /> : null}

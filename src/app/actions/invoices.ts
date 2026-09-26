@@ -3,10 +3,11 @@
 import { t } from '@/lib/copy';
 import { billSentMessage, moneyForMessage } from '@/lib/copy/messages';
 import { parseCustomer } from '@/lib/domain/customer-form';
+import { findDuplicate, proportionalCredit, type DuplicateHit } from '@/lib/domain/bill-guard';
 
 import { revalidatePath } from 'next/cache';
 
-import { assertCivilDate, todayIst } from '@/lib/dates';
+import { assertCivilDate, formatDateShort, todayIst } from '@/lib/dates';
 import { saveDraftInput, paymentInput } from '@/lib/domain/validation';
 import type { InvoiceLine, InvoiceRecord } from '@/lib/domain/types';
 import { formatMoneyPlain, formatPercentPlain, formatQuantityPlain, parseMoney } from '@/lib/money';
@@ -18,6 +19,8 @@ import {
   emptyParty,
   getInvoice,
   issueInvoice,
+  cancelIssuedInvoice,
+  listInvoices,
   newInvoiceId,
   noteReminder,
   saveDraft,
@@ -170,11 +173,19 @@ export async function startDraftAction(kind: 'quick-bill' | 'customer-invoice'):
  */
 export async function startBillForCustomerAction(
   customerId: string | null,
-): Promise<ActionResult<{ invoiceId: string }>> {
+): Promise<ActionResult<{ invoiceId: string; resumed?: boolean }>> {
   try {
     const { business, user } = await requireCurrentContext();
     const customer = customerId ? await getCustomer(business.id, customerId) : null;
     if (customerId && !customer) return { ok: false, error: t('error.notFound'), code: 'not-found' };
+    // A bill for this customer that was started and left: pick it up instead
+    // of opening a second one beside it.
+    if (customerId) {
+      const open = (await listInvoices(business.id, { status: 'draft', customerId, limit: 5 })).find((d) =>
+        d.lines.some((l) => l.description.trim() || l.unitPricePaise > 0),
+      );
+      if (open) return ok({ invoiceId: open.id, resumed: true });
+    }
     const invoiceId = newInvoiceId();
     await saveDraft({
       business,
@@ -227,8 +238,10 @@ export async function makeBillAction(
     issueDate: string;
     customer: { customerId: string | null; name: string; phone: string | null; gstin?: string | null };
     lines: InvoiceLine[];
+    /** The owner saw the "already billed?" question and said make it anyway. */
+    force?: boolean;
   },
-): Promise<ActionResult<{ invoice: InvoiceRecord; message: string }>> {
+): Promise<ActionResult<{ invoice: InvoiceRecord; message: string }> | { ok: false; code: 'duplicate'; error: string; duplicate: DuplicateHit }> {
   try {
     const { business, user } = await requireBusiness(businessId);
     const draft = await getInvoice(businessId, raw.invoiceId);
@@ -269,6 +282,28 @@ export async function makeBillAction(
     }
 
     const issueDate = assertCivilDate(raw.issueDate, 'date');
+
+    // "Didn't I bill them this already?" Same customer, same total, within a
+    // week: asked once, and made anyway when the owner says so.
+    if (!raw.force) {
+      const priced = priceInvoice({ business, lines: raw.lines, placeOfSupplyStateCode: party.stateCode ?? business.stateCode, supplyFlags: [], issueDate });
+      const recent = party.customerId
+        ? await listInvoices(businessId, { status: 'issued', customerId: party.customerId, limit: 20 })
+        : await listInvoices(businessId, { status: 'issued', limit: 50 });
+      const dup = findDuplicate(
+        { customerId: party.customerId, customerName: party.name, grandTotalPaise: priced.totals.grandTotalPaise, today: issueDate },
+        recent,
+      );
+      if (dup) {
+        return {
+          ok: false,
+          code: 'duplicate',
+          error: t('dup.body', { number: dup.number, date: formatDateShort(dup.issueDate), amount: moneyForMessage(dup.grandTotalPaise) }),
+          duplicate: dup,
+        };
+      }
+    }
+
     const saved = await saveDraft({
       business,
       uid: user.uid,
@@ -364,6 +399,77 @@ export async function noteReminderAction(businessId: string, invoiceId: string):
     await noteReminder(businessId, invoiceId);
     revalidatePath('/home');
     return ok(null);
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
+ * "Cancel karke naya banao." The wrong bill is cancelled -- its number stays
+ * used, never reissued -- and a new draft opens with the same lines for the
+ * owner to correct and make. Refused once money has come in against it.
+ */
+export async function cancelAndRedoAction(
+  businessId: string,
+  invoiceId: string,
+  reason: string,
+): Promise<ActionResult<{ newInvoiceId: string }>> {
+  try {
+    const { business, user } = await requireBusiness(businessId);
+    const source = await getInvoice(businessId, invoiceId);
+    if (!source || source.status !== 'issued') return { ok: false, error: t('error.notFound'), code: 'not-found' };
+    if (source.amountPaidPaise > 0 || source.creditAppliedPaise > 0) {
+      return { ok: false, error: t('fix.redoBlocked'), code: 'blocked' };
+    }
+    const draft = await duplicateInvoice({ business, uid: user.uid, sourceInvoiceId: invoiceId });
+    await cancelIssuedInvoice({ businessId, uid: user.uid, invoiceId, reason, redoneAsInvoiceId: draft.id });
+    revalidatePath('/home');
+    revalidatePath('/bills');
+    return ok({ newInvoiceId: draft.id });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
+ * "Rakam kam karo." A credit note for part of the bill, with the tax split
+ * in the bill's own proportion so the GST summary stays true.
+ */
+export async function kamKaroAction(
+  businessId: string,
+  raw: { invoiceId: string; amount: string; reason: string; idempotencyKey: string },
+): Promise<ActionResult<{ number: string; balancePaise: number }>> {
+  try {
+    const { business, user } = await requireBusiness(businessId);
+    const invoice = await getInvoice(businessId, raw.invoiceId);
+    if (!invoice || invoice.status !== 'issued') return { ok: false, error: t('error.notFound'), code: 'not-found' };
+    let amountPaise: number;
+    try {
+      amountPaise = parseMoney(raw.amount);
+    } catch {
+      return { ok: false, error: t('error.amount'), code: 'validation' };
+    }
+    const maxCredit = invoice.totals.grandTotalPaise - invoice.creditAppliedPaise;
+    if (amountPaise <= 0 || amountPaise > maxCredit) {
+      return { ok: false, error: t('paid.tooMuch', { amount: moneyForMessage(maxCredit) }), code: 'validation' };
+    }
+    if (!raw.reason.trim()) return { ok: false, error: t('error.required'), code: 'validation' };
+    const affectsTaxLiability = invoice.totals.totalTaxPaise > 0;
+    const note = await createAdjustment({
+      business,
+      uid: user.uid,
+      invoiceId: invoice.id,
+      kind: 'credit-note',
+      amountPaise,
+      reason: raw.reason,
+      affectsTaxLiability,
+      tax: affectsTaxLiability ? proportionalCredit(invoice.totals, amountPaise) : undefined,
+      idempotencyKey: raw.idempotencyKey,
+    });
+    const after = await getInvoice(businessId, raw.invoiceId);
+    revalidatePath('/home');
+    revalidatePath('/bills');
+    return ok({ number: note.number ?? '', balancePaise: after?.balancePaise ?? 0 });
   } catch (error) {
     return toActionError(error);
   }

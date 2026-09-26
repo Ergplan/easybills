@@ -25,7 +25,7 @@ export default async function CustomersPage() {
         </Link>
         <h1 className="grow" style={{ fontSize: '1.3rem' }}>{t('customer.list.title')}</h1>
       </div>
-      <ImportBills businessId={business.id} />
+      <ImportBills businessId={business.id} fy={business.activeFinancialYear} />
       <section className="card stack stack--tight">
         {rows.length === 0 ? (
           <p className="muted">{t('customer.list.empty')}</p>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { NumberingForm } from '@/components/NumberingForm';
 import { ProfileForm } from '@/components/ProfileForm';
 import { t } from '@/lib/copy';
 import { openAccess } from '@/lib/env';
@@ -36,6 +37,7 @@ export default async function YouPage() {
           stateCode: business.stateCode ?? '',
         }}
       />
+      <NumberingForm businessId={business.id} numbering={business.numbering} fy={business.activeFinancialYear} />
       <div className="stack stack--tight" style={{ alignItems: 'flex-start' }}>
         <Link href="/customers" className="btn btn--ghost">{t('customer.list.title')}</Link>
         <Link href="/settings" className="btn btn--ghost">{t('you.more')}</Link>

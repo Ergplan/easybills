@@ -17,9 +17,10 @@ export const dynamic = 'force-dynamic';
 export default async function BillsPage() {
   const { business } = await requireCurrentContext();
   const today = todayIst();
-  const [issued, drafts] = await Promise.all([
+  const [issued, drafts, cancelled] = await Promise.all([
     listInvoices(business.id, { status: 'issued', limit: 500 }),
     listInvoices(business.id, { status: 'draft', limit: 20 }),
+    listInvoices(business.id, { status: 'cancelled', limit: 50 }),
   ]);
   const view = summariseHome({ issued, customers: [], today, recent: 500 });
 
@@ -69,6 +70,22 @@ export default async function BillsPage() {
           </div>
         )}
       </section>
+      {cancelled.length > 0 && (
+        <section className="card stack stack--tight">
+          <h2 className="card__title" style={{ fontSize: '1.1rem' }}>{t('bills.cancelled')}</h2>
+          <div className="rows">
+            {cancelled.map((c) => (
+              <Link key={c.id} href={`/bills/${c.id}`} className="row-line">
+                <div className="row-line__link">
+                  <div className="row-line__name">{c.customer.name}</div>
+                  <div className="row-line__meta">{c.number} · {c.cancelledReason ?? ''}</div>
+                </div>
+                <span className="pill pill--draft">{t('fix.cancelled')}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

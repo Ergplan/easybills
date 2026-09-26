@@ -20,7 +20,7 @@ import type { SupplyFlag } from '@/lib/gst/scenarios';
 import { DEFAULT_RULE_PACK } from '@/lib/gst/ruleset';
 import { db, FieldValue } from '@/server/firebase/admin';
 import { businessDoc, countersCol, counterId, invoicesCol } from '@/server/firebase/paths';
-import { recordAuditInTransaction } from '@/server/services/audit';
+import { recordAudit, recordAuditInTransaction } from '@/server/services/audit';
 import { computeBalance, computeDueDate, paymentStatusFor, priceInvoice } from '@/server/services/invoice-calc';
 
 export class DraftConflictError extends Error {
@@ -426,6 +426,71 @@ export async function cancelDraft(businessId: string, invoiceId: string): Promis
       throw new InvoiceStateError('An issued bill cannot be deleted. Use a credit note instead.');
     }
     tx.delete(ref);
+  });
+}
+
+/**
+ * Cancel an issued bill. Its number stays used -- the counter only moves
+ * forward and the reservation stays -- so no later bill can carry it, and
+ * the GST summary lists it as cancelled. Refused once money or a credit
+ * note has been applied: that bill is a record of a settlement, and the
+ * way to change it is a note, not a cancellation.
+ */
+export async function cancelIssuedInvoice(args: {
+  businessId: string;
+  uid: string;
+  invoiceId: string;
+  reason: string;
+  redoneAsInvoiceId?: string | null;
+}): Promise<InvoiceRecord> {
+  const ref = invoicesCol(args.businessId).doc(args.invoiceId);
+  const cancelled = await db().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new InvoiceStateError('That bill no longer exists.');
+    const inv = asInvoice(snap.data()!);
+    if (inv.status === 'cancelled') return inv;
+    if (inv.status !== 'issued') throw new InvoiceStateError('Only an issued bill can be cancelled.');
+    if (inv.amountPaidPaise > 0 || inv.creditAppliedPaise > 0 || inv.debitAppliedPaise > 0 || inv.settlementDeductionPaise > 0) {
+      throw new InvoiceStateError('Money has been recorded against this bill, so it cannot be cancelled.');
+    }
+    const now = new Date().toISOString();
+    const patch = {
+      status: 'cancelled' as const,
+      cancelledAt: now,
+      cancelledReason: args.reason.trim().slice(0, 300) || 'Cancelled',
+      redoneAsInvoiceId: args.redoneAsInvoiceId ?? null,
+      balancePaise: 0,
+      paymentStatus: 'paid' as const,
+      updatedAt: now,
+      revision: inv.revision + 1,
+    };
+    tx.update(ref, patch);
+    return { ...inv, ...patch };
+  });
+  await recordAudit(args.businessId, {
+    actorUid: args.uid,
+    actorKind: 'user',
+    action: 'invoice.cancelled',
+    subjectType: 'invoice',
+    subjectId: args.invoiceId,
+    detail: { number: cancelled.number, redoneAs: args.redoneAsInvoiceId ?? null },
+  });
+  return cancelled;
+}
+
+/**
+ * Move the year's counter to the number the owner chose. The engine reads
+ * the counter before the business record, so without this an edit under
+ * Aap would show in the preview and never on a bill. Never backwards: the
+ * reservation of every issued number stays, and the counter only grows.
+ */
+export async function setNextNumber(businessId: string, fy: FinancialYear, nextNumber: number): Promise<void> {
+  const ref = countersCol(businessId).doc(counterId(fy, 'default'));
+  await db().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const current = snap.exists ? (snap.data()!.nextNumber as number) : 1;
+    if (nextNumber < current && current > 1) throw new InvoiceStateError(`The next number cannot go below ${current}.`);
+    tx.set(ref, { nextNumber, updatedAt: new Date().toISOString() }, { merge: true });
   });
 }
 

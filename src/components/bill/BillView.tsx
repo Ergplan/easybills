@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { likhLoAction } from '@/app/actions/invoices';
+import { cancelAndRedoAction, kamKaroAction, likhLoAction } from '@/app/actions/invoices';
 import { Money } from '@/components/Money';
 import { t } from '@/lib/copy';
 import { moneyForMessage } from '@/lib/copy/messages';
@@ -32,11 +32,13 @@ export function BillView({
   businessId,
   invoice,
   payments,
+  adjustments,
   today,
 }: {
   businessId: string;
   invoice: InvoiceRecord;
   payments: PaymentRecord[];
+  adjustments: Array<{ number: string; amountPaise: number; reason: string; issueDate: CivilDate }>;
   today: CivilDate;
 }) {
   const router = useRouter();
@@ -50,6 +52,43 @@ export function BillView({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [nonce, setNonce] = useState(() => crypto.randomUUID());
+  const [fix, setFix] = useState<'none' | 'redo' | 'less'>('none');
+  const [reason, setReason] = useState('');
+  const [lessAmount, setLessAmount] = useState('');
+  const [fixBusy, setFixBusy] = useState(false);
+  const [fixError, setFixError] = useState<string | null>(null);
+  const [fixDone, setFixDone] = useState<string | null>(null);
+  const [fixNonce, setFixNonce] = useState(() => crypto.randomUUID());
+  const settled = invoice.amountPaidPaise > 0 || invoice.creditAppliedPaise > 0;
+
+  async function redo() {
+    setFixBusy(true);
+    setFixError(null);
+    const r = await cancelAndRedoAction(businessId, invoice.id, reason);
+    setFixBusy(false);
+    if (!r.ok) {
+      setFixError(r.error);
+      return;
+    }
+    router.push(`/bills/${r.data.newInvoiceId}`);
+  }
+
+  async function kamKaro() {
+    setFixBusy(true);
+    setFixError(null);
+    const r = await kamKaroAction(businessId, { invoiceId: invoice.id, amount: lessAmount, reason, idempotencyKey: `${fixNonce}|${lessAmount}|${reason}` });
+    setFixBusy(false);
+    if (!r.ok) {
+      setFixError(r.error);
+      return;
+    }
+    setFixNonce(crypto.randomUUID());
+    setFixDone(t('fix.lessDone', { number: r.data.number, amount: moneyForMessage(r.data.balancePaise) }));
+    setFix('none');
+    setLessAmount('');
+    setReason('');
+    router.refresh();
+  }
   const pdfUrl = `/api/invoices/${invoice.id}/pdf?b=${encodeURIComponent(businessId)}`;
 
   async function likhLo() {
@@ -214,6 +253,83 @@ export function BillView({
             <span className="bill-total"><Money paise={invoice.totals.grandTotalPaise} whole /></span>
           </div>
         </div>
+      </section>
+
+      {adjustments.length > 0 && (
+        <section className="card stack stack--tight">
+          <h2 className="card__title" style={{ fontSize: '1.1rem' }}>{t('fix.notes')}</h2>
+          <div className="rows">
+            {adjustments.map((a) => (
+              <div key={a.number} className="row-line">
+                <div className="row-line__link">
+                  <div className="row-line__name">{a.number}</div>
+                  <div className="row-line__meta">{formatDateShort(a.issueDate)} · {a.reason}</div>
+                </div>
+                <span className="amount">− <Money paise={a.amountPaise} whole /></span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="card stack stack--tight">
+        <h2 className="card__title" style={{ fontSize: '1.1rem' }}>{t('fix.title')}</h2>
+        {fixDone && (
+          <div className="notice notice--ok" role="status">
+            <span className="notice__icon" aria-hidden="true">✓</span>
+            <span className="small">{fixDone}</span>
+          </div>
+        )}
+        {fix === 'none' && (
+          <div className="row row--tight">
+            <button type="button" className="btn btn--secondary btn--small" onClick={() => { setFix('redo'); setFixError(null); }}>{t('fix.redo')}</button>
+            <button type="button" className="btn btn--secondary btn--small" onClick={() => { setFix('less'); setFixError(null); }}>{t('fix.less')}</button>
+          </div>
+        )}
+        {fix === 'redo' && (
+          <div className="stack stack--tight">
+            <p className="small muted">{settled ? t('fix.redoBlocked') : t('fix.redoHint')}</p>
+            {!settled && (
+              <div className="field">
+                <label className="field__label" htmlFor="fix-reason">{t('fix.reason')}</label>
+                <input id="fix-reason" className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('fix.reasonHint')} maxLength={300} />
+              </div>
+            )}
+            {fixError && <span className="field__error" role="alert">{fixError}</span>}
+            <div className="row row--tight">
+              {!settled && (
+                <button type="button" className="btn btn--danger" disabled={fixBusy || !reason.trim()} onClick={() => void redo()}>
+                  {fixBusy ? <span className="spinner" aria-hidden="true" /> : null}
+                  {t('fix.redo')}
+                </button>
+              )}
+              <button type="button" className="btn btn--ghost" disabled={fixBusy} onClick={() => setFix('none')}>{t('common.cancel')}</button>
+            </div>
+          </div>
+        )}
+        {fix === 'less' && (
+          <div className="stack stack--tight">
+            <p className="small muted">{t('fix.lessHint')}</p>
+            <div className="you-place">
+              <div className="field">
+                <label className="field__label" htmlFor="fix-amount">{t('fix.lessAmount')}</label>
+                <input id="fix-amount" className="input input--numeric" inputMode="decimal" value={lessAmount} onChange={(e) => setLessAmount(e.target.value)} />
+              </div>
+              <div className="field">
+                <label className="field__label" htmlFor="fix-why">{t('fix.reason')}</label>
+                <input id="fix-why" className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('fix.reasonHint')} maxLength={300} />
+              </div>
+            </div>
+            {fixError && <span className="field__error" role="alert">{fixError}</span>}
+            <div className="row row--tight">
+              <button type="button" className="btn btn--primary" disabled={fixBusy || !lessAmount.trim() || !reason.trim()} onClick={() => void kamKaro()}>
+                {fixBusy ? <span className="spinner" aria-hidden="true" /> : null}
+                {t('fix.less')}
+              </button>
+              <button type="button" className="btn btn--ghost" disabled={fixBusy} onClick={() => setFix('none')}>{t('common.cancel')}</button>
+            </div>
+          </div>
+        )}
       </section>
 
       <div className="row row--tight">

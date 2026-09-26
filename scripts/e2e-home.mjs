@@ -90,7 +90,7 @@ try {
   check('Apne baare mein batayen, prefilled', (await page.locator('#you-name').inputValue()).length > 0);
   await page.locator('#you-upiId').fill('demo@upi');
   await page.locator('#you-gstin').fill('27AAPFU0939F1ZV');
-  await page.getByRole('button', { name: 'Save karo' }).click();
+  await page.getByRole('button', { name: 'Save karo' }).first().click();
   await page.getByText('Save ho gaya').waitFor({ timeout: 15000 });
   await page.waitForTimeout(800);
   const tabsAfter = await page.locator('.tabbar__item').allInnerTexts();
@@ -115,7 +115,7 @@ try {
 
   await page.goto(`${BASE}/you`, { waitUntil: 'networkidle' });
   await page.locator('#you-gstin').fill('');
-  await page.getByRole('button', { name: 'Save karo' }).click();
+  await page.getByRole('button', { name: 'Save karo' }).first().click();
   await page.getByText('Save ho gaya').waitFor({ timeout: 15000 });
   await page.waitForTimeout(800);
   const tabsBack = await page.locator('.tabbar__item').allInnerTexts();

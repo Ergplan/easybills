@@ -3,7 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 
+import { setNumberingAction } from '@/app/actions/business';
 import { importCustomersAction } from '@/app/actions/customers';
+import { previewNumber, suggestNumbering } from '@/lib/domain/bill-guard';
 import { t } from '@/lib/copy';
 import { moneyForMessage } from '@/lib/copy/messages';
 import { formatDateShort } from '@/lib/dates';
@@ -32,13 +34,15 @@ interface Row {
  * the wrong ones, fixes a name, and adds the rest. Nothing is added by
  * the upload itself.
  */
-export function ImportBills({ businessId }: { businessId: string }) {
+export function ImportBills({ businessId, fy }: { businessId: string; fy: string }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [readings, setReadings] = useState<Reading[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [done, setDone] = useState<string | null>(null);
+  const [numberingNote, setNumberingNote] = useState<string | null>(null);
+  const numbering = suggestNumbering(readings.flatMap((r) => r.customers.map((c) => c.bill?.number ?? null)));
   const [error, setError] = useState<string | null>(null);
 
   async function upload(files: FileList | null) {
@@ -141,6 +145,28 @@ export function ImportBills({ businessId }: { businessId: string }) {
           )}
         </div>
       ))}
+
+      {numbering && !numberingNote && (
+        <div className="notice notice--info">
+          <span className="notice__icon" aria-hidden="true">i</span>
+          <div className="stack stack--tight">
+            <span className="small">{t('num.suggest', { last: numbering.last, next: previewNumber(numbering.series, fy) })}</span>
+            <button
+              type="button"
+              className="btn btn--secondary btn--small"
+              style={{ alignSelf: 'flex-start' }}
+              disabled={busy}
+              onClick={async () => {
+                const r = await setNumberingAction(businessId, { ...numbering.series });
+                setNumberingNote(r.ok ? t('num.saved', { preview: r.data.preview }) : r.error);
+              }}
+            >
+              {t('num.suggestYes', { next: previewNumber(numbering.series, fy) })}
+            </button>
+          </div>
+        </div>
+      )}
+      {numberingNote && <p className="small muted">{numberingNote}</p>}
 
       {rows.length > 0 && (
         <div className="rows">

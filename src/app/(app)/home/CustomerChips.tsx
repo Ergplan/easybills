@@ -27,7 +27,7 @@ export function CustomerChips({ customers }: { customers: Chip[] }) {
     setError(null);
     const r = await startBillForCustomerAction(customerId);
     if (r.ok) {
-      router.push(`/bills/${r.data.invoiceId}`);
+      router.push(`/bills/${r.data.invoiceId}${r.data.resumed ? '?resumed=1' : ''}`);
       return;
     }
     setError(r.error);

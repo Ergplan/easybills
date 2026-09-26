@@ -6,7 +6,7 @@ import { addMonthsToPeriod, formatDateShort, isMonthPeriod, monthPeriodOf, today
 import { gstTabVisible } from '@/lib/domain/gst-tab';
 import { moneyWhole, quarterBounds, summariseQuarter } from '@/lib/domain/gst-summary';
 import { requireCurrentContext } from '@/server/auth/current';
-import { listIssuedBetween } from '@/server/repos/invoices';
+import { listInvoices, listIssuedBetween } from '@/server/repos/invoices';
 
 import { GstSend } from './GstSend';
 
@@ -26,6 +26,7 @@ export default async function GstPage({ searchParams }: { searchParams: Promise<
   const month: MonthPeriod = q && isMonthPeriod(q) ? q : monthPeriodOf(todayIst());
   const { from, to, months } = quarterBounds(month);
   const issued = await listIssuedBetween(business.id, from, to);
+  const cancelled = (await listInvoices(business.id, { status: 'cancelled', limit: 100 })).filter((c) => c.issueDate >= from && c.issueDate <= to && c.number);
   const s = summariseQuarter(issued, month);
   const prev = addMonthsToPeriod(months[0]!, -3);
   const next = addMonthsToPeriod(months[0]!, 3);
@@ -100,6 +101,7 @@ export default async function GstPage({ searchParams }: { searchParams: Promise<
         </section>
       )}
       {s.bills > 0 && s.b2cBills > 0 && <p className="faint">{t('gst.b2c.note', { n: s.b2cBills })}</p>}
+      {cancelled.length > 0 && <p className="faint">{t('gst.cancelled', { n: cancelled.length, numbers: cancelled.map((c) => c.number).join(', ') })}</p>}
 
       {s.bills > 0 && <GstSend businessId={business.id} month={month} label={s.label} />}
       <p className="faint" style={{ textAlign: 'center' }}>{t('gst.notFiled')}</p>

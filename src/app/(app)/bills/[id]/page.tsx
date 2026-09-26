@@ -8,10 +8,12 @@ import { billSentMessage } from '@/lib/copy/messages';
 import { Icon } from '@/components/Icon';
 import { t } from '@/lib/copy';
 import { formatDateShort, todayIst } from '@/lib/dates';
-import { summariseLines } from '@/lib/domain/bill-form';
+import { linesToDraft, summariseLines } from '@/lib/domain/bill-form';
 import Link from 'next/link';
 import { requireCurrentContext } from '@/server/auth/current';
-import { getInvoice, lastIssuedForCustomer } from '@/server/repos/invoices';
+import { getInvoice, lastIssuedForCustomer, listInvoices } from '@/server/repos/invoices';
+import { listAdjustmentsForInvoice } from '@/server/repos/adjustments';
+import { Money } from '@/components/Money';
 import { listPaymentsForInvoice } from '@/server/repos/payments';
 import { assessIssuance } from '@/lib/gst/scenarios';
 import { guessLanguage } from '@/lib/domain/language-guess';
@@ -26,10 +28,10 @@ export default async function BillPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ done?: string }>;
+  searchParams: Promise<{ done?: string; resumed?: string }>;
 }) {
   const { id } = await params;
-  const { done } = await searchParams;
+  const { done, resumed } = await searchParams;
   const { business } = await requireCurrentContext();
   const invoice = await getInvoice(business.id, id);
   if (!invoice) notFound();
@@ -62,8 +64,35 @@ export default async function BillPage({
     );
   }
 
+  if (invoice.status === 'cancelled') {
+    const redone = invoice.redoneAsInvoiceId ? await getInvoice(business.id, invoice.redoneAsInvoiceId) : null;
+    return (
+      <main className="page">
+        <div className="row">
+          <Link href="/bills" className="btn btn--ghost" aria-label={t('common.back')} style={{ paddingInline: 8 }}>
+            <Icon name="back" size={20} />
+          </Link>
+          <div className="grow">
+            <h1 style={{ fontSize: '1.3rem' }}>{t('bill.title', { customer: invoice.customer.name })}</h1>
+            <p className="faint">{invoice.number}</p>
+          </div>
+        </div>
+        <section className="card stack stack--tight">
+          <span className="pill pill--draft" style={{ alignSelf: 'flex-start' }}>{t('fix.cancelled')}</span>
+          <p className="muted">{t('fix.cancelledOn', { date: formatDateShort((invoice.cancelledAt ?? '').slice(0, 10) as never), reason: invoice.cancelledReason ?? '' })}</p>
+          {redone && (
+            <Link href={`/bills/${redone.id}`} className="btn btn--secondary" style={{ alignSelf: 'flex-start' }}>
+              {t('fix.redoneAs', { number: redone.number ?? t('status.draft') })}
+            </Link>
+          )}
+          <p className="faint"><Money paise={invoice.totals.grandTotalPaise} whole /></p>
+        </section>
+      </main>
+    );
+  }
+
   if (invoice.status === 'issued') {
-    const payments = await listPaymentsForInvoice(business.id, invoice.id);
+    const [payments, adjustments] = await Promise.all([listPaymentsForInvoice(business.id, invoice.id), listAdjustmentsForInvoice(business.id, invoice.id)]);
     return (
       <main className="page">
         <div className="row">
@@ -87,6 +116,7 @@ export default async function BillPage({
           businessId={business.id}
           invoice={invoice}
           payments={payments.filter((p) => !p.reversalOfPaymentId && !p.reversedByPaymentId)}
+          adjustments={adjustments.map((a) => ({ number: a.number ?? '', amountPaise: a.amountPaise, reason: a.reason, issueDate: a.issueDate }))}
           today={todayIst()}
         />
       </main>
@@ -109,6 +139,9 @@ export default async function BillPage({
   const setup = profileSetupStatus(business, invoice.issueDate);
 
   const last = invoice.customer.customerId ? await lastIssuedForCustomer(business.id, invoice.customer.customerId) : null;
+  const outstandingPaise = invoice.customer.customerId
+    ? (await listInvoices(business.id, { status: 'issued', customerId: invoice.customer.customerId, limit: 100 })).reduce((s, b) => s + Math.max(0, b.balancePaise), 0)
+    : 0;
   const lastTime = last
     ? {
         month: formatDateShort(last.issueDate).split(' ')[1] ?? '',
@@ -146,6 +179,9 @@ export default async function BillPage({
         defaultGstRateBp={business.defaultTaxRateBp ?? (assessment.chargesGst ? 1800 : null)}
         lastTime={lastTime}
         blockers={setup.blockers.map((b) => ({ message: b.message, whatYouCanDo: b.whatYouCanDo }))}
+        outstandingPaise={outstandingPaise}
+        resumed={resumed === '1'}
+        initialLines={invoice.lines.some((l) => l.description.trim()) ? linesToDraft(invoice.lines, () => crypto.randomUUID()) : []}
       />
     </main>
   );

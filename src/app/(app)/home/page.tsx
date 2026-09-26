@@ -13,7 +13,10 @@ import { loadHome } from '@/server/services/home';
 import { VoiceButton } from '@/components/voice/VoiceButton';
 import { voiceConfig } from '@/lib/env';
 
+import { financialYearOf } from '@/lib/dates';
+
 import { CustomerChips } from './CustomerChips';
+import { NewYearBanner } from './NewYearBanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +47,10 @@ export default async function HomePage() {
           {initialOf(business.legalName)}
         </Link>
       </header>
+
+      {financialYearOf(today) !== business.activeFinancialYear && (
+        <NewYearBanner businessId={business.id} fy={financialYearOf(today)} prefix={business.numbering.prefix} />
+      )}
 
       {!setup.complete && (
         <div className="notice notice--warn">

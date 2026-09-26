@@ -334,6 +334,8 @@ export interface InvoiceRecord {
    */
   remindersSent?: number;
   lastRemindedAt?: Iso | null;
+  /** When this issued bill was cancelled and redone, the bill that took its place. */
+  redoneAsInvoiceId?: string | null;
 
   /** Optimistic concurrency for autosave. Incremented on every server write. */
   revision: number;

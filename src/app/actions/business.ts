@@ -1,8 +1,11 @@
 'use server';
 
+import { t } from '@/lib/copy';
+
 import { revalidatePath } from 'next/cache';
 
 import { financialYearOf, todayIst } from '@/lib/dates';
+import { previewNumber } from '@/lib/domain/bill-guard';
 import { parseProfile, type ProfileField, type ProfileInput } from '@/lib/domain/profile';
 import { numberingInput } from '@/lib/domain/validation';
 import { checkGstin, checkPan } from '@/lib/gst/gstin';
@@ -12,6 +15,7 @@ import type { BusinessRecord } from '@/lib/domain/types';
 import { requireBusiness } from '@/server/auth/guard';
 import { requireUser } from '@/server/auth/session';
 import { createBusiness, updateBusiness } from '@/server/repos/business';
+import { setNextNumber } from '@/server/repos/invoices';
 
 import { ok, toActionError, type ActionResult } from './common';
 
@@ -271,6 +275,56 @@ export async function updateBankDetailsAction(
     });
     revalidatePath('/settings');
     return ok(updated);
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
+ * "Bill number": how the next bill is numbered. Going backwards is refused,
+ * because a number already used must never be used again; the preview is
+ * what the next bill will actually carry.
+ */
+export async function setNumberingAction(
+  businessId: string,
+  input: { prefix: string; nextNumber: number; includeFinancialYear: boolean; padding?: number },
+): Promise<ActionResult<{ preview: string }>> {
+  try {
+    const { user, business } = await requireBusiness(businessId);
+    const prefix = input.prefix.trim();
+    if (!/^[A-Za-z0-9\/\-]{0,10}$/.test(prefix)) return { ok: false, error: t('num.error.prefix'), code: 'validation' };
+    const nextNumber = Math.floor(Number(input.nextNumber));
+    const min = business.numbering.nextNumber > 1 ? business.numbering.nextNumber : 1;
+    if (!Number.isFinite(nextNumber) || nextNumber < min || nextNumber > 999_999) {
+      return { ok: false, error: t('num.error.tooLow', { min }), code: 'validation' };
+    }
+    const numbering = {
+      prefix,
+      nextNumber,
+      padding: Math.max(1, Math.min(8, input.padding ?? business.numbering.padding)),
+      includeFinancialYear: Boolean(input.includeFinancialYear),
+    };
+    await setNextNumber(businessId, business.activeFinancialYear, nextNumber);
+    await updateBusiness(businessId, user.uid, { numbering, numberingConfirmed: true });
+    revalidatePath('/you');
+    return ok({ preview: previewNumber(numbering, business.activeFinancialYear) });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/** April: the new year's bills start from 1, with the same prefix. */
+export async function startNewYearAction(businessId: string): Promise<ActionResult<{ fy: string }>> {
+  try {
+    const { user, business } = await requireBusiness(businessId);
+    const fy = financialYearOf(todayIst());
+    if (fy === business.activeFinancialYear) return ok({ fy });
+    await updateBusiness(businessId, user.uid, {
+      activeFinancialYear: fy,
+      numbering: { ...business.numbering, nextNumber: 1 },
+    });
+    revalidatePath('/home');
+    return ok({ fy });
   } catch (error) {
     return toActionError(error);
   }

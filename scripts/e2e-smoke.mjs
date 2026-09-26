@@ -228,6 +228,76 @@ try {
   await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
   check('and a chip on Home', await page.locator('.chip', { hasText: 'Priya Boutique' }).isVisible());
 
+  console.log('\n10e. Bill number, on Aap');
+  await page.goto(`${BASE}/you`, { waitUntil: 'networkidle' });
+  const numText = await page.locator('main').innerText();
+  check('Aap shows the next bill number', /Agla bill: INV-002/.test(numText));
+  await page.locator('#num-next').fill('1');
+  await page.getByRole('button', { name: 'Save karo' }).last().click();
+  await page.getByText('2 se kam nahi ho sakta').waitFor({ timeout: 10000 });
+  check('a number already used cannot come back', true);
+  await page.locator('#num-prefix').fill('SE-');
+  await page.locator('#num-next').fill('10');
+  await page.getByRole('button', { name: 'Save karo' }).last().click();
+  await page.getByText('Agla bill: SE-010').waitFor({ timeout: 10000 });
+  check('prefix and next number change, with a preview', true);
+
+  console.log('\n10f. Yeh bill pehle ban chuka hai?');
+  await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
+  await page.locator('.chip', { hasText: 'Ramesh Patil' }).click();
+  await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 20000 });
+  await page.waitForTimeout(800);
+  check('the form says what Ramesh already owes', /Ramesh Patil ke ₹1,050 pehle se baaki hain/.test(await page.locator('main').innerText()));
+  // Pichle jaisa hi: the same two lines, the same ₹2,050, within a week.
+  await page.getByRole('button', { name: 'Haan' }).click();
+  await page.locator('input[id^="rate-"]').first().fill('80');
+  await page.getByRole('button', { name: 'Bill banao' }).click();
+  await page.getByText('Rate check kar lo').waitFor({ timeout: 10000 });
+  check('a rate ten times smaller than last time is questioned', /Repair visit: pichli baar ₹800, is baar ₹80/.test(await page.locator('main').innerText()));
+  await page.getByRole('button', { name: 'Peeche' }).click();
+  await page.locator('input[id^="rate-"]').first().fill('800');
+  await page.getByRole('button', { name: 'Bill banao' }).click();
+  await page.getByText('Yeh bill pehle ban chuka hai?').waitFor({ timeout: 15000 });
+  await shot('11-duplicate');
+  check('the same bill again within a week is questioned, naming the earlier one', /INV-001, .* ko, isi customer ko, same ₹2,050/.test(await page.locator('main').innerText()));
+  await page.getByRole('button', { name: 'Phir bhi banao' }).click();
+  await page.waitForURL(/\?done=1/, { timeout: 25000 });
+  const secondText = await page.locator('main').innerText();
+  check('made anyway, and numbered on the new series', /SE-010/.test(secondText), `(text: ${secondText.slice(0, 80)})`);
+
+  console.log('\n10g. Galti ho gayi: rakam kam karo on the paid bill, cancel and redo on the new one');
+  await page.getByRole('link', { name: 'Bill dekho' }).click();
+  await page.waitForTimeout(800);
+  const wrongBillUrl = page.url();
+  await page.getByRole('button', { name: 'Cancel karke naya banao' }).click();
+  await page.locator('#fix-reason').fill('rate galat');
+  await page.getByRole('button', { name: 'Cancel karke naya banao' }).last().click();
+  await page.waitForURL((u) => /\/bills\/[0-9a-f-]{36}$/.test(u.href) && u.href !== wrongBillUrl, { timeout: 20000 });
+  await page.waitForTimeout(800);
+  check('a new draft opened with the same lines', (await page.locator('input[id^="what-"]').first().inputValue()) === 'Repair visit');
+  await page.goto(`${BASE}/bills`, { waitUntil: 'networkidle' });
+  const billsText = await page.locator('main').innerText();
+  check('the cancelled bill is listed apart, number kept', /Cancel kiye bills/.test(billsText) && /SE-010 · rate galat/.test(billsText));
+  await page.locator('.row-line', { hasText: 'SE-010' }).click();
+  await page.waitForTimeout(600);
+  check('the cancelled bill says so and points at its replacement', /Cancel kiya/.test(await page.locator('main').innerText()) && await page.getByRole('link', { name: /Naya bill/ }).isVisible());
+
+  await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
+  await page.locator('section[aria-labelledby=due-heading] .row-line', { hasText: 'INV-001' }).locator('a').first().click();
+  await page.waitForURL(/\/bills\/[0-9a-f-]{36}$/, { timeout: 20000 });
+  await page.getByRole('button', { name: 'Rakam kam karo' }).click();
+  await page.locator('#fix-amount').fill('50');
+  await page.locator('#fix-why').fill('ek item do baar laga');
+  await page.getByRole('button', { name: 'Rakam kam karo' }).last().click();
+  await page.getByText(/Credit note CN-001 ban gaya/).waitFor({ timeout: 15000 });
+  await page.waitForTimeout(800);
+  await shot('12-credit-note');
+  const afterNote = await page.locator('main').innerText();
+  check('a credit note reduces what is left: ₹1,000', /Ab ₹1,000 baaki/.test(afterNote) && /₹1,000 abhi baaki/.test(afterNote));
+  check('and the note is listed on the bill', /CN-001/.test(afterNote) && /ek item do baar laga/.test(afterNote));
+  await page.getByRole('button', { name: 'Cancel karke naya banao' }).click();
+  check('a bill with money against it cannot be cancelled', /Paise aa chuke hain, isliye cancel nahi/.test(await page.locator('main').innerText()));
+
   console.log('\n11. Bheje hue bills');
   await page.goto(`${BASE}/bills`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);

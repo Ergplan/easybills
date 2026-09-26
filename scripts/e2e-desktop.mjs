@@ -172,7 +172,7 @@ try {
   // none -- so give it one under Aap, the way an owner would.
   await page.goto(`${BASE}/you`, { waitUntil: 'networkidle' });
   await page.locator('#you-gstin').fill('27AAAAA0000A1Z2');
-  await page.getByRole('button', { name: 'Save karo' }).click();
+  await page.getByRole('button', { name: 'Save karo' }).first().click();
   await page.getByText('Save ho gaya').waitFor({ timeout: 15000 });
   await page.waitForTimeout(800);
 
