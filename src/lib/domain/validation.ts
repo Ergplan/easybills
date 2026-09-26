@@ -196,6 +196,11 @@ export const customerInput = z.object({
   gstin: gstinField,
   pan: panField,
   notes: trimmedOrNull(1000),
+  /** The person the owner talks to at a shop. Who a message says "ji" to. */
+  contactPerson: trimmedOrNull(100).optional(),
+  /** The language this customer is messaged in. Null is the owner's own. */
+  language: z.enum(['hi', 'mr', 'gu', 'ta', 'te', 'kn', 'bn', 'en']).nullable().optional(),
+  languageSource: z.enum(['owner', 'suggested']).nullable().optional(),
 });
 
 export const savedItemInput = z.object({

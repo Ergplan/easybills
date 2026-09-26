@@ -1,0 +1,203 @@
+/**
+ * Every word the owner sees, in one place.
+ *
+ * Two columns per key. `en` is the MEANING -- the reference a maintainer reads,
+ * and the source a translator (human or model) works from when a new language
+ * is added. `hi` is Hinglish, the only language the app speaks today: Hindi
+ * words, Latin letters, the way everyone actually texts.
+ *
+ * The app renders `hi`. There is no language toggle; `en` is documentation,
+ * not a feature. When Marathi or Gujarati or Tamil come, they come as another
+ * column here and nowhere else.
+ *
+ * The voice these strings are written in is described in docs/voice.md, and
+ * tests/unit/copy.test.ts holds them to it: every key must exist in both
+ * columns, placeholders must match, and the words the owner never uses
+ * ("invoice", "receivable", "schedule") must not appear.
+ *
+ * Placeholders are `{name}`. Keep them identical across columns.
+ */
+
+export interface Entry {
+  /** What this string means. Read by maintainers and translators, never shown. */
+  en: string;
+  /** Hinglish. What the owner sees. */
+  hi: string;
+}
+
+export const DICTIONARY = {
+  // ------------------------------------------------------------ common ----
+  'app.name': { en: 'EkBill', hi: 'EkBill' },
+  'common.ok': { en: 'OK', hi: 'Theek hai' },
+  'common.cancel': { en: 'Cancel', hi: 'Rehne do' },
+  'common.save': { en: 'Save', hi: 'Save karo' },
+  'common.saved': { en: 'Saved', hi: 'Save ho gaya ✓' },
+  'common.back': { en: 'Back', hi: 'Peeche' },
+  'common.next': { en: 'Next', hi: 'Aage' },
+  'common.done': { en: 'Done', hi: 'Ho gaya' },
+  'common.remove': { en: 'Remove', hi: 'Hatao' },
+  'common.seeAll': { en: 'See all', hi: 'Sab dekho' },
+  'common.loading': { en: 'One moment', hi: 'Ek second…' },
+  'common.retry': { en: 'Try again', hi: 'Dobara try karo' },
+  'common.today': { en: 'today', hi: 'aaj' },
+  'common.yesterday': { en: 'yesterday', hi: 'kal' },
+  'common.daysAgo': { en: '{n} days ago', hi: '{n} din pehle' },
+  'common.days': { en: '{n} days', hi: '{n} din' },
+  'common.optional': { en: 'optional', hi: 'zaroori nahi' },
+
+  // -------------------------------------------------------------- tabs ----
+  'tab.home': { en: 'Home', hi: 'Ghar' },
+  'tab.gst': { en: 'GST', hi: 'GST' },
+  'tab.you': { en: 'You', hi: 'Aap' },
+
+  // -------------------------------------------------------------- home ----
+  'home.greeting': { en: 'Hello, {name}', hi: 'Namaste, {name}' },
+  'home.greetingNoName': { en: 'Hello', hi: 'Namaste' },
+
+  'home.bill.title': { en: "Let's make a bill", hi: 'Chalo, bill banate hain' },
+  'home.bill.sub': { en: 'For whom? Tap a name.', hi: 'Kiska bill? Naam pe tap karo.' },
+  'home.bill.subEmpty': { en: 'Add your first customer to start.', hi: 'Pehla customer add karo, phir bill.' },
+  'home.bill.newCustomer': { en: 'New customer', hi: 'Naya customer' },
+
+  'home.sent.title': { en: 'Bills you sent', hi: 'Bheje hue bills' },
+  'home.sent.sub': { en: '{n} bills this month', hi: '{n} bills is mahine' },
+  'home.sent.subOne': { en: '1 bill this month', hi: '1 bill is mahine' },
+  'home.sent.subEmpty': { en: 'No bills yet. The first one is one tap away.', hi: 'Abhi tak koi bill nahi. Pehla bill ek tap door hai.' },
+
+  'home.due.title': { en: 'Who owes you', hi: 'Kiske paise aane hain' },
+  'home.due.sub': { en: 'From {n} people · oldest is {days} days', hi: '{n} logon se · sabse purana {days} din' },
+  'home.due.subOne': { en: 'From 1 person · {days} days', hi: '1 se · {days} din' },
+  'home.due.subEmpty': { en: 'Everything is paid. Nice.', hi: 'Sab paise aa gaye. Badhiya!' },
+  'home.due.ageDays': { en: '{days} days now', hi: '{days} din ho gaye' },
+  'home.due.ageToday': { en: 'sent today', hi: 'aaj bheja' },
+
+  // ------------------------------------------------------------ status ----
+  'status.draft': { en: 'Not sent yet', hi: 'Abhi bheja nahi' },
+  'status.sent': { en: 'Sent', hi: 'Bheja' },
+  'status.paid': { en: 'Paid', hi: 'Aa gaye' },
+  'status.partly': { en: 'Partly paid', hi: 'Thoda aaya' },
+  'status.due': { en: 'Due', hi: 'Baaki' },
+  'status.overdue': { en: 'Overdue', hi: 'Kaafi din ho gaye' },
+
+  // ------------------------------------------------------------ remind ----
+  'remind.button': { en: 'Remind', hi: 'Yaad dilao' },
+  'remind.title': { en: 'Remind {name}', hi: '{name} ko yaad dilayein' },
+  'remind.note': { en: 'This is the message. Change it if you like.', hi: 'Yeh message jaayega. Chahein toh badal lo.' },
+  'remind.attached': { en: 'The bill goes with it', hi: 'Bill saath jaayega' },
+  'remind.tone': { en: 'Tone', hi: 'Tone' },
+  'remind.tone.gentle': { en: 'Gentle', hi: 'Pyaar se' },
+  'remind.tone.direct': { en: 'Direct', hi: 'Seedha' },
+  'remind.tone.second': { en: 'Second reminder', hi: 'Doosri baar' },
+  'remind.go': { en: 'Open WhatsApp', hi: 'WhatsApp kholo' },
+  'remind.markPaid': { en: 'Mark as paid', hi: 'Paise aa gaye ✓' },
+
+  // --------------------------------------------------------------- bill ----
+  'bill.title': { en: 'Bill for {customer}', hi: '{customer} ka bill' },
+  'bill.titleNew': { en: 'New bill', hi: 'Naya bill' },
+  'bill.meta': { en: '{number} · {date}', hi: '{number} · {date}' },
+  'bill.same.title': { en: 'Same as last time?', hi: 'Pichle jaisa hi?' },
+  'bill.same.sub': { en: "{month}'s bill: {summary} · {amount}", hi: '{month} ka bill: {summary} · {amount}' },
+  'bill.same.yes': { en: 'Yes', hi: 'Haan' },
+  'bill.item.label': { en: 'What did you do?', hi: 'Kya kiya?' },
+  'bill.item.placeholder': { en: 'e.g. AMC visit, fitted 2 fans', hi: 'jaise: AMC visit, 2 fans lagaye' },
+  'bill.qty': { en: 'How many', hi: 'Kitna' },
+  'bill.rate': { en: 'Rate (₹)', hi: 'Rate (₹)' },
+  'bill.addItem': { en: '+ Something else', hi: '+ Aur kuch' },
+  'bill.date': { en: 'Date', hi: 'Tareekh' },
+  'bill.note': { en: 'Anything to add?', hi: 'Koi baat likhni ho?' },
+  'bill.subtotal': { en: 'Before GST', hi: 'GST se pehle' },
+  'bill.gst': { en: 'GST ({rate}%)', hi: 'GST ({rate}%)' },
+  'bill.total': { en: 'Total', hi: 'Total' },
+  'bill.make': { en: 'Make the bill', hi: 'Bill banao' },
+  'bill.makeNote': { en: 'The bill itself is in English, for your customer.', hi: 'Bill English mein banega, customer ke liye.' },
+  'bill.cannotYet': { en: "Can't make it yet", hi: 'Abhi nahi ban sakta' },
+
+  'bill.done.title': { en: 'Bill is ready!', hi: 'Bill ban gaya!' },
+  'bill.done.whatsapp': { en: 'Send on WhatsApp', hi: 'WhatsApp pe bhejo' },
+  'bill.done.later': { en: 'Later', hi: 'Baad mein' },
+  'bill.done.view': { en: 'See the bill', hi: 'Bill dekho' },
+  'bill.done.sentNote': { en: 'Sent. It will show under "Bills you sent".', hi: 'Bhej diya. "Bheje hue bills" mein dikhega.' },
+
+  // ------------------------------------------------------------- paid ----
+  'paid.title': { en: 'How much came in?', hi: 'Kitne aaye?' },
+  'paid.full': { en: 'All of it, {amount}', hi: 'Poore {amount}' },
+  'paid.partial': { en: 'Part of it', hi: 'Kuch hissa' },
+  'paid.amount': { en: 'How much (₹)', hi: 'Kitna aaya (₹)' },
+  'paid.date': { en: 'When', hi: 'Kab aaye' },
+  'paid.how': { en: 'How', hi: 'Kaise aaye' },
+  'paid.how.upi': { en: 'UPI', hi: 'UPI' },
+  'paid.how.cash': { en: 'Cash', hi: 'Cash' },
+  'paid.how.bank': { en: 'Bank', hi: 'Bank' },
+  'paid.how.other': { en: 'Other', hi: 'Kuch aur' },
+  'paid.save': { en: 'Note it down', hi: 'Likh lo' },
+  'paid.remaining': { en: '{amount} still to come', hi: '{amount} abhi baaki' },
+
+  // ---------------------------------------------------------- customer ----
+  'customer.new.title': { en: 'New customer', hi: 'Naya customer' },
+  'customer.name': { en: 'Name (or shop name)', hi: 'Naam (ya dukaan ka naam)' },
+  'customer.person': { en: 'Who do you talk to there?', hi: 'Kis se baat hoti hai?' },
+  'customer.personHint': { en: 'For a company. We use it to say "ji" to the right person.', hi: 'Company ho toh. Isi naam se "ji" bolenge.' },
+  'customer.phone': { en: 'Phone (the WhatsApp one)', hi: 'Phone (WhatsApp waala)' },
+  'customer.gstin': { en: 'Their GST number (if they have one)', hi: 'Unka GST number (agar hai)' },
+  'customer.gstinHint': { en: 'Needed on the bill if they will claim GST. Otherwise leave it.', hi: 'Agar woh GST claim karte hain toh bill pe chahiye. Nahi toh chhodo.' },
+  'customer.city': { en: 'City', hi: 'Sheher' },
+  'customer.save': { en: 'Save customer', hi: 'Customer save karo' },
+  'customer.lastBill': { en: 'Last bill {when}', hi: 'Pichla bill {when}' },
+  'customer.noBills': { en: 'No bills yet', hi: 'Abhi koi bill nahi' },
+
+  // -------------------------------------------------------------- gst ----
+  'gst.title': { en: 'GST summary', hi: 'GST ka hisaab' },
+  'gst.period': { en: '{from} – {to} · for your CA', hi: '{from} – {to} · CA ke liye' },
+  'gst.thisQuarter': { en: 'This quarter', hi: 'Is quarter' },
+  'gst.bills': { en: 'Bills', hi: 'Bills' },
+  'gst.sales': { en: 'Sales', hi: 'Bikri' },
+  'gst.tax': { en: 'GST', hi: 'GST' },
+  'gst.rate': { en: 'Rate', hi: 'Rate' },
+  'gst.b2b.title': { en: 'Company bills (B2B)', hi: 'Company bills (B2B)' },
+  'gst.b2b.sub': { en: 'Customers with a GST number · {n} bills', hi: 'GST number waale customers · {n} bills' },
+  'gst.b2c.note': { en: 'The other {n} bills went to customers without a GST number (B2C).', hi: 'Baaki {n} bills bina GST number waale customers ko gaye (B2C).' },
+  'gst.send': { en: 'Send to your CA', hi: 'CA ko bhejo' },
+  'gst.sendNote': { en: 'Excel + every bill as PDF, by WhatsApp or email.', hi: 'Excel + saare bills ki PDF, WhatsApp ya email se.' },
+  'gst.none.title': { en: 'No GST number?', hi: 'GST number nahi hai?' },
+  'gst.none.body': { en: "That's fine. When you get one, add it under \"You\" and this tab will open.", hi: 'Koi baat nahi. Jab GST number mile, "Aap" mein daal dena — yeh tab tab khulega.' },
+  'gst.empty': { en: 'No bills in this quarter yet.', hi: 'Is quarter mein abhi koi bill nahi.' },
+
+  // --------------------------------------------------------------- you ----
+  'you.title': { en: 'Tell us about yourself', hi: 'Apne baare mein batayen' },
+  'you.sub': { en: 'This is printed on your bills', hi: 'Yeh bill pe chhapega' },
+  'you.name': { en: 'Your name / shop name', hi: 'Aapka naam / dukaan ka naam' },
+  'you.phone': { en: 'Phone', hi: 'Phone' },
+  'you.phoneHint': { en: 'This is how you sign in', hi: 'Isi se login hota hai' },
+  'you.gstin': { en: 'GST number', hi: 'GST number' },
+  'you.gstinHint': { en: "Don't have one? That's fine, leave it blank. The GST tab stays hidden.", hi: 'Nahi hai? Koi baat nahi, khali chhodo. Tab GST tab bhi nahi dikhega.' },
+  'you.upi': { en: 'UPI ID', hi: 'UPI ID' },
+  'you.upiHint': { en: 'Printed on the bill so customers can pay you directly', hi: 'Bill pe chhapega, taaki customer seedha pay kar sake' },
+  'you.city': { en: 'City', hi: 'Sheher' },
+  'you.state': { en: 'State', hi: 'Rajya' },
+  'you.stateHint': { en: 'Needed to work out GST correctly', hi: 'GST sahi lagane ke liye chahiye' },
+  'you.logout': { en: 'Sign out', hi: 'Logout' },
+
+  // -------------------------------------------------------------- auth ----
+  'auth.phone.title': { en: 'Enter your phone number', hi: 'Apna phone number daalo' },
+  'auth.phone.sub': { en: 'The WhatsApp one is best', hi: 'WhatsApp waala number best hai' },
+  'auth.phone.send': { en: 'Send OTP', hi: 'OTP bhejo' },
+  'auth.otp.title': { en: 'Enter the OTP', hi: 'OTP daalo' },
+  'auth.otp.sub': { en: 'Sent to {phone}', hi: '{phone} pe bheja hai' },
+  'auth.otp.resend': { en: 'Send again', hi: 'Dobara bhejo' },
+  'auth.otp.verify': { en: 'Continue', hi: 'Aage badho' },
+  'auth.otp.wrong': { en: 'That OTP is not right. Check and try again.', hi: 'OTP galat hai. Dobara dekho.' },
+  'auth.otp.expired': { en: 'That OTP has expired. We sent a new one.', hi: 'OTP purana ho gaya. Naya bhej diya hai.' },
+
+  // ------------------------------------------------------------ errors ----
+  'error.required': { en: 'This is needed', hi: 'Yeh zaroori hai' },
+  'error.phone': { en: 'A phone number has 10 digits', hi: 'Phone number 10 digit ka hona chahiye' },
+  'error.gstin': { en: "That GST number doesn't look right. Check it again.", hi: 'GST number theek nahi lag raha. Dobara dekho.' },
+  'error.amount': { en: 'Write the amount properly', hi: 'Rakam theek se likho' },
+  'error.generic': { en: 'Something went wrong. Try again.', hi: 'Kuch gadbad ho gayi. Dobara try karo.' },
+  'error.offline': { en: "No internet. It will save when you're back online.", hi: 'Internet nahi hai. Jab aayega, save ho jaayega.' },
+  'error.savedLocally': { en: 'Saved on this phone', hi: 'Phone pe save hai' },
+  'error.notFound': { en: "Can't find that", hi: 'Yeh mila nahi' },
+  'error.nothingLost': { en: 'Nothing you saved has been lost.', hi: 'Aapka save kiya hua kuch nahi gaya.' },
+} as const satisfies Record<string, Entry>;
+
+export type CopyKey = keyof typeof DICTIONARY;

@@ -30,13 +30,21 @@ export async function getCustomer(businessId: string, customerId: string): Promi
   return snap.exists ? (snap.data() as CustomerRecord) : null;
 }
 
-export async function createCustomer(
-  businessId: string,
-  uid: string,
-  input: Omit<CustomerRecord, 'id' | 'archived' | 'createdAt' | 'updatedAt' | 'lastBilledAt'>,
-): Promise<CustomerRecord> {
+type NewCustomer = Omit<
+  CustomerRecord,
+  'id' | 'archived' | 'createdAt' | 'updatedAt' | 'lastBilledAt' | 'contactPerson' | 'language' | 'languageSource'
+> &
+  Partial<Pick<CustomerRecord, 'contactPerson' | 'language' | 'languageSource'>>;
+
+export async function createCustomer(businessId: string, uid: string, input: NewCustomer): Promise<CustomerRecord> {
   const now = new Date().toISOString();
   const record: CustomerRecord = {
+    // Who to greet, and in what language, are questions most callers have no
+    // answer to yet. Null is the honest default: the owner's own language, and
+    // a greeting worked out from the name.
+    contactPerson: null,
+    language: null,
+    languageSource: null,
     ...input,
     id: randomUUID(),
     archived: false,

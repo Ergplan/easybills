@@ -9,8 +9,10 @@
  *  - Record timestamps are ISO-8601 instants and end in `At`.
  */
 
+import type { CustomerLanguage } from '@/lib/copy';
 import type { CivilDate, FinancialYear, MonthPeriod } from '@/lib/dates';
 import type { GstRegistrationType, SupplyFlag } from '@/lib/gst/scenarios';
+
 
 export type Iso = string;
 
@@ -144,6 +146,23 @@ export interface CustomerRecord {
   gstin: string | null;
   pan: string | null;
   notes: string | null;
+  /**
+   * The person the owner talks to, when the customer is a shop or a company.
+   * It is who a message greets: "Patil ji", not "Green Park Society ji".
+   */
+  contactPerson: string | null;
+  /**
+   * The language this customer should be messaged in. Null means the owner's
+   * own (Hinglish). The app works in one language; its customers do not all
+   * speak it, and a reminder in the wrong one reads as a form letter.
+   */
+  language: CustomerLanguage | null;
+  /**
+   * Where that language came from: the owner chose it, or a model suggested it
+   * from the name and the city and the owner has not yet said otherwise. A
+   * suggestion is shown as one, and is never silently promoted to a fact.
+   */
+  languageSource: 'owner' | 'suggested' | null;
   archived: boolean;
   createdAt: Iso;
   updatedAt: Iso;
