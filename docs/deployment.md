@@ -122,23 +122,43 @@ check that the backend has a Firebase Web App associated with it.
 
 ---
 
-## 0. Getting the CLI, once
+## 0. Where to run these commands
 
-Both of the steps below run from your own machine, against a checkout of this
-repository — `firestore.rules` and `firestore.indexes.json` are files, so the
-CLI has to be able to see them.
+The commands below need to see `firestore.rules` and `firestore.indexes.json`,
+which are files in this repository. So they run in a terminal, from a checkout
+of it — not in the Firebase Console.
+
+### The easy way: Cloud Shell
+
+**[console.cloud.google.com](https://console.cloud.google.com)** → the terminal
+icon in the top bar (*Activate Cloud Shell*). It is a Linux terminal in the
+browser that is **already signed in as you**, with `git` and Node already
+installed. Nothing to install on your own computer, and no `firebase login`
+browser dance.
 
 ```bash
 npm install -g firebase-tools
-firebase login                       # opens a browser; sign in as the project owner
 git clone https://github.com/Ergplan/easybills.git
 cd easybills
 git checkout claude/admiring-wright-5w8x4g
-firebase use production              # the alias for ekbill, in .firebaserc
+firebase login --no-localhost     # prints a link; paste the code back
+firebase use production           # the alias for ekbill, in .firebaserc
 ```
 
-`firebase login` is the whole authentication story. There is no token to
-generate, paste or store anywhere.
+`--no-localhost` matters in Cloud Shell: the ordinary `firebase login` tries to
+open a browser on the machine running it, and that machine is in a data centre.
+
+### Or on your own computer
+
+Same commands, with `firebase login` instead of `firebase login --no-localhost`,
+and Node.js installed first from [nodejs.org](https://nodejs.org) if you do not
+have it.
+
+### If the repository is private
+
+`git clone` will ask for credentials. In Cloud Shell the simplest route is a
+GitHub personal access token as the password, or use the Console fallback for
+the rules described in step 2.
 
 ---
 
@@ -224,11 +244,29 @@ each one as *Building* then *Enabled*. Queries against an index still building
 fail exactly as they would if it were missing, so give it a minute on a small
 database before deciding something is wrong.
 
-**No CLI at hand?** The rules can also be pasted into Firebase Console ›
-Firestore Database › Rules and published, which takes a minute and is the
-security-critical half. The indexes cannot usefully be done that way — there
-are six, each with its own field order, and getting one wrong shows up as a
-query that fails in production.
+### No terminal at all?
+
+The **rules** can be pasted straight into Firebase Console › Firestore Database
+› **Rules**, and published. That takes a minute and is the security-critical
+half — with sign-in switched off, those rules are the only thing stopping
+someone reading the database directly with the public API key. The whole file is
+fifteen lines; copy it from `firestore.rules` in the repository.
+
+The **indexes** are six composite indexes, each with its own field order, and
+can be added by hand in Console › Firestore Database › Indexes › *Create index*
+(collection ID, then the fields in this order, query scope *Collection*):
+
+| Collection | Fields, in order |
+|---|---|
+| `invoices` | `status` ↑, `updatedAt` ↓ |
+| `invoices` | `status` ↑, `issueDate` ↑ |
+| `invoices` | `customer.customerId` ↑, `status` ↑ |
+| `customers` | `archived` ↑, `lastBilledAt` ↓ |
+| `jobs` | `status` ↑, `runAfter` ↑ |
+| `gstStatementSnapshots` | `gstin` ↑, `period` ↑, `statementType` ↑, `importVersion` ↓ |
+
+The order matters and a wrong one shows up as a query that fails in production,
+so the command is the safer route if you have any way to run it.
 
 `firestore.rules` denies **all** direct client access. Every record is reached
 through this app's own server, which is what makes tenant isolation a server
