@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "easybills-dev"
+    "default": "easybills-dev",
+    "production": "ekbill"
   }
 }

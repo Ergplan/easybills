@@ -12,7 +12,7 @@ import {
   type Auth,
 } from 'firebase/auth';
 
-import { authEmulatorHost, publicFirebaseConfig } from '@/lib/env';
+import { authEmulatorHost, publicFirebaseConfig, type PublicFirebaseConfig } from '@/lib/env';
 
 /**
  * Firebase Auth is the managed authentication provider. We do not implement
@@ -26,11 +26,28 @@ import { authEmulatorHost, publicFirebaseConfig } from '@/lib/env';
 
 let authInstance: Auth | null = null;
 
+/**
+ * The config the server handed us for this request.
+ *
+ * Next inlines `NEXT_PUBLIC_*` into the browser bundle at build time, so a
+ * host that supplies them only at runtime ships a bundle with four empty
+ * strings. Rather than depend on when the values happen to arrive, the root
+ * layout reads them on the server -- where the whole environment is always
+ * visible -- and passes them down. The build-time values remain as the
+ * fallback, which is what local development uses.
+ */
+let supplied: PublicFirebaseConfig | null = null;
+
+export function setFirebaseConfig(config: PublicFirebaseConfig): void {
+  if (config?.projectId) supplied = config;
+}
+
 export function firebaseAuth(): Auth {
-  const config = publicFirebaseConfig();
+  const config = supplied ?? publicFirebaseConfig();
   if (!config.projectId) {
     throw new Error(
-      'Firebase Web config is missing. Set NEXT_PUBLIC_FIREBASE_* in .env.local (see docs/setup.md).',
+      'Firebase Web config is missing. Locally, set NEXT_PUBLIC_FIREBASE_* in .env.local ' +
+        '(see docs/setup.md). On a deployed instance, see docs/deployment.md.',
     );
   }
   const app = getApps().length ? getApp() : initializeApp(config);

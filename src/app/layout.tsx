@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 
+import { FirebaseConfig } from '@/components/FirebaseConfig';
+import { publicFirebaseConfig } from '@/lib/env';
+
 import './globals.css';
 
 /**
@@ -39,9 +42,15 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Read on the server, once per request, and handed down. See FirebaseConfig.
+  const firebase = publicFirebaseConfig();
+
   return (
     <html lang="en-IN" className={inter.variable}>
-      <body>{children}</body>
+      <body>
+        <FirebaseConfig config={firebase} />
+        {children}
+      </body>
     </html>
   );
 }

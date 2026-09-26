@@ -38,26 +38,61 @@ Three things that normally need copying are handled:
   names the browser reads. Anything you set explicitly still wins.
 - **The server's project id** — read from `GOOGLE_CLOUD_PROJECT`, which Cloud
   Run sets.
-- **Firebase credentials** — the service the backend runs as already has
-  Firebase access, and `firebase-admin` picks it up through Application Default
-  Credentials. **Do not create a service account key file.** It is a long-lived
-  secret that would have to be stored, rotated and eventually leaked; nothing
-  here needs it.
+- **Firebase credentials** — the backend runs as its own service account
+  (`firebase-app-hosting-compute@…`) which already has Firebase access, and
+  `firebase-admin` picks it up through Application Default Credentials.
+
+  **Do not download a service account key.** The classic Admin SDK account
+  (`firebase-adminsdk-…@…`) exists so that code running *outside* Google
+  infrastructure can authenticate, and using it means creating a JSON private
+  key that has to be stored somewhere, rotated by someone, and is a full
+  credential to your entire database for as long as it exists. Nothing in this
+  deployment needs one. If a Firestore call is ever refused with a permissions
+  error, the fix is to grant the App Hosting service account the Firestore role
+  in IAM — not to introduce a key.
 
 ---
 
-## 1. The one secret you must create
+## The sign-in page, and where its config comes from
+
+The browser needs the Firebase Web config — API key, auth domain, project id,
+app id — to sign anyone in. It is read **on the server at request time** and
+handed to the page, rather than read by the browser itself.
+
+That is deliberate. Next inlines `NEXT_PUBLIC_*` into the client bundle at
+*build* time, so a host that supplies configuration only at *runtime* ships a
+bundle containing four empty strings, and a sign-in page whose only behaviour
+is to report that its config is missing. Reading it server-side works either
+way, which is why `FIREBASE_WEBAPP_CONFIG` alone is enough and there is nothing
+to set.
+
+If sign-in ever does report a missing config, the server could not find one:
+check that the backend has a Firebase Web App associated with it.
+
+---
+
+## 1. The worker secret
 
 The background worker endpoint refuses every request that does not present a
-shared secret. Create it before the first rollout:
+shared secret, so without it the queue is never drained and monthly drafts are
+never prepared.
+
+It is **not** required for the first rollout. A backend that refuses to start
+because a secret for a background job is missing is worse than one that bills
+correctly while that job waits — so `apphosting.yaml` has it commented out, and
+Business details reports *Monthly drafts: not configured* until you finish this.
 
 ```bash
 openssl rand -hex 32                     # copy the output
-firebase apphosting:secrets:set job-runner-secret
-firebase apphosting:secrets:grantaccess job-runner-secret --backend easybills
+firebase apphosting:secrets:set job-runner-secret --project ekbill
+firebase apphosting:secrets:grantaccess job-runner-secret \
+  --project ekbill --backend easybills
 ```
 
-`apphosting.yaml` already references it by name.
+Then uncomment the `JOB_RUNNER_SECRET` block in `apphosting.yaml` and push.
+Doing it the other way round — referencing the secret before it exists — fails
+the rollout with *Error resolving secret version*, which is the same message
+whether the secret is missing or merely inaccessible.
 
 ---
 
@@ -67,7 +102,7 @@ App Hosting deploys the application. It does not touch Firestore, so this is a
 separate, one-time command — and it is not optional:
 
 ```bash
-firebase use YOUR-PROJECT-ID
+firebase use production          # the alias in .firebaserc
 firebase deploy --only firestore:rules,firestore:indexes
 ```
 

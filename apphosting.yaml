@@ -55,12 +55,23 @@ env:
     availability: [RUNTIME]
 
   # The shared secret the background job runner must present. Cloud Scheduler
-  # sends it; without it nothing can drain the queue. Create it with:
-  #   firebase apphosting:secrets:set job-runner-secret
-  # and paste the output of: openssl rand -hex 32
-  - variable: JOB_RUNNER_SECRET
-    secret: job-runner-secret
-    availability: [RUNTIME]
+  # sends it; without it nothing can drain the queue, and monthly drafts are
+  # never prepared.
+  #
+  # Deliberately commented out rather than required. A backend that refuses to
+  # start because a secret for a background job is missing is worse than one
+  # that bills correctly while that job waits -- and Business details reports
+  # "Monthly drafts: not configured" either way, so this cannot be forgotten
+  # quietly. Create it, then uncomment:
+  #
+  #   openssl rand -hex 32
+  #   firebase apphosting:secrets:set job-runner-secret --project ekbill
+  #   firebase apphosting:secrets:grantaccess job-runner-secret \
+  #     --project ekbill --backend easybills
+  #
+  # - variable: JOB_RUNNER_SECRET
+  #   secret: job-runner-secret
+  #   availability: [RUNTIME]
 
   # --- the assistant --------------------------------------------------------
   #

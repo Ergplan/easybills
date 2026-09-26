@@ -49,18 +49,68 @@ export const firebaseProjectId = (): string =>
   optional('GCLOUD_PROJECT') ??
   required('FIREBASE_PROJECT_ID');
 
-/** Public Firebase Web config. Safe to ship to the browser. */
-export const publicFirebaseConfig = () => ({
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '',
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '',
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '',
-});
+export interface PublicFirebaseConfig {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  appId: string;
+}
+
+/**
+ * Public Firebase Web config. Safe to ship to the browser -- it identifies the
+ * project, it does not grant anything, and Firestore rules deny all direct
+ * client access regardless.
+ *
+ * Read on the server at request time, where the whole environment is visible.
+ * The browser is handed the result rather than reading it itself: Next inlines
+ * `NEXT_PUBLIC_*` into the client bundle at BUILD time, so a host that supplies
+ * these only at runtime -- which Firebase App Hosting may -- produces a bundle
+ * with four empty strings and a sign-in page that cannot sign anyone in.
+ */
+export const publicFirebaseConfig = (): PublicFirebaseConfig => {
+  const fromEnv: PublicFirebaseConfig = {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '',
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '',
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '',
+  };
+  if (fromEnv.projectId) return fromEnv;
+
+  // Firebase App Hosting creates a Web App for the backend and describes it
+  // here. Nothing to copy, and nothing to get wrong.
+  const injected = optional('FIREBASE_WEBAPP_CONFIG');
+  if (injected) {
+    try {
+      const c = JSON.parse(injected) as Partial<PublicFirebaseConfig>;
+      if (c.projectId) {
+        return {
+          apiKey: c.apiKey ?? '',
+          authDomain: c.authDomain ?? `${c.projectId}.firebaseapp.com`,
+          projectId: c.projectId,
+          appId: c.appId ?? '',
+        };
+      }
+    } catch {
+      // Fall through to the empty config; the sign-in page says what is missing.
+    }
+  }
+  return fromEnv;
+};
 
 export const authEmulatorHost = () => process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST ?? null;
 
 /** Shared secret the job runner must present. Prevents anyone poking the worker endpoint. */
 export const jobRunnerSecret = (): string => required('JOB_RUNNER_SECRET');
+
+/**
+ * Whether background work can run at all.
+ *
+ * Without the shared secret the runner endpoint refuses every request, so the
+ * queue is never drained and monthly drafts are never prepared. That is the
+ * one failure an owner would not notice until a customer asks where their bill
+ * is -- so it is reported in Business details rather than left to be found.
+ */
+export const backgroundWorkConfigured = (): boolean => optional('JOB_RUNNER_SECRET') !== null;
 
 /** Session cookie lifetime. Firebase caps session cookies at 14 days. */
 export const sessionMaxAgeMs = Number(optional('SESSION_MAX_AGE_MS') ?? 5 * 24 * 60 * 60 * 1000);

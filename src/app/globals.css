@@ -10,42 +10,45 @@
  */
 
 :root {
-  /* Ink and paper. Warm greys read as less clinical than pure neutrals. */
+  /* One neutral family, warm.
+     The ink has always been warm; the paper behind it was cool, which is the
+     kind of mismatch nobody names but everybody feels. */
   --paper: #ffffff;
-  --paper-sunk: #f4f5f7;
+  --paper-sunk: #f4f2ee;
   --paper-raised: #ffffff;
-  --line: rgb(23 26 33 / 9%);
-  --line-strong: rgb(23 26 33 / 18%);
+  --line: rgb(27 25 21 / 9%);
+  --line-strong: rgb(27 25 21 / 17%);
 
   /* Surfaces are translucent and sit over a soft page wash, so cards read as
      panes of glass rather than flat rectangles. Opacity stays high enough that
-     text contrast is unaffected -- see the @supports fallback below. */
-  --surface: rgb(255 255 255 / 76%);
-  --surface-strong: rgb(255 255 255 / 88%);
-  --surface-blur: saturate(1.6) blur(18px);
+     text contrast is unaffected -- see the @supports fallback below, and
+     tests/unit/palette.test.ts, which holds every pairing to a floor. */
+  --surface: rgb(255 255 255 / 78%);
+  --surface-strong: rgb(255 255 255 / 90%);
+  --surface-blur: saturate(1.5) blur(20px);
 
-  /* The wash the blur has something to reveal. Very low saturation: this is a
-     billing app, not a dashboard demo. */
-  --wash-a: rgb(47 74 158 / 11%);
-  --wash-b: rgb(31 107 69 / 8%);
+  /* What the blur has something to reveal. Very low saturation and placed high
+     on the page: this is a billing app, not a dashboard demo. */
+  --wash-a: rgb(43 69 149 / 10%);
+  --wash-b: rgb(29 102 64 / 7%);
 
-  --ink: #1c1a17;          /* 15.8:1 on paper */
-  --ink-soft: #5a554d;     /* 7.1:1  on paper */
-  --ink-faint: #7d776d;    /* 4.7:1  on paper */
+  --ink: #1b1915;          /* 16.4:1 on paper */
+  --ink-soft: #55504a;     /*  8.2:1 on paper */
+  --ink-faint: #6e675e;    /*  5.4:1 on paper, 4.8:1 on the page behind it */
 
-  /* Brand: a calm indigo. The accent is overridable per business. */
-  --accent: #2f4a9e;
+  /* Brand: a deep indigo. Overridable per business. */
+  --accent: #2b4595;
   --accent-ink: #ffffff;
-  --accent-soft: #eef1fa;
-  --accent-line: #c3cdea;
+  --accent-soft: #edf0fa;
+  --accent-line: #c2ccea;
 
-  /* Semantic states. Each is paired with an icon or word, never colour alone. */
-  --ok: #1f6b45;
-  --ok-soft: #e8f4ed;
-  --warn: #8a5a00;
-  --warn-soft: #fdf2dd;
-  --danger: #a32c25;
-  --danger-soft: #fbeceb;
+  /* Semantic states. Each is paired with an icon or a word, never colour alone. */
+  --ok: #1d6640;
+  --ok-soft: #e6f2ea;
+  --warn: #7d5200;
+  --warn-soft: #fbf1db;
+  --danger: #9c2a23;
+  --danger-soft: #fbeae8;
 
   --radius: 14px;
   --radius-sm: 10px;
