@@ -720,6 +720,22 @@ table.data td.num, table.data th.num {
 
 .divider { height: 1px; background: var(--line); border: 0; margin: 4px 0; }
 
+/* Open access: no sign-in at all. This is a security state, not a data state,
+   so it does not get the demo banner's quiet treatment -- it is the loudest
+   thing on the page, on every page, and it is announced to screen readers as
+   an alert rather than a status. */
+.open-access-banner {
+  padding: 10px 16px;
+  background: var(--danger-soft);
+  color: var(--ink);
+  border-bottom: 2px solid var(--danger);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  text-align: center;
+}
+
+.open-access-banner strong { color: var(--danger); }
+
 .demo-banner {
   background: var(--warn-soft);
   color: var(--ink);

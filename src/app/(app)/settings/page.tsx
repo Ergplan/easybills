@@ -3,7 +3,7 @@ import { SUPPORTED_SCENARIOS_SUMMARY, UNSUPPORTED_SCENARIOS_SUMMARY } from '@/li
 import { TopBar } from '@/components/TopBar';
 import { requireCurrentContext } from '@/server/auth/current';
 import { describeAiConfiguration } from '@/server/ai/adapters';
-import { backgroundWorkConfigured, gspConfig } from '@/lib/env';
+import { backgroundWorkConfigured, gspConfig, openAccess } from '@/lib/env';
 import { pdfCapability } from '@/server/pdf/render';
 
 import { SettingsForm } from './SettingsForm';
@@ -43,6 +43,7 @@ export default async function SettingsPage({
           gspMode={gsp.mode}
           pdfStatus={pdf}
           backgroundWork={backgroundWork}
+          openAccess={openAccess()}
           supported={[...SUPPORTED_SCENARIOS_SUMMARY]}
           unsupported={[...UNSUPPORTED_SCENARIOS_SUMMARY]}
         />

@@ -68,6 +68,27 @@ env:
   # from an app whose fonts are self-hosted precisely so that opening a bill
   # tells no third party anything.
 
+  # ===========================================================================
+  # SIGN-IN IS SWITCHED OFF.
+  #
+  # With this set to "true" there is no sign-in at all. Everyone who opens the
+  # address is the same test user, and can read every bill, issue new ones and
+  # record payments against them. The app says so in red on every screen.
+  #
+  # It is on because it was asked for, to look at the app without setting up
+  # Firebase Auth first. It must come off before a real business's books go in.
+  #
+  # To turn sign-in back on: set this to "false" (or delete these three lines),
+  # commit, push. Then in Firebase Console > Authentication > Sign-in method,
+  # enable Email/Password, and Google if you want that button to work.
+  #
+  # The test user's data is its own demo business, flagged as sample records,
+  # so nothing real is mixed into it.
+  # ===========================================================================
+  - variable: AUTH_BYPASS
+    value: "true"
+    availability: [RUNTIME]
+
   # Five days. An owner billing from a shared shop counter should not stay
   # signed in for a month.
   - variable: SESSION_MAX_AGE_MS

@@ -112,6 +112,24 @@ export const jobRunnerSecret = (): string => required('JOB_RUNNER_SECRET');
  */
 export const backgroundWorkConfigured = (): boolean => optional('JOB_RUNNER_SECRET') !== null;
 
+/**
+ * Open access: no sign-in, everybody is the same test user.
+ *
+ * For showing the app to somebody without first setting up Firebase Auth, and
+ * for poking at it before there is anything real in it. It is not a
+ * configuration so much as a decision, so it is deliberately awkward: it must
+ * be the exact string 'true', it is off unless set, and when it is on the app
+ * says so on every screen.
+ *
+ * What it means, stated plainly: there is no sign-in, so anyone who has the
+ * address is the owner. They can read every bill, issue new ones and record
+ * payments. Never leave it on with a real business's books behind it.
+ */
+export const openAccess = (): boolean => optional('AUTH_BYPASS') === 'true';
+
+/** The one user everybody is in open-access mode. Stable, so the data persists. */
+export const OPEN_ACCESS_UID = 'open-access-test-user';
+
 /** Session cookie lifetime. Firebase caps session cookies at 14 days. */
 export const sessionMaxAgeMs = Number(optional('SESSION_MAX_AGE_MS') ?? 5 * 24 * 60 * 60 * 1000);
 

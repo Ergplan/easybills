@@ -1,3 +1,4 @@
+import { openAccess } from '@/lib/env';
 import { requireCurrentContext } from '@/server/auth/current';
 
 import { SideNav, TabBar } from '@/components/TabBar';
@@ -20,6 +21,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="app-shell">
       <SideNav businessName={business.legalName} />
       <div className="app-shell__main">
+        {/* Two different warnings, and both can be true at once. One is about
+            the records; the other is about who can reach them. */}
+        {openAccess() && (
+          <div className="open-access-banner" role="alert">
+            <strong>Sign-in is switched off.</strong> Anyone with this web address can see and change
+            these bills. Do not put a real business&rsquo;s books here.
+          </div>
+        )}
         {business.isDemo && (
           <div className="demo-banner" role="status">
             Demo business — these are sample records, not your real bills

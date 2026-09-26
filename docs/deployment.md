@@ -53,6 +53,38 @@ Three things that normally need copying are handled:
 
 ---
 
+## Sign-in is currently switched off
+
+`apphosting.yaml` sets `AUTH_BYPASS: "true"`. With it on there is **no
+sign-in**: everyone who opens the address is the same test user, and can read
+every bill, issue new ones and record payments. The app says so in red at the
+top of every screen, and Business details reports *Sign-in: switched off — open
+access*.
+
+It exists so the app can be looked at without setting up Firebase Auth first.
+It must come off before a real business's books go in.
+
+The test user gets its own demo business, seeded on first visit and flagged as
+sample records, so nothing real is ever mixed into it.
+
+**To turn sign-in back on**
+
+1. Set `AUTH_BYPASS` to `"false"` in `apphosting.yaml` (or delete those three
+   lines), commit and push.
+2. In **Firebase Console › Authentication › Sign-in method**, enable
+   **Email/Password**. Without it, every sign-in raises
+   `auth/configuration-not-found` — which is what the app reports, in words,
+   as "this way of signing in is not switched on for this app yet".
+3. Enable **Google** as well if you want the *Continue with Google* button to
+   work. The button is always shown, because the page cannot see what the
+   project has enabled.
+
+Nothing else changes: the bypass is a single branch in `currentUser()`, the one
+question every page, server action and API route asks. Switching it off
+restores the ordinary path exactly.
+
+---
+
 ## Sign-in providers
 
 Nothing in this app can switch a sign-in method on; that lives in the Firebase

@@ -2,7 +2,7 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 
-import { sessionMaxAgeMs, runtime } from '@/lib/env';
+import { sessionMaxAgeMs, runtime, openAccess, OPEN_ACCESS_UID } from '@/lib/env';
 import { adminAuth } from '@/server/firebase/admin';
 
 export const SESSION_COOKIE = 'eb_session';
@@ -65,6 +65,19 @@ export async function destroySession(): Promise<void> {
 
 /** The signed-in user, or null. Checks revocation on every request. */
 export async function currentUser(): Promise<SessionUser | null> {
+  // Open access short-circuits here, and only here. Every page, every server
+  // action and every API route asks this one question, so there is exactly one
+  // place where "who is this" can be answered differently -- rather than a
+  // bypass sprinkled through the app that someone later fails to remove.
+  if (openAccess()) {
+    return {
+      uid: OPEN_ACCESS_UID,
+      email: 'test@example.invalid',
+      name: 'Test user',
+      emailVerified: false,
+    };
+  }
+
   const store = await cookies();
   const cookie = store.get(SESSION_COOKIE)?.value;
   if (!cookie) return null;

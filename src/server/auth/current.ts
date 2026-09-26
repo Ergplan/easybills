@@ -2,8 +2,10 @@ import 'server-only';
 
 import { redirect } from 'next/navigation';
 
+import { openAccess } from '@/lib/env';
 import type { BusinessRecord } from '@/lib/domain/types';
 import { usersCol, businessDoc, membersCol } from '@/server/firebase/paths';
+import { seedDemoBusiness } from '@/server/services/seed';
 
 import { currentUser, type SessionUser } from './session';
 
@@ -25,7 +27,22 @@ export async function requireCurrentContext(): Promise<CurrentContext> {
   if (!user) redirect('/signin');
 
   const userSnap = await usersCol().doc(user.uid).get();
-  const ids = (userSnap.data()?.businessIds as string[] | undefined) ?? [];
+  let ids = (userSnap.data()?.businessIds as string[] | undefined) ?? [];
+
+  // In open access there is nobody to complete a setup form, and an empty app
+  // shows nothing worth looking at. The test user gets the sample business on
+  // first visit -- the same one "Try a demo business" creates, flagged isDemo,
+  // so its records are never mistaken for real ones.
+  if (!ids.length && openAccess()) {
+    const seeded = await seedDemoBusiness({
+      uid: user.uid,
+      email: user.email,
+      displayName: user.name,
+      profile: 'repair',
+    });
+    ids = [seeded.id];
+  }
+
   if (!ids.length) redirect('/start');
 
   const snaps = await Promise.all(ids.map((id) => businessDoc(id).get()));

@@ -29,6 +29,7 @@ export function SettingsForm({
   gspMode,
   pdfStatus,
   backgroundWork,
+  openAccess,
   supported,
   unsupported,
 }: {
@@ -41,6 +42,7 @@ export function SettingsForm({
   gspMode: string;
   pdfStatus: { ok: boolean; detail: string };
   backgroundWork: boolean;
+  openAccess: boolean;
   supported: string[];
   unsupported: string[];
 }) {
@@ -502,7 +504,12 @@ export function SettingsForm({
       <details className="card disclosure deck__full">
         <summary>App status</summary>
         <div className="disclosure__body stack stack--tight small">
-          <div className="row row--between"><span className="muted">Signed in as</span><span className="truncate">{userEmail ?? '—'}</span></div>
+          <div className="row row--between">
+            <span className="muted">Sign-in</span>
+            <span style={openAccess ? { color: 'var(--danger)', fontWeight: 650 } : undefined}>
+              {openAccess ? 'switched off — open access' : (userEmail ?? '—')}
+            </span>
+          </div>
           <div className="row row--between"><span className="muted">Assistant</span><span>{aiStatus.enabled ? `${aiStatus.llmProvider}${aiStatus.llmConfigured ? '' : ' (not configured)'}` : 'off'}</span></div>
           <div className="row row--between"><span className="muted">Voice</span><span>{aiStatus.transcriptionProvider}{aiStatus.transcriptionConfigured ? '' : ' (not configured)'}</span></div>
           <div className="row row--between"><span className="muted">GST filing</span><span>{gspMode}</span></div>
@@ -522,6 +529,9 @@ export function SettingsForm({
         </div>
       </details>
 
+      {/* Signing out of nothing lands you straight back in, so the button is
+          not offered when there is no sign-in to undo. */}
+      {!openAccess && (
       <button
         type="button"
         className="btn btn--secondary btn--block deck__full"
@@ -539,6 +549,7 @@ export function SettingsForm({
       >
         Sign out
       </button>
+      )}
       </div>
     </div>
   );
