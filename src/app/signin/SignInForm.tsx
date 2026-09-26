@@ -17,9 +17,13 @@ type Mode = 'sign-in' | 'create';
  * Sign-in is deliberately plain: an email and a password, or Google.
  *
  * Firebase Auth does the work. We do not implement password storage, reset
- * flows or token refresh ourselves, and we do not claim a provider is connected
- * when it is not -- the Google button is shown only when the project has a web
- * config, and any provider error is surfaced verbatim rather than swallowed.
+ * flows or token refresh ourselves.
+ *
+ * Both methods are always offered, because whether a provider is switched on
+ * lives in the Firebase project and not in anything this page can see. What
+ * matters is that being switched off says so in words an owner can act on --
+ * see `friendlyAuthError` -- rather than showing them the raw
+ * `auth/configuration-not-found` that Firebase raises.
  */
 export function SignInForm() {
   const router = useRouter();
@@ -30,7 +34,7 @@ export function SignInForm() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  async function run(fn: () => Promise<string>) {
+  async function run(fn: () => Promise<string>, method: 'password' | 'google' = 'password') {
     setBusy(true);
     setError(null);
     setInfo(null);
@@ -40,7 +44,7 @@ export function SignInForm() {
       router.replace('/home');
       router.refresh();
     } catch (e) {
-      setError(friendlyAuthError(e));
+      setError(friendlyAuthError(e, method));
     } finally {
       setBusy(false);
     }
@@ -130,7 +134,7 @@ export function SignInForm() {
         <hr className="divider grow" />
       </div>
 
-      <button type="button" className="btn btn--secondary btn--block" disabled={busy} onClick={() => void run(signInWithGoogle)}>
+      <button type="button" className="btn btn--secondary btn--block" disabled={busy} onClick={() => void run(signInWithGoogle, 'google')}>
         Continue with Google
       </button>
 
@@ -156,7 +160,7 @@ export function SignInForm() {
   );
 }
 
-function friendlyAuthError(e: unknown): string {
+function friendlyAuthError(e: unknown, method: 'password' | 'google' = 'password'): string {
   const code = (e as { code?: string })?.code ?? '';
   switch (code) {
     case 'auth/invalid-credential':
@@ -166,7 +170,18 @@ function friendlyAuthError(e: unknown): string {
     case 'auth/email-already-in-use':
       return 'That email already has an account. Try signing in.';
     case 'auth/weak-password':
-      return 'Please choose a longer password.';
+      return 'Please choose a longer password — at least 8 characters.';
+    // Raised when the sign-in method is not switched on in the Firebase
+    // project, and when Authentication has never been set up there at all.
+    // An owner cannot fix either, so it says who can rather than showing them
+    // a code, and names the method so the person who can knows which to enable.
+    case 'auth/configuration-not-found':
+    case 'auth/operation-not-allowed':
+      return method === 'google'
+        ? 'Signing in with Google is not switched on for this app yet. Use your email and password, ' +
+          'or ask whoever looks after this app to enable it.'
+        : 'Signing in with an email and password is not switched on for this app yet. Please ask ' +
+          'whoever looks after this app to enable it.';
     case 'auth/popup-closed-by-user':
       return 'Sign-in was cancelled.';
     case 'auth/network-request-failed':

@@ -53,6 +53,25 @@ Three things that normally need copying are handled:
 
 ---
 
+## Sign-in providers
+
+Nothing in this app can switch a sign-in method on; that lives in the Firebase
+project. In **Firebase Console › Authentication › Sign-in method**, enable:
+
+- **Email/Password** — required. Without it every sign-in and sign-up fails.
+- **Google** — optional. The *Continue with Google* button is always shown,
+  because the page has no way to know what the project has enabled.
+
+Either one switched off raises `auth/configuration-not-found`, which the
+sign-in page translates into "this way of signing in is not switched on for
+this app yet" and names the method, rather than showing an owner a code they
+can do nothing with.
+
+The app requires a password of at least 8 characters. That is this app's rule,
+not Firebase's, which stops at 6.
+
+---
+
 ## The sign-in page, and where its config comes from
 
 The browser needs the Firebase Web config — API key, auth domain, project id,
@@ -71,6 +90,26 @@ check that the backend has a Firebase Web App associated with it.
 
 ---
 
+## 0. Getting the CLI, once
+
+Both of the steps below run from your own machine, against a checkout of this
+repository — `firestore.rules` and `firestore.indexes.json` are files, so the
+CLI has to be able to see them.
+
+```bash
+npm install -g firebase-tools
+firebase login                       # opens a browser; sign in as the project owner
+git clone https://github.com/Ergplan/easybills.git
+cd easybills
+git checkout claude/admiring-wright-5w8x4g
+firebase use production              # the alias for ekbill, in .firebaserc
+```
+
+`firebase login` is the whole authentication story. There is no token to
+generate, paste or store anywhere.
+
+---
+
 ## 1. The worker secret
 
 The background worker endpoint refuses every request that does not present a
@@ -83,13 +122,21 @@ correctly while that job waits — so `apphosting.yaml` has it commented out, an
 Business details reports *Monthly drafts: not configured* until you finish this.
 
 ```bash
-openssl rand -hex 32                     # copy the output
-firebase apphosting:secrets:set job-runner-secret --project ekbill
-firebase apphosting:secrets:grantaccess job-runner-secret \
-  --project ekbill --backend easybills
+openssl rand -hex 32
+# Copy the 64-character output. You need it twice: once here, once in the
+# scheduler in step 4. Keep it somewhere until then.
+
+firebase apphosting:secrets:set job-runner-secret
+# Paste the value when prompted. It is not echoed.
+
+firebase apphosting:secrets:grantaccess job-runner-secret --backend easybills
 ```
 
-Then uncomment the `JOB_RUNNER_SECRET` block in `apphosting.yaml` and push.
+Then uncomment the `JOB_RUNNER_SECRET` block in `apphosting.yaml`, commit and
+push — pushing is what triggers the rollout that picks it up.
+
+On Windows without `openssl`, any long random string works:
+`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
 Doing it the other way round — referencing the secret before it exists — fails
 the rollout with *Error resolving secret version*, which is the same message
 whether the secret is missing or merely inaccessible.
@@ -102,14 +149,33 @@ App Hosting deploys the application. It does not touch Firestore, so this is a
 separate, one-time command — and it is not optional:
 
 ```bash
-firebase use production          # the alias in .firebaserc
 firebase deploy --only firestore:rules,firestore:indexes
 ```
+
+Expect two things in the output: *firestore: released rules firestore.rules to
+cloud.firestore*, and the indexes being created. Index builds are asynchronous
+— the command returns before they finish, and Firestore Console › Indexes shows
+each one as *Building* then *Enabled*. Queries against an index still building
+fail exactly as they would if it were missing, so give it a minute on a small
+database before deciding something is wrong.
+
+**No CLI at hand?** The rules can also be pasted into Firebase Console ›
+Firestore Database › Rules and published, which takes a minute and is the
+security-critical half. The indexes cannot usefully be done that way — there
+are six, each with its own field order, and getting one wrong shows up as a
+query that fails in production.
 
 `firestore.rules` denies **all** direct client access. Every record is reached
 through this app's own server, which is what makes tenant isolation a server
 invariant rather than a rule that has to be got right. Deploying the rules is
 what turns that from a claim into a fact.
+
+The rules deny **all** direct client access, and
+`tests/integration/rules.test.ts` executes them with the client SDK to prove
+it — signed out, signed in, and as one business reaching for another's records.
+Every other test in the suite reaches Firestore through the Admin SDK, which
+bypasses rules by design, so all of them would pass just as happily against a
+rule set that allowed the world.
 
 `firestore.indexes.json` holds every compound query the app makes.
 Without it the first real user gets `FAILED_PRECONDITION: The query requires an
