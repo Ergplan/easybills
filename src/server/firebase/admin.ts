@@ -4,7 +4,7 @@ import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getAuth, type Auth } from 'firebase-admin/auth';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
-import { firebaseProjectId, usingEmulators } from '@/lib/env';
+import { firebaseProjectId, firestoreDatabaseId, usingEmulators } from '@/lib/env';
 
 /**
  * The Firebase Admin SDK is the ONLY path to Firestore in this application.
@@ -55,7 +55,12 @@ let dbInstance: Firestore | null = null;
 
 export function db(): Firestore {
   if (!dbInstance) {
-    const instance = getFirestore(adminApp());
+    // A named database when one is configured, the project's `(default)`
+    // otherwise. This exists because a database's region is fixed at creation:
+    // the only way off a `(default)` in the wrong part of the world is to make
+    // another one in the right part and point here at it.
+    const named = firestoreDatabaseId();
+    const instance = named ? getFirestore(adminApp(), named) : getFirestore(adminApp());
     try {
       instance.settings({ ignoreUndefinedProperties: true });
     } catch {

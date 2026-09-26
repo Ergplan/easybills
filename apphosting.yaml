@@ -68,6 +68,19 @@ env:
   # from an app whose fonts are self-hosted precisely so that opening a bill
   # tells no third party anything.
 
+  # Which Firestore database to use. Unset means the project's `(default)`.
+  #
+  # A database's LOCATION IS FIXED AT CREATION and can never be changed. If the
+  # default one was created in the wrong region -- nam5 is the United States;
+  # asia-south1 is Mumbai -- the way out is to create a second database in the
+  # right region and name it here, then move any data across. Every read this
+  # app makes happens before a page renders, so the round trip to the database
+  # is in front of the owner on every screen.
+  #
+  # - variable: FIRESTORE_DATABASE_ID
+  #   value: easybills-india
+  #   availability: [RUNTIME]
+
   # ===========================================================================
   # SIGN-IN IS SWITCHED OFF.
   #

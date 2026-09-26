@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 
-import { backgroundWorkConfigured, firebaseProjectId, openAccess, publicFirebaseConfig, usingEmulators } from '@/lib/env';
+import {
+  backgroundWorkConfigured,
+  firebaseProjectId,
+  firestoreDatabaseId,
+  openAccess,
+  publicFirebaseConfig,
+  usingEmulators,
+} from '@/lib/env';
 import { db } from '@/server/firebase/admin';
 import { pdfCapability } from '@/server/pdf/render';
 
@@ -24,6 +31,7 @@ export const runtime = 'nodejs';
 export async function GET() {
   const checks: Record<string, unknown> = {
     projectId: firebaseProjectId(),
+    database: firestoreDatabaseId() ?? '(default)',
     usingEmulators,
     signIn: openAccess() ? 'switched off — open access' : 'required',
     webConfig: publicFirebaseConfig().projectId ? 'present' : 'MISSING',

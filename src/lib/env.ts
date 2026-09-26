@@ -113,6 +113,18 @@ export const jobRunnerSecret = (): string => required('JOB_RUNNER_SECRET');
 export const backgroundWorkConfigured = (): boolean => optional('JOB_RUNNER_SECRET') !== null;
 
 /**
+ * Which Firestore database, when it is not the default one.
+ *
+ * A project can hold several databases, and a database's LOCATION can never be
+ * changed after it is created. So a `(default)` created in the wrong region is
+ * not a mistake that can be corrected in place -- the way out is a second
+ * database in the right region, named, and this pointing at it.
+ *
+ * Unset means `(default)`, which is what a normal project has.
+ */
+export const firestoreDatabaseId = (): string | null => optional('FIRESTORE_DATABASE_ID');
+
+/**
  * Open access: no sign-in, everybody is the same test user.
  *
  * For showing the app to somebody without first setting up Firebase Auth, and

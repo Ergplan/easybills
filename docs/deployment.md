@@ -204,8 +204,24 @@ Database, not a named database.
 Firebase Console › **Firestore Database** › **Create database**:
 
 - **Native mode**, not Datastore mode.
-- Location `asia-south1` (Mumbai) for an Indian business. This cannot be
-  changed later without creating a new database.
+- **Location** `asia-south1` (Mumbai) for an Indian business. **This can never
+  be changed.** Not renamed, not migrated, not edited — the only route to a
+  different region is a different database.
+
+  It is worth getting right, because every screen reads Firestore before it
+  renders anything: Home reads bills and schedules, the list reads invoices,
+  opening a bill reads that invoice, its payments and its adjustments. A
+  database in `nam5` (United States) puts an ocean in front of each of those
+  round trips, and the owner waits for it on every tap. Indian tax records also
+  then sit outside India, which an accountant may have a view on.
+
+  **Already created in the wrong region?** Nothing needs deleting. Create a
+  *second* database in `asia-south1` with a name of its own, set
+  `FIRESTORE_DATABASE_ID` in `apphosting.yaml` to that name, and push. Deploy
+  the rules and indexes to it with
+  `firebase deploy --only firestore --database <name>`. Anything already in the
+  old one has to be copied across by hand, which is why doing this while it is
+  still empty costs nothing at all.
 - Start in production mode; the rules deployed in the next step replace
   whatever you pick here anyway.
 
