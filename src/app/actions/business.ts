@@ -54,6 +54,44 @@ export async function createBusinessAction(
 }
 
 /**
+ * "Aap": the same five fields, edited later.
+ *
+ * Changing the UPI ID changes where customers send money. The older settings
+ * screen gates that on re-typing a password; there is no password any more,
+ * and the owner reached this screen through an OTP on the phone in their
+ * hand. That is the check. It is also the case that the deployed app has no
+ * sign-in at all today (AUTH_BYPASS), which no gate here can make up for.
+ */
+export async function saveProfileAction(
+  businessId: string,
+  input: ProfileInput,
+): Promise<ActionResult<BusinessRecord> | { ok: false; error: string; field: ProfileField }> {
+  try {
+    const { user, business } = await requireBusiness(businessId);
+    const checked = parseProfile({ ...input, phone: user.phone ?? input.phone });
+    if (!checked.ok) return { ok: false, error: checked.message, field: checked.field };
+    const { profile } = checked;
+    const updated = await updateBusiness(businessId, user.uid, {
+      legalName: profile.name,
+      phone: profile.phone,
+      gstin: profile.gstin,
+      // A GST number settles the status; taking it away un-settles it back to
+      // "not registered", never to "not sure".
+      registrationType: profile.registrationType,
+      stateCode: profile.stateCode,
+      city: profile.city,
+      bank: { ...business.bank, upiId: profile.upiId },
+    });
+    revalidatePath('/home');
+    revalidatePath('/you');
+    revalidatePath('/settings');
+    return ok(updated);
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
  * Update the business profile.
  *
  * Changing where money is sent is a security-sensitive action, so bank and UPI

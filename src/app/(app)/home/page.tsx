@@ -1,141 +1,142 @@
 import Link from 'next/link';
 
-import { formatPeriodLong, monthPeriodOf, todayIst } from '@/lib/dates';
-import { profileSetupStatus } from '@/lib/domain/setup-status';
 import { Money } from '@/components/Money';
-import { TopBar } from '@/components/TopBar';
+import { t, tCount } from '@/lib/copy';
+import { salutationFor } from '@/lib/copy/messages';
+import { formatDateShort, todayIst } from '@/lib/dates';
+import type { SentStatus } from '@/lib/domain/home';
+import { profileSetupStatus } from '@/lib/domain/setup-status';
+import { initialOf } from '@/lib/domain/home';
 import { requireCurrentContext } from '@/server/auth/current';
-import { loadHomeSummary } from '@/server/services/home-summary';
-import { gstModuleVisibility } from '@/server/services/gst-visibility';
+import { loadHome } from '@/server/services/home';
+
+import { CustomerChips } from './CustomerChips';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Three questions, three cards, nothing else.
+ *
+ *   Who do I bill?      Chalo, bill banate hain  -- the customers, as chips
+ *   What have I sent?   Bheje hue bills          -- this month, latest first
+ *   Who owes me?        Kiske paise aane hain    -- the total, then each one
+ *
+ * If a feature does not answer one of those, it is not on Home.
+ */
 export default async function HomePage() {
   const { business } = await requireCurrentContext();
-  const summary = await loadHomeSummary(business.id);
-  const gst = gstModuleVisibility(business);
   const today = todayIst();
-
-  // Asks the same question issuance asks, so the banner cannot outlive the
-  // problem it describes.
+  const home = await loadHome(business.id, today);
   const setup = profileSetupStatus(business, today);
+  const greetName = salutationFor({ name: business.legalName });
 
   return (
-    <>
-      <TopBar title={business.legalName} wideTitle="Home" showProfile />
-      <main className="page">
-        {/* The one primary action. Nothing competes with it visually. */}
-        <Link href="/bills/new" className="btn btn--primary btn--block btn--large">
-          + Create bill
+    <main className="page">
+      <header className="home__top">
+        <div className="grow">
+          <div className="home__greet">{t('home.greeting', { name: greetName })}</div>
+          {business.city && <div className="home__where">{business.city}</div>}
+        </div>
+        <Link href="/you" className="avatar" aria-label={t('tab.you')}>
+          {initialOf(business.legalName)}
         </Link>
+      </header>
 
-        {!setup.complete && (
-          <div className="notice notice--warn">
-            <span className="notice__icon" aria-hidden="true">!</span>
-            <div className="stack" style={{ gap: 6 }}>
-              <span>{setup.headline}</span>
-              <span className="small">
-                You can carry on writing bills in the meantime — you just cannot issue one yet.
-              </span>
-              <Link href="/settings" className="btn btn--secondary" style={{ alignSelf: 'flex-start' }}>
-                Finish business setup
-              </Link>
-            </div>
-          </div>
-        )}
+      {!setup.complete && (
+        <div className="notice notice--warn">
+          <span className="notice__icon" aria-hidden="true">!</span>
+          <span className="grow">{t('home.setup')}</span>
+          <Link href="/you" className="btn btn--secondary btn--small">{t('home.setup.go')}</Link>
+        </div>
+      )}
 
-        {/* Four cards that each say one thing. On a phone they stack; in a
-            browser window they sit two across, so the whole of today is read
-            in one glance instead of a long scroll. */}
-        <div className="deck">
-        {/* Monthly bills ready */}
-        <section className="card stack" aria-labelledby="monthly-heading">
-          <div className="row row--between">
-            <h2 id="monthly-heading">Monthly bills ready</h2>
-            {summary.monthlyDraftsReady > 0 && (
-              <span className="pill pill--info">{summary.monthlyDraftsReady} to review</span>
-            )}
+      <div className="deck">
+        {/* 1. Chalo, bill banate hain */}
+        <section className="card stack" aria-labelledby="bill-heading">
+          <div>
+            <h2 id="bill-heading" className="card__title">{t('home.bill.title')}</h2>
+            <p className="card__sub">{home.customers.length ? t('home.bill.sub') : t('home.bill.subEmpty')}</p>
           </div>
-          {summary.monthlyDraftsReady > 0 ? (
-            <>
-              <p className="muted small">
-                We have prepared {summary.monthlyDraftsReady === 1 ? 'a draft' : 'drafts'} for you to check.
-                Nothing has been sent to your customers.
-              </p>
-              <Link href="/bills?filter=monthly" className="btn btn--secondary btn--block">
-                Review {summary.monthlyDraftsReady === 1 ? 'draft' : 'drafts'}
-              </Link>
-            </>
-          ) : summary.activeScheduleCount > 0 ? (
-            <p className="muted small">
-              Nothing to review right now. We will prepare your next draft automatically.
-            </p>
-          ) : (
-            <p className="muted small">
-              Billing the same customer every month? Turn on “Repeat every month” on any bill and we will
-              prepare the next one for you to review.
-            </p>
-          )}
+          <CustomerChips customers={home.customers.map((c) => ({ id: c.id, name: c.name }))} />
         </section>
 
-        {/* Money to collect */}
-        <section className="card stack" aria-labelledby="collect-heading">
-          <h2 id="collect-heading">Money to collect</h2>
-          <Money paise={summary.moneyToCollectPaise} big />
-          {summary.unpaidCount > 0 ? (
-            <p className="muted small">
-              Across {summary.unpaidCount} {summary.unpaidCount === 1 ? 'bill' : 'bills'}
-              {summary.overdueCount > 0 && (
-                <>
-                  {' · '}
-                  <span style={{ color: 'var(--danger)', fontWeight: 650 }}>
-                    {summary.overdueCount} past the due date
-                  </span>
-                </>
-              )}
+        {/* 2. Bheje hue bills */}
+        <section className="card stack" aria-labelledby="sent-heading">
+          <div>
+            <h2 id="sent-heading" className="card__title">{t('home.sent.title')}</h2>
+            <p className="card__sub">
+              {tCount(home.sentThisMonth, { zero: 'home.sent.subEmpty', one: 'home.sent.subOne', many: 'home.sent.sub' })}
             </p>
-          ) : (
-            <p className="muted small">Nothing outstanding. </p>
-          )}
-          {summary.unpaidCount > 0 && (
-            <Link href="/bills?status=unpaid" className="btn btn--secondary btn--block">
-              See unpaid bills
-            </Link>
-          )}
-        </section>
-
-        {/* GST returns -- shown only to businesses it applies to. */}
-        {gst.visible && (
-          <section className="card stack" aria-labelledby="gst-heading">
-            <div className="row row--between">
-              <h2 id="gst-heading">GST returns</h2>
-              <span className="pill pill--info">{formatPeriodLong(monthPeriodOf(today))}</span>
-            </div>
-            <p className="muted small">{gst.homeCardLine}</p>
-            <Link href="/gst" className="btn btn--secondary btn--block">
-              Open GST returns
-            </Link>
-          </section>
-        )}
-
-        {summary.recentDrafts.length > 0 && (
-          <section className="card card--flush deck__full" aria-labelledby="drafts-heading">
-            <div className="card__header">
-              <h2 id="drafts-heading">Your unfinished bills</h2>
-            </div>
-            <div className="list">
-              {summary.recentDrafts.map((d) => (
-                <Link key={d.id} href={`/bills/${d.id}`} className="list__item">
-                  <span className="grow truncate">{d.customer.name}</span>
-                  <Money paise={d.totals.grandTotalPaise} />
-                  <span className="pill pill--draft">Draft</span>
+          </div>
+          {home.recentSent.length > 0 && (
+            <div className="rows">
+              {home.recentSent.map((row) => (
+                <Link key={row.id} href={`/bills/${row.id}`} className="row-line">
+                  <div className="row-line__link">
+                    <div className="row-line__name">{row.customerName}</div>
+                    <div className="row-line__meta">{row.number} · {formatDateShort(row.issueDate)}</div>
+                  </div>
+                  <Money paise={row.grandTotalPaise} whole />
+                  <SentPill status={row.status} />
                 </Link>
               ))}
             </div>
-          </section>
-        )}
-        </div>
-      </main>
-    </>
+          )}
+          {home.recentSent.length > 0 && (
+            <Link href="/bills" className="btn btn--ghost" style={{ alignSelf: 'flex-start' }}>
+              {t('common.seeAll')}
+            </Link>
+          )}
+        </section>
+
+        {/* 3. Kiske paise aane hain */}
+        <section className="card stack" aria-labelledby="due-heading">
+          <div>
+            <h2 id="due-heading" className="card__title">{t('home.due.title')}</h2>
+            {home.due.length > 0 && <div className="home__big amount"><Money paise={home.duePaise} whole /></div>}
+            <p className="card__sub">
+              {tCount(
+                home.dueFrom,
+                { zero: 'home.due.subEmpty', one: 'home.due.subOne', many: 'home.due.sub' },
+                { days: home.oldestDays },
+              )}
+            </p>
+          </div>
+          {home.due.length > 0 && (
+            <div className="rows">
+              {home.due.map((row) => (
+                <div key={row.id} className="row-line">
+                  <Link href={`/bills/${row.id}`} className="row-line__link">
+                    <div className="row-line__name">{row.customerName}</div>
+                    <div className="row-line__meta">{ageLine(row.days)} · {row.number}</div>
+                  </Link>
+                  <Money paise={row.balancePaise} whole />
+                  <Link href={`/bills/${row.id}`} className="btn btn--secondary btn--small">
+                    {t('remind.button')}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
   );
+}
+
+function ageLine(days: number): string {
+  if (days === 0) return t('home.due.ageToday');
+  if (days === 1) return t('home.due.ageOne');
+  return t('home.due.ageDays', { days });
+}
+
+function SentPill({ status }: { status: SentStatus }) {
+  const map: Record<SentStatus, { cls: string; key: 'status.sent' | 'status.paid' | 'status.partly' | 'status.due' }> = {
+    sent: { cls: 'pill--sent', key: 'status.sent' },
+    paid: { cls: 'pill--paid', key: 'status.paid' },
+    partly: { cls: 'pill--partly', key: 'status.partly' },
+    due: { cls: 'pill--unpaid', key: 'status.due' },
+  };
+  const { cls, key } = map[status];
+  return <span className={`pill ${cls}`}>{t(key)}</span>;
 }

@@ -8,16 +8,24 @@ export function Money({
   paise,
   big = false,
   symbol = true,
+  whole = false,
   className = '',
 }: {
   paise: number;
   big?: boolean;
   symbol?: boolean;
+  /**
+   * Drop the ".00" when there are no paise. Right on Home, where the figure
+   * is read at a glance; wrong on a bill or a ledger, where the paise column
+   * lining up is the point.
+   */
+  whole?: boolean;
   className?: string;
 }) {
+  const text = formatMoneyIndian(paise, { withSymbol: symbol });
   return (
     <span className={`amount${big ? ' amount--big' : ''}${className ? ` ${className}` : ''}`}>
-      {formatMoneyIndian(paise, { withSymbol: symbol })}
+      {whole && text.endsWith('.00') ? text.slice(0, -3) : text}
     </span>
   );
 }

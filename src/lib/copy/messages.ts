@@ -103,7 +103,7 @@ function firstWord(name: string): string {
  * a word-boundary pattern never sees "Sharma & Sons" as anything but a name.
  */
 const SHOP_WORDS =
-  /\b(traders?|enterprises?|stores?|industries|pvt|ltd|llp|society|associates|agencies|agency|solutions|services|works|mart|boutique|electricals?|hardware|motors|textiles?|and\s+sons|brothers|bros|co\.?|company|corp|centre|center|clinic|hospital|school|academy|institute|shop|hotel|restaurant|cafe|bakery|studio|infotech|technologies|tech|systems)\b/i;
+  /\b(traders?|enterprises?|stores?|industries|pvt|ltd|llp|society|associates|agencies|agency|solutions|services|works|mart|boutique|electricals?|hardware|motors|textiles?|and\s+sons|brothers|bros|co\.?|company|corp|centre|center|clinic|hospital|school|academy|institute|shop|hotel|restaurant|cafe|bakery|studio|infotech|technologies|tech|systems|repairs?|appliances?|consulting|consultants|kitchen|designs?|classes|tuitions?|caterers|foods?|sweets|garments|fashions?|furniture|interiors|builders|constructions?|developers|printers|photography|events|sample)\b/i;
 
 export function looksLikeShop(name: string): boolean {
   return name.includes('&') || SHOP_WORDS.test(name);

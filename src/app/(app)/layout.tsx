@@ -1,4 +1,5 @@
 import { openAccess } from '@/lib/env';
+import { gstTabVisible } from '@/lib/domain/gst-tab';
 import { requireCurrentContext } from '@/server/auth/current';
 
 import { SideNav, TabBar } from '@/components/TabBar';
@@ -16,10 +17,11 @@ export const dynamic = 'force-dynamic';
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { business } = await requireCurrentContext();
+  const showGst = gstTabVisible(business);
 
   return (
     <div className="app-shell">
-      <SideNav businessName={business.legalName} />
+      <SideNav businessName={business.legalName} showGst={showGst} />
       <div className="app-shell__main">
         {/* Two different warnings, and both can be true at once. One is about
             the records; the other is about who can reach them. */}
@@ -36,7 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         )}
         {children}
       </div>
-      <TabBar />
+      <TabBar showGst={showGst} />
     </div>
   );
 }

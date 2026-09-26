@@ -47,8 +47,9 @@ try {
   await fillProfile(page, BASE, { name: 'Kumar Electrical Repairs', city: 'Pune', stateCode: '27' });
   await page.waitForTimeout(600);
   await shot('01-home');
-  check('Home shows one primary action', await page.getByRole('link', { name: '+ Create bill' }).isVisible());
-  check('Home has exactly three navigation destinations', (await page.locator('.tabbar__item').count()) === 3);
+  check('Home asks the three questions', await page.getByText('Chalo, bill banate hain').isVisible()
+    && await page.getByText('Bheje hue bills').isVisible() && await page.getByText('Kiske paise aane hain').isVisible());
+  check('no GST number, so two tabs: Ghar and Aap', (await page.locator('.tabbar__item').count()) === 2);
   check('Home shows no chart', (await page.locator('canvas, svg.chart').count()) === 0);
 
   // The 44px floor applies on every screen, not only the editor.
@@ -63,8 +64,7 @@ try {
   check('Home touch targets are at least 44px', homeSmall.length === 0, `(${homeSmall.join(', ')})`);
 
   console.log('\n3. Quick bill at 360px');
-  await page.getByRole('link', { name: '+ Create bill' }).click();
-  await page.waitForURL('**/bills/new', { timeout: 15000 });
+  await page.goto(`${BASE}/bills/new`, { waitUntil: 'networkidle' });
   await page.getByText('Quick bill', { exact: true }).click();
   await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 20000 });
   await page.waitForTimeout(1000);

@@ -1,5 +1,7 @@
 'use server';
 
+import { t } from '@/lib/copy';
+
 import { revalidatePath } from 'next/cache';
 
 import { todayIst } from '@/lib/dates';
@@ -16,7 +18,7 @@ import {
   newInvoiceId,
   saveDraft,
 } from '@/server/repos/invoices';
-import { markBilled } from '@/server/repos/customers';
+import { customerToParty, getCustomer, markBilled } from '@/server/repos/customers';
 import { createItem } from '@/server/repos/items';
 import { recordPayment, recordSettlementDeduction, reversePayment } from '@/server/repos/payments';
 import { createAdjustment } from '@/server/repos/adjustments';
@@ -140,6 +142,53 @@ export async function startDraftAction(kind: 'quick-bill' | 'customer-invoice'):
           taxRateBp: business.defaultTaxRateBp ?? 0,
           // Only a configured default counts as an answer. With none, the rate
           // select opens blank and issuing waits for the owner to fill it.
+          taxRateChosen: business.defaultTaxRateBp !== null,
+          cessRateBp: 0,
+          priceIncludesTax: false,
+          unit: null,
+          hsnCode: null,
+          savedItemId: null,
+        },
+      ],
+      notes: null,
+      baseRevision: 0,
+    });
+    return ok({ invoiceId });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
+ * A chip on Home: the customer's details are already on the bill when the
+ * editor opens, and there is one empty line to type into. "Naya customer"
+ * comes through here too with no id, and the editor asks who it is for.
+ */
+export async function startBillForCustomerAction(
+  customerId: string | null,
+): Promise<ActionResult<{ invoiceId: string }>> {
+  try {
+    const { business, user } = await requireCurrentContext();
+    const customer = customerId ? await getCustomer(business.id, customerId) : null;
+    if (customerId && !customer) return { ok: false, error: t('error.notFound'), code: 'not-found' };
+    const invoiceId = newInvoiceId();
+    await saveDraft({
+      business,
+      uid: user.uid,
+      invoiceId,
+      kind: 'customer-invoice',
+      issueDate: todayIst(),
+      customer: customer ? customerToParty(customer) : emptyParty(''),
+      placeOfSupplyStateCode: customer?.stateCode ?? business.stateCode,
+      supplyFlags: [],
+      lines: [
+        {
+          id: crypto.randomUUID(),
+          description: '',
+          quantityMilli: 1000,
+          unitPricePaise: 0,
+          discountPaise: 0,
+          taxRateBp: business.defaultTaxRateBp ?? 0,
           taxRateChosen: business.defaultTaxRateBp !== null,
           cessRateBp: 0,
           priceIncludesTax: false,

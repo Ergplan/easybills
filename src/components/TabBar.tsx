@@ -3,35 +3,45 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { t } from '@/lib/copy';
+
 import { Icon, type IconName } from './Icon';
 
 /**
- * Exactly three destinations. Business settings live behind the profile icon in
- * the top bar, not here -- adding a fourth tab is the first step towards the
- * crowded app this product is trying not to be.
+ * Ghar, GST, Aap. And GST only once there is a GST number to speak of.
+ *
+ * Most owners this app is for are not registered and cannot charge GST; a GST
+ * tab in front of them says "you should be doing something here", and the
+ * something is not allowed. So the tab is earned by entering a number under
+ * Aap, and until then there are two.
  *
  * One list, rendered twice: along the bottom on a phone, down the side on a
  * desktop. Only one is ever visible -- CSS decides which -- so the two cannot
- * drift apart or offer a destination the other does not have. The hidden one is
- * `display: none`, which takes it out of the accessibility tree as well as the
- * picture, so a keyboard or a screen reader meets three destinations, not six.
+ * drift apart or offer a destination the other does not have.
  */
-const TABS: Array<{ href: string; label: string; icon: IconName }> = [
-  { href: '/home', label: 'Home', icon: 'home' },
-  { href: '/bills', label: 'Bills', icon: 'bills' },
-  { href: '/customers', label: 'Customers', icon: 'customers' },
-];
+export interface Tab {
+  href: string;
+  label: string;
+  icon: IconName;
+}
+
+export function tabsFor(showGst: boolean): Tab[] {
+  const tabs: Tab[] = [{ href: '/home', label: t('tab.home'), icon: 'home' }];
+  if (showGst) tabs.push({ href: '/gst', label: t('tab.gst'), icon: 'gst' });
+  tabs.push({ href: '/you', label: t('tab.you'), icon: 'person' });
+  return tabs;
+}
 
 function useActive() {
   const pathname = usePathname();
   return (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function TabBar() {
+export function TabBar({ showGst }: { showGst: boolean }) {
   const isActive = useActive();
   return (
     <nav className="tabbar" aria-label="Main" data-nav="compact">
-      {TABS.map((tab) => (
+      {tabsFor(showGst).map((tab) => (
         <Link
           key={tab.href}
           href={tab.href}
@@ -46,11 +56,8 @@ export function TabBar() {
   );
 }
 
-/**
- * The same three destinations, down the side, for a window wide enough that a
- * bar across the bottom would be a long way from where the eye already is.
- */
-export function SideNav({ businessName }: { businessName: string }) {
+/** The same destinations, down the side, for a window wide enough. */
+export function SideNav({ businessName, showGst }: { businessName: string; showGst: boolean }) {
   const isActive = useActive();
   return (
     <div className="sidenav" data-nav="wide">
@@ -60,7 +67,7 @@ export function SideNav({ businessName }: { businessName: string }) {
         </span>
       </div>
       <nav className="sidenav__links" aria-label="Main">
-        {TABS.map((tab) => (
+        {tabsFor(showGst).map((tab) => (
           <Link
             key={tab.href}
             href={tab.href}

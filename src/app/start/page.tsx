@@ -4,7 +4,7 @@ import { t } from '@/lib/copy';
 import { currentUser } from '@/server/auth/session';
 import { usersCol } from '@/server/firebase/paths';
 
-import { ProfileForm } from './ProfileForm';
+import { ProfileForm } from '@/components/ProfileForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +29,7 @@ export default async function StartPage() {
         <h1>{t('you.title')}</h1>
         <p className="muted">{t('you.sub')}</p>
       </div>
-      <ProfileForm phone={user.phone} />
+      <ProfileForm mode="create" phone={user.phone} />
     </main>
   );
 }

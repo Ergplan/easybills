@@ -71,6 +71,12 @@ export const DICTIONARY = {
   'home.due.subEmpty': { en: 'Everything is paid. Nice.', hi: 'Sab paise aa gaye. Badhiya!' },
   'home.due.ageDays': { en: '{days} days now', hi: '{days} din ho gaye' },
   'home.due.ageToday': { en: 'sent today', hi: 'aaj bheja' },
+  'home.due.ageOne': { en: '1 day', hi: '1 din' },
+  'home.setup': {
+    en: 'A couple of details are needed before a bill can go out. Add them under "You".',
+    hi: 'Bill bhejne se pehle "Aap" mein thodi details bhar do.',
+  },
+  'home.setup.go': { en: 'Fill in', hi: 'Bhar do' },
 
   // ------------------------------------------------------------ status ----
   'status.draft': { en: 'Not sent yet', hi: 'Abhi bheja nahi' },
@@ -180,6 +186,8 @@ export const DICTIONARY = {
   'you.stateChoose': { en: 'Choose your state', hi: 'Rajya chuno' },
   'you.start': { en: "Let's start", hi: 'Chalo, shuru karte hain' },
   'you.demo': { en: 'Want to look around first? Open a demo shop', hi: 'Pehle demo dekhna hai? Demo dukaan kholo' },
+  'you.saved': { en: 'Saved. Your next bill will use this.', hi: 'Save ho gaya ✓ Agla bill isi se banega.' },
+  'you.more': { en: 'More: bank account, bill numbering, logo', hi: 'Aur bhi: bank account, bill number, logo' },
   'you.demoNote': { en: 'Sample bills and customers, kept separate from your real ones.', hi: 'Sample bills aur customers. Aapke asli bills se bilkul alag rehta hai.' },
   'you.nameHint': { en: 'Exactly as it should appear on the bill', hi: 'Jaisa bill pe dikhna chahiye, waisa hi' },
   'you.upiExample': { en: 'like sharma@upi or 98765xxxxx@ybl', hi: 'jaise sharma@upi ya 98765xxxxx@ybl' },

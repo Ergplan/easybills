@@ -80,7 +80,8 @@ async function layoutRules(name) {
     ).length,
   }));
   check(`${name}: navigation is the side rail`, nav.rails === 1 && nav.bars === 0, JSON.stringify(nav));
-  check(`${name}: exactly three destinations`, nav.destinations === 3, `(saw ${nav.destinations})`);
+  // Ghar and Aap, plus GST once there is a GST number to speak of.
+  check(`${name}: two or three destinations`, nav.destinations === 2 || nav.destinations === 3, `(saw ${nav.destinations})`);
 
   // Content must not stretch to the full monitor: long lines are unreadable.
   const measure = await page.evaluate(() => document.querySelector('main.page')?.getBoundingClientRect().width ?? 0);
@@ -106,20 +107,15 @@ try {
   const railName = (await page.locator('.sidenav__name').innerText()).trim();
   check('the rail carries the business name', railName.length > 0, `(saw "${railName}")`);
   // A name that fits must not be cut off: the rail wraps rather than truncates.
-  const topbarName = (await page.locator('.topbar__title').innerText()).trim();
-  check('the business name is not repeated across the top', topbarName === 'Home', `(saw "${topbarName}")`);
-  // The one primary action rule survives the width change.
+  const topbars = await page.locator('.topbar__title').count();
+  check('home has no top bar repeating the business name', topbars === 0, `(saw ${topbars})`);
   const primaries = await page.locator('main .btn--primary').count();
-  check('home still has exactly one primary action', primaries === 1, `(saw ${primaries})`);
-  const createBtn = await page.getByRole('link', { name: '+ Create bill' }).boundingBox();
-  check(
-    'the primary action is a button, not a full-width bar',
-    createBtn !== null && createBtn.width < 400,
-    `(${createBtn ? Math.round(createBtn.width) : 0}px wide)`,
-  );
+  check('home has no primary button: the chips are the action', primaries === 0, `(saw ${primaries})`);
+  const chips = await page.locator('.chip').count();
+  check('the demo customers are chips on the first card', chips >= 2, `(saw ${chips})`);
 
   console.log('\n3. The rail navigates');
-  for (const [label, path] of [['Bills', '/bills'], ['Customers', '/customers'], ['Home', '/home']]) {
+  for (const [label, path] of [['Aap', '/you'], ['Ghar', '/home']]) {
     await page.locator('.sidenav__item', { hasText: label }).click();
     await page.waitForURL(`**${path}`, { timeout: 15000 });
     await page.waitForTimeout(700);
@@ -127,10 +123,12 @@ try {
     check(`the rail marks ${label} as where you are`, current.trim() === label, `(marked "${current.trim()}")`);
   }
 
-  console.log('\n4. Settings is behind the top bar icon, not a fourth destination');
+  console.log('\n4. Settings is behind Aap, not a destination of its own');
   const inRail = await page.locator('.sidenav a[href="/settings"]').count();
   check('settings is not in the rail', inRail === 0);
-  await page.getByRole('link', { name: 'Business settings' }).click();
+  await page.locator('.sidenav__item', { hasText: 'Aap' }).click();
+  await page.waitForURL('**/you', { timeout: 15000 });
+  await page.getByRole('link', { name: /Aur bhi/ }).click();
   await page.waitForURL('**/settings', { timeout: 15000 });
   await page.waitForTimeout(1200);
   await shot('02-settings');
