@@ -481,6 +481,47 @@ across the row with the amounts in a column of their own.
 
 ---
 
+## Visual pass, 26 September 2026
+
+The brief asked for plain and unintimidating and got it, but plain had drifted
+into unconsidered: a warm ink on a cool paper, one radius everywhere, a
+dark theme that was a blue-grey inversion of a warm light one, and the single
+figure an owner opens the app to see set barely larger than a heading.
+
+The asked-for reference was a defence-technology site — near-black, monospace,
+industrial. That reads as technical authority to a defence buyer and as *this
+is complicated software* to a repair-shop owner with four bills to raise, so
+the aesthetic was not copied. What was taken from it is the discipline:
+deliberate type, sharper geometry, restraint. Every usability rule the product
+is built on — three destinations, one primary action, 44px targets, plain
+language, no charts — is unchanged, and still asserted at fourteen widths.
+
+What changed. One warm neutral family across both themes. A type scale with
+tracking that tightens as size grows, rather than each component reaching for
+its own size. Squarer corners, lighter shadows, and a focus ring that is a ring
+rather than a slab. Empty states that look like a starting point instead of
+something that failed to load. And "Money to collect" given the size it earns —
+fluid, so that ₹1,750.00 and ₹99,99,99,999.99 are the same field and neither
+pushes a 360px screen sideways.
+
+The dark theme was rebuilt rather than adjusted: the same warm family inverted,
+with depth coming from surfaces lightening as they come forward, because a
+black shadow on a near-black page separates nothing.
+
+**A real defect fell out of writing the check rather than the colours.**
+`tests/unit/palette.test.ts` computes WCAG contrast for every text-on-background
+pairing the app puts on screen, in both themes, from the tokens in the
+stylesheet itself. Run against the palette as it stood, it failed twice:
+`--ink-faint` was 4.44:1 on a card and 4.07:1 on the page behind it, below AA
+for the smallest text in the app — dates, hints, "1,050.00 left". The comment
+beside it had claimed 4.7:1 for months. Both themes now clear the floors, and a
+colour nudged for looks cannot quietly break them again.
+
+Verified: 342 tests, all four browser suites, and screenshots at 360px and
+1440px in both themes.
+
+---
+
 ## Everything that is mocked or unverified
 
 | Thing | State |

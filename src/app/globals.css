@@ -50,14 +50,33 @@
   --danger: #9c2a23;
   --danger-soft: #fbeae8;
 
-  --radius: 14px;
-  --radius-sm: 10px;
+  /* Squarer than it was. A 14px radius on every corner reads soft to the point
+     of vague; these are documents about money. Sharp enough to feel precise,
+     round enough not to feel severe. */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
   --tap: 44px;
 
+  /* A type scale, rather than whatever size each component reached for.
+     Tracking tightens as size grows, which is what stops large text looking
+     like small text that was scaled up. */
+  --text-xs: 0.8125rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 2.125rem;
+  --track-tight: -0.02em;
+  --track-tighter: -0.032em;
+
   /* Two layers: a tight contact shadow that grounds the card, and a broad
-     ambient one that gives it height. One blurry shadow alone reads muddy. */
-  --shadow-sm: 0 1px 1px rgb(16 20 28 / 4%), 0 2px 8px rgb(16 20 28 / 5%);
-  --shadow-md: 0 1px 2px rgb(16 20 28 / 6%), 0 12px 32px rgb(16 20 28 / 10%);
+     ambient one that gives it height. One blurry shadow alone reads muddy.
+     Both are lighter than they were -- the border is doing the separating,
+     and a shadow that has to be noticed is too heavy. */
+  --shadow-sm: 0 1px 1px rgb(24 20 14 / 4%), 0 1px 6px rgb(24 20 14 / 4%);
+  --shadow-md: 0 1px 2px rgb(24 20 14 / 5%), 0 10px 28px rgb(24 20 14 / 8%);
 
   /* Inter is self-hosted by next/font; the stack behind it covers the moment
      before it loads and any environment where it cannot. */
@@ -80,30 +99,45 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --paper: #101319;
-    --paper-sunk: #0b0e13;
-    --paper-raised: #161a22;
-    --line: rgb(255 255 255 / 10%);
-    --line-strong: rgb(255 255 255 / 20%);
-    --surface: rgb(28 33 43 / 72%);
-    --surface-strong: rgb(28 33 43 / 88%);
-    --wash-a: rgb(110 140 230 / 10%);
-    --wash-b: rgb(80 190 140 / 6%);
-    --ink: #f2f4f8;
-    --ink-soft: #b9c0cd;
-    --ink-faint: #8d95a5;
-    --accent: #9db0ee;
-    --accent-ink: #12203f;
-    --accent-soft: #232a3d;
-    --accent-line: #39415c;
-    --ok: #74c99b;
-    --ok-soft: #1b2a22;
-    --warn: #e0b45f;
-    --warn-soft: #2c2415;
-    --danger: #ef9a93;
-    --danger-soft: #2e1b19;
-    --shadow-sm: 0 1px 1px rgb(0 0 0 / 30%), 0 2px 8px rgb(0 0 0 / 35%);
-    --shadow-md: 0 1px 2px rgb(0 0 0 / 35%), 0 12px 32px rgb(0 0 0 / 45%);
+    /* The same warm neutral family, inverted. A blue-grey dark theme under a
+       warm light one is the giveaway that only one of them was designed. */
+    --paper: #191714;
+    --paper-sunk: #0f0e0c;
+    --paper-raised: #201d19;
+    --line: rgb(255 248 235 / 11%);
+    --line-strong: rgb(255 248 235 / 20%);
+    --surface: rgb(33 30 26 / 74%);
+    --surface-strong: rgb(33 30 26 / 90%);
+
+    /* Dimmer than the light theme's wash. On a dark screen the same intensity
+       reads as a smear rather than as depth. */
+    --wash-a: rgb(120 150 240 / 9%);
+    --wash-b: rgb(90 200 150 / 5%);
+
+    --ink: #f4f1ea;
+    --ink-soft: #bdb6a9;
+    --ink-faint: #958e81;
+
+    /* The indigo lifts rather than deepens: the same hue at light-theme
+       darkness disappears into the page. */
+    --accent: #a3b6f4;
+    --accent-ink: #0f1731;
+    --accent-soft: #1f2540;
+    --accent-line: #39415f;
+
+    --ok: #7fd0a4;
+    --ok-soft: #13241a;
+    --warn: #e8bf6f;
+    --warn-soft: #2a2213;
+    --danger: #f2a49c;
+    --danger-soft: #2b1917;
+
+    /* Shadow does almost nothing on a dark page -- a black shadow on a nearly
+       black background is invisible. Depth comes from the surfaces getting
+       lighter as they come forward, so these stay subtle and do the small job
+       of separating a card's edge from what is directly behind it. */
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow-md: 0 2px 4px rgb(0 0 0 / 40%), 0 16px 40px rgb(0 0 0 / 50%);
   }
 }
 
@@ -128,18 +162,22 @@ body {
   overflow-x: hidden;
 }
 
-h1, h2, h3 { margin: 0; line-height: 1.22; font-weight: 600; letter-spacing: -0.018em; }
-h1 { font-size: 1.45rem; letter-spacing: -0.025em; }
-h2 { font-size: 1.1rem; }
-h3 { font-size: 1rem; }
+h1, h2, h3 { margin: 0; line-height: 1.2; font-weight: 620; letter-spacing: var(--track-tight); }
+h1 { font-size: var(--text-2xl); letter-spacing: var(--track-tighter); }
+h2 { font-size: var(--text-lg); }
+h3 { font-size: var(--text-base); }
 p { margin: 0; }
 
 a { color: var(--accent); }
 
+/* A ring, not a slab. Two pixels of accent for the shape and a soft halo
+   behind it, so focus is unmistakable on a white card and on a dark one
+   without drawing a thick border around everything it touches. */
 :focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
+  box-shadow: 0 0 0 4px var(--accent-soft);
 }
 
 /* Two renderings of the same thing, one per layout. Only ever one is in the
@@ -276,20 +314,35 @@ a { color: var(--accent); }
 .grow { flex: 1; min-width: 0; }
 
 .muted { color: var(--ink-soft); }
-.faint { color: var(--ink-faint); font-size: 0.875rem; }
-.small { font-size: 0.875rem; }
-.tiny { font-size: 0.8125rem; }
-.strong { font-weight: 650; }
+.faint { color: var(--ink-faint); font-size: var(--text-sm); }
+.small { font-size: var(--text-sm); }
+.tiny { font-size: var(--text-xs); }
+.strong { font-weight: 640; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Money.
+   Tabular figures so columns line up down a list, and Inter's cv05 so the
+   rupee's digits keep their open shapes at small sizes. */
 .amount {
   font-family: var(--font-num);
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1, 'cv05' 1;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.012em;
 }
-.amount--big { font-size: 1.9rem; letter-spacing: -0.03em; font-weight: 650; }
+
+/* The one figure an owner opened the app to see. It is allowed to be the
+   largest thing on the screen -- there is nothing else on Home competing for
+   the role, and a number this size needs no label to be found. */
+.amount--big {
+  display: block;
+  /* Fluid, because the value is not. "₹1,750.00" and "₹1,23,45,678.90" are the
+     same field, and the second must not push a 360px screen sideways. */
+  font-size: clamp(1.75rem, 7.6vw, var(--text-3xl));
+  line-height: 1.08;
+  letter-spacing: var(--track-tighter);
+  font-weight: 660;
+}
 
 /* --------------------------------------------------------------- buttons */
 
@@ -319,7 +372,8 @@ a { color: var(--accent); }
 .btn--primary {
   background: var(--accent);
   color: var(--accent-ink);
-  box-shadow: 0 1px 2px rgb(16 20 28 / 10%), 0 4px 14px color-mix(in srgb, var(--accent) 28%, transparent);
+  letter-spacing: 0.002em;
+  box-shadow: 0 1px 2px rgb(24 20 14 / 12%), 0 2px 10px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 .btn--primary:hover:not(:disabled) { filter: brightness(1.08); }
 
@@ -339,13 +393,18 @@ a { color: var(--accent); }
 
 .field { display: flex; flex-direction: column; gap: 6px; }
 
+/* Labels stay sentence case. Letterspaced uppercase would read as more
+   designed and is a real cost to anyone reading in a second language or with
+   a reading difficulty -- which is a fair description of who this is for. The
+   deliberateness comes from weight and colour instead. */
 .field__label {
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: 560;
+  letter-spacing: 0.004em;
   color: var(--ink-soft);
 }
 
-.field__hint { font-size: 0.8125rem; color: var(--ink-faint); }
+.field__hint { font-size: var(--text-xs); color: var(--ink-faint); line-height: 1.45; }
 
 .field__error {
   font-size: 0.8125rem;
@@ -499,12 +558,28 @@ a { color: var(--accent); }
 .list__item:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
 
 .empty {
-  padding: 32px 16px;
+  padding: 48px 24px;
   text-align: center;
   color: var(--ink-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
-.empty__icon { display: block; margin: 0 auto 10px; color: var(--ink-faint); opacity: 0.7; }
+.empty p { max-width: 34ch; }
+
+/* The icon sits in a tinted disc rather than floating grey on white: an empty
+   screen should look like a starting point, not like something failed to load. */
+.empty__icon {
+  display: block;
+  box-sizing: content-box;
+  margin-bottom: 4px;
+  padding: 14px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
 
 /* -------------------------------------------------------- sticky footer */
 
