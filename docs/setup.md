@@ -146,7 +146,6 @@ Checklist before you serve real traffic:
 - [ ] Emulator variables are unset
 - [ ] Firestore rules are deployed (they should deny everything)
 - [ ] Application Default Credentials or a service account is configured
-- [ ] `APP_BASE_URL` matches the real origin
 - [ ] HTTPS is terminated in front of the app (session cookies are marked
       `secure` in production)
 - [ ] Chromium is available to the server process, or `PLAYWRIGHT_CHROMIUM_PATH`

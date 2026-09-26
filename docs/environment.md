@@ -37,7 +37,6 @@ suite refuses to run without them, so tests cannot touch a real project.
 
 | Variable | Default | Notes |
 |---|---|---|
-| `APP_BASE_URL` | `http://localhost:3000` | Used in absolute links |
 | `SESSION_MAX_AGE_MS` | 5 days | Capped at 14 days by Firebase |
 | `JOB_RUNNER_SECRET` | — | **Required.** Bearer token for `/api/jobs/run`, compared in constant time. Generate with `openssl rand -hex 32` |
 | `PLAYWRIGHT_CHROMIUM_PATH` | — | Path to Chromium for PDFs. Without it, Playwright's own download is used |

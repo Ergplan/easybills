@@ -18,7 +18,7 @@
 #     Application Default Credentials. There is no service account key file, and
 #     there should not be: it is a long-lived secret that need not exist.
 #
-# What is left is the two things only you know.
+# What is left is one optional secret, for the background worker.
 
 runConfig:
   # Rendering a bill's PDF starts a real Chromium inside this container. It
@@ -38,15 +38,35 @@ runConfig:
   maxInstances: 4
 
 env:
-  # The public address of this service. Used for links that leave the app --
-  # the share link on a bill, and the PDF a customer opens.
+  # --- the Firebase Web app -------------------------------------------------
   #
-  # FILL THIS IN after the first rollout tells you the domain, or point it at
-  # your own domain if you attach one. Left wrong, bills still issue correctly
-  # and their figures are right, but a share link will point at localhost.
-  - variable: APP_BASE_URL
-    value: https://CHANGE-ME.web.app
-    availability: [RUNTIME]
+  # These four are public by design. The browser is handed all of them on every
+  # page load: they identify the project, they do not authorise anything, and
+  # every Firestore read and write goes through this app's own server because
+  # firestore.rules denies direct client access outright.
+  #
+  # App Hosting also describes its Web App to the server as
+  # FIREBASE_WEBAPP_CONFIG, and the app falls back to that. They are set
+  # explicitly here anyway: an explicit value wins, and sign-in then does not
+  # depend on whether a platform variable turned up.
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: ekbill
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: ekbill.firebaseapp.com
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyDcmIdVh3AIAtG3EbIX-ZkhGOEJJKUDo7o
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:286759361840:web:c7582d023b21502e8e3cf5"
+    availability: [BUILD, RUNTIME]
+
+  # Storage, Messaging and Analytics appear in the console's snippet and are
+  # deliberately absent here: this app uses none of them. Analytics in
+  # particular would send a record of every screen an owner opens to Google,
+  # from an app whose fonts are self-hosted precisely so that opening a bill
+  # tells no third party anything.
 
   # Five days. An owner billing from a shared shop counter should not stay
   # signed in for a month.

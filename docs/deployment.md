@@ -120,15 +120,12 @@ instead.
 
 ---
 
-## 3. First rollout, then the base URL
+## 3. First rollout
 
 Push to the connected branch. When the rollout finishes, the console shows the
-backend's domain.
-
-`APP_BASE_URL` in `apphosting.yaml` is the one value still marked `CHANGE-ME`.
-Set it to that domain (or to your own, if you attach one) and push again. Until
-you do, bills issue correctly and their figures are right, but a share link sent
-to a customer points at `localhost`.
+backend's domain, and there is nothing to set afterwards: every link the app
+produces is relative, so it is correct on that domain, on a preview URL and on
+your own domain without being told which it is.
 
 ---
 

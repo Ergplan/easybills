@@ -160,4 +160,12 @@ export const pdfConfig = () => ({
   chromiumExecutablePath: optional('PLAYWRIGHT_CHROMIUM_PATH'),
 });
 
-export const appBaseUrl = (): string => optional('APP_BASE_URL') ?? 'http://localhost:3000';
+/*
+ * There is deliberately no APP_BASE_URL here.
+ *
+ * Every link this app produces is relative -- the share link on a bill, the
+ * PDF a customer opens -- so it is correct on localhost, on a preview URL and
+ * on a custom domain without being told which it is. A configured base URL
+ * would be one more value that can be set wrongly, and whose being wrong shows
+ * up as a customer opening a link to somebody's laptop.
+ */
