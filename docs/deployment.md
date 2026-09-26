@@ -175,6 +175,39 @@ whether the secret is missing or merely inaccessible.
 
 ---
 
+## 2a. Create the database (this is not automatic)
+
+Creating the Firebase project does **not** create a database. The app uses
+**Cloud Firestore in Native mode**, the `(default)` database — not Realtime
+Database, not a named database.
+
+Firebase Console › **Firestore Database** › **Create database**:
+
+- **Native mode**, not Datastore mode.
+- Location `asia-south1` (Mumbai) for an Indian business. This cannot be
+  changed later without creating a new database.
+- Start in production mode; the rules deployed in the next step replace
+  whatever you pick here anyway.
+
+Skip this and every page returns a blank server error with a request id. The
+reason it is blank rather than a message is worth knowing: an unreachable
+Firestore does not fail, it retries, so the request hangs until Cloud Run gives
+up. Nothing gets a chance to explain itself.
+
+**Open `/api/health` on the deployed address first when anything is wrong.**
+It answers in seconds and names the cause:
+
+```json
+{ "ok": false, "firestore": "FAILED",
+  "firestoreError": { "code": "TIMEOUT", "hint": "…create one in Firebase Console…" } }
+```
+
+It reports state, never secrets — which project, whether Firestore answered,
+whether a browser is available for PDFs — and is the first thing to try after a
+bad rollout instead of Cloud Logging.
+
+---
+
 ## 2. Deploy the database rules and indexes
 
 App Hosting deploys the application. It does not touch Firestore, so this is a
