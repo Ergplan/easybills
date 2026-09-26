@@ -79,7 +79,17 @@ function asInvoice(data: FirebaseFirestore.DocumentData): InvoiceRecord {
     // owner is not retrospectively accused of skipping a question we never
     // asked, and their issued bills keep the rates they were issued with.
     lines: rec.lines?.map((l) => ({ ...l, taxRateChosen: l.taxRateChosen ?? true })) ?? rec.lines,
+    remindersSent: rec.remindersSent ?? 0,
+    lastRemindedAt: rec.lastRemindedAt ?? null,
   };
+}
+
+/** The owner opened WhatsApp with a reminder. Counted, dated, and that is all we know. */
+export async function noteReminder(businessId: string, invoiceId: string): Promise<void> {
+  await invoicesCol(businessId).doc(invoiceId).update({
+    remindersSent: FieldValue.increment(1),
+    lastRemindedAt: new Date().toISOString(),
+  });
 }
 
 export async function getInvoice(businessId: string, invoiceId: string): Promise<InvoiceRecord | null> {

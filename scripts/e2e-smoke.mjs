@@ -128,46 +128,57 @@ try {
   await shot('05-issued');
   const issuedText = await page.locator('main').innerText();
   check('the issued bill shows its number', /INV-\d+/.test(issuedText));
-  check('and shows it is unpaid', /Unpaid/i.test(issuedText));
+  check('and says Bheja, with the total', /Bheja/.test(issuedText) && /₹2,050/.test(issuedText));
 
-  console.log('\n7. Record a part payment');
-  await page.getByRole('button', { name: 'Payment received' }).click();
-  await page.waitForTimeout(500);
-  await page.locator('#pay-amount').fill('1000');
-  await page.getByRole('button', { name: 'Record payment' }).click();
-  await page.waitForTimeout(3000);
+  console.log('\n7. Likh lo: part of it came');
+  await page.getByRole('button', { name: 'Paise aa gaye' }).click();
+  await page.getByText('Kitne aaye?').waitFor({ timeout: 5000 });
+  await page.getByRole('button', { name: 'Kuch hissa' }).click();
+  await page.locator('#paid-amount').fill('1000');
+  await page.getByRole('button', { name: 'Likh lo' }).click();
+  await page.getByText('Likh liya').waitFor({ timeout: 15000 });
+  await page.waitForTimeout(1200);
   await shot('06-part-paid');
   const paidText = await page.locator('main').innerText();
-  check('bill now shows as part paid', /Part paid/i.test(paidText));
-  check('remaining balance is 1,050', paidText.includes('1,050.00'), `(text: ${paidText.slice(0, 200)})`);
+  check('the bill now says Thoda aaya', /Thoda aaya/.test(paidText));
+  check('and ₹1,050 abhi baaki', /₹1,050 abhi baaki/.test(paidText), `(text: ${paidText.slice(0, 200)})`);
+  check('the payment is listed', /Aaye hue paise/.test(paidText) && /₹1,000/.test(paidText));
 
-  console.log('\n8. PDF downloads');
-  const pdfResponse = await page.request.get(`${BASE}${new URL(page.url()).pathname.replace('/bills/', '/api/invoices/')}/pdf?b=${await page.evaluate(() => document.cookie ? '' : '')}`).catch(() => null);
-  // The PDF link in the page carries the right business id; use it directly.
-  const pdfHref = await page.locator('a:has-text("View PDF")').getAttribute('href');
+  console.log('\n8. More than what is left is refused, in Hinglish');
+  await page.getByRole('button', { name: 'Paise aa gaye' }).click();
+  await page.getByRole('button', { name: 'Kuch hissa' }).click();
+  await page.locator('#paid-amount').fill('5000');
+  await page.getByRole('button', { name: 'Likh lo' }).click();
+  await page.getByText('Bill se zyada?').waitFor({ timeout: 10000 });
+  check('says only ₹1,050 is left', await page.getByText(/Sirf ₹1,050 baaki hai/).isVisible());
+  await page.getByRole('button', { name: 'Rehne do' }).click();
+
+  console.log('\n9. PDF downloads');
+  const pdfHref = await page.locator('a:has-text("PDF download karo")').getAttribute('href');
   const res = await page.request.get(`${BASE}${pdfHref}`);
   check('PDF endpoint returns a PDF', res.ok() && res.headers()['content-type']?.includes('pdf'), `(status ${res.status()})`);
   const bytes = await res.body();
   check('PDF has real content', bytes.length > 5000 && bytes.subarray(0, 4).toString() === '%PDF');
 
-  console.log('\n9. Correct the bill with a credit note');
-  await page.getByRole('button', { name: 'Raise a credit or debit note' }).click();
-  await page.waitForTimeout(400);
-  await page.locator('#adj-amount').fill('50');
-  await page.locator('#adj-reason').fill('One item was billed twice');
-  await page.getByRole('button', { name: /Raise credit note/ }).click();
-  await page.waitForTimeout(3000);
-  await shot('08-credit-note');
-  const correctedText = await page.locator('main').innerText();
-  check('credit note is listed with its own number', /CN-001/.test(correctedText));
-  check('credit note is recorded as balance-only by default', /GST unchanged/i.test(correctedText));
-  check('balance drops by the credit note', correctedText.includes('1,000.00'), '(expected 1,050 - 50)');
+  console.log('\n10. Yaad dilao');
+  await page.getByRole('link', { name: 'Yaad dilao' }).click();
+  await page.waitForURL(/\/remind$/, { timeout: 15000 });
+  await page.waitForTimeout(600);
+  await shot('08-remind');
+  const remindText = await page.locator('main').innerText();
+  check('the reminder is addressed to Ramesh ji', /Ramesh Patil ko yaad dilayein/.test(remindText));
+  const draft = await page.locator('#remind-text').inputValue();
+  check('gentle by default, with the amount still due and the UPI line left out (no UPI id)', /^Namaste Ramesh ji 🙏/.test(draft) && /₹1,050/.test(draft) && !/UPI/.test(draft));
+  await page.getByRole('button', { name: 'Seedha' }).click();
+  const direct = await page.locator('#remind-text').inputValue();
+  check('Seedha asks for it today', /aaj bhej dein/.test(direct));
+  check('WhatsApp kholo is the button', await page.getByRole('button', { name: 'WhatsApp kholo' }).isVisible());
 
-  console.log('\n11. Bills list and search');
+  console.log('\n11. Bheje hue bills');
   await page.goto(`${BASE}/bills`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);
   await shot('07-bills');
-  check('bills list shows the issued bill', (await page.locator('.list__item').count()) >= 1);
+  check('the bills page lists the bill', (await page.locator('.row-line').count()) >= 1);
 
   console.log('\n12. No uncaught page errors');
   check('no uncaught client errors', pageErrors.length === 0, pageErrors.slice(0, 2).join(' | '));

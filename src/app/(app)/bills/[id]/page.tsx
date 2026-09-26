@@ -1,24 +1,21 @@
 import { notFound } from 'next/navigation';
 
 import { DEFAULT_RULE_PACK } from '@/lib/gst/ruleset';
-import { TopBar } from '@/components/TopBar';
 import { BillDone } from '@/components/bill/BillDone';
+import { BillView } from '@/components/bill/BillView';
 import { BillForm } from '@/components/bill/BillForm';
 import { billSentMessage } from '@/lib/copy/messages';
 import { Icon } from '@/components/Icon';
 import { t } from '@/lib/copy';
-import { formatDateShort } from '@/lib/dates';
+import { formatDateShort, todayIst } from '@/lib/dates';
 import { summariseLines } from '@/lib/domain/bill-form';
 import Link from 'next/link';
 import { requireCurrentContext } from '@/server/auth/current';
 import { getInvoice, lastIssuedForCustomer } from '@/server/repos/invoices';
 import { listPaymentsForInvoice } from '@/server/repos/payments';
-import { listAdjustmentsForInvoice } from '@/server/repos/adjustments';
-import { getSchedule, listSchedules } from '@/server/repos/schedules';
 import { assessIssuance } from '@/lib/gst/scenarios';
 import { profileSetupStatus } from '@/lib/domain/setup-status';
 
-import { IssuedInvoiceView } from './IssuedInvoiceView';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,32 +54,25 @@ export default async function BillPage({
   }
 
   if (invoice.status === 'issued') {
-    const [payments, adjustments] = await Promise.all([
-      listPaymentsForInvoice(business.id, invoice.id),
-      listAdjustmentsForInvoice(business.id, invoice.id),
-    ]);
-
-    // A schedule this bill belongs to, or one it started. Either way the owner
-    // manages the monthly arrangement from the bill they know about.
-    const schedule = invoice.scheduleId
-      ? await getSchedule(business.id, invoice.scheduleId)
-      : (await listSchedules(business.id)).find(
-          (sc) => sc.customerId === invoice.customer.customerId && sc.status !== 'stopped',
-        ) ?? null;
-
+    const payments = await listPaymentsForInvoice(business.id, invoice.id);
     return (
-      <>
-        <TopBar title={invoice.number ?? 'Bill'} back={{ href: '/bills' }} />
-        <main className="page">
-          <IssuedInvoiceView
-            businessId={business.id}
-            invoice={invoice}
-            payments={payments}
-            adjustments={adjustments}
-            schedule={schedule ? JSON.parse(JSON.stringify(schedule)) : null}
-          />
-        </main>
-      </>
+      <main className="page">
+        <div className="row">
+          <Link href="/home" className="btn btn--ghost" aria-label={t('common.back')} style={{ paddingInline: 8 }}>
+            <Icon name="back" size={20} />
+          </Link>
+          <div className="grow">
+            <h1 style={{ fontSize: '1.3rem' }}>{t('bill.title', { customer: invoice.customer.name })}</h1>
+            <p className="faint">{invoice.number}</p>
+          </div>
+        </div>
+        <BillView
+          businessId={business.id}
+          invoice={invoice}
+          payments={payments.filter((p) => !p.reversalOfPaymentId && !p.reversedByPaymentId)}
+          today={todayIst()}
+        />
+      </main>
     );
   }
 

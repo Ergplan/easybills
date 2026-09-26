@@ -1137,3 +1137,13 @@ table.data td.num, table.data th.num {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* A chip that is a choice: pressed is haldi-soft with the deep accent. */
+.chip[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+textarea.msg { width: 100%; font: inherit; border: 1px solid var(--line-strong); resize: vertical; min-height: 140px; }
+.pdf-chip {
+  width: 40px; height: 52px; flex-shrink: 0;
+  display: grid; place-items: center;
+  border-radius: 6px; border: 1px solid var(--line-strong); background: var(--paper-sunk);
+  font-size: 0.7rem; font-weight: 700; color: var(--ink-faint);
+}

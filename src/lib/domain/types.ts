@@ -327,6 +327,14 @@ export interface InvoiceRecord {
   /** Set when this draft came from Duplicate. */
   duplicatedFromInvoiceId: string | null;
 
+  /**
+   * How many times the owner has opened WhatsApp to remind about this bill,
+   * and when last. Counted when they tap through, since the app cannot see
+   * whether the message was sent. Optional: older documents predate it.
+   */
+  remindersSent?: number;
+  lastRemindedAt?: Iso | null;
+
   /** Optimistic concurrency for autosave. Incremented on every server write. */
   revision: number;
   createdAt: Iso;

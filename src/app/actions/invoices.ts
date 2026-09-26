@@ -1,14 +1,14 @@
 'use server';
 
 import { t } from '@/lib/copy';
-import { billSentMessage } from '@/lib/copy/messages';
+import { billSentMessage, moneyForMessage } from '@/lib/copy/messages';
 
 import { revalidatePath } from 'next/cache';
 
 import { assertCivilDate, todayIst } from '@/lib/dates';
 import { saveDraftInput, paymentInput } from '@/lib/domain/validation';
 import type { InvoiceLine, InvoiceRecord } from '@/lib/domain/types';
-import { formatMoneyPlain, formatPercentPlain, formatQuantityPlain } from '@/lib/money';
+import { formatMoneyPlain, formatPercentPlain, formatQuantityPlain, parseMoney } from '@/lib/money';
 import { requireBusiness } from '@/server/auth/guard';
 import { requireCurrentContext } from '@/server/auth/current';
 import {
@@ -18,6 +18,7 @@ import {
   getInvoice,
   issueInvoice,
   newInvoiceId,
+  noteReminder,
   saveDraft,
 } from '@/server/repos/invoices';
 import { createCustomer, customerToParty, getCustomer, markBilled } from '@/server/repos/customers';
@@ -311,6 +312,62 @@ function sentMessage(business: { legalName: string; bank: { upiId: string | null
 function phoneOrNull(raw: string | null): string | null {
   const digits = (raw ?? '').replace(/[\s\-()]/g, '');
   return digits ? digits : null;
+}
+
+/**
+ * "Likh lo": the money came in. Amount, when, how -- and the errors in the
+ * owner's words. A double tap records it once, by the key the form fixed
+ * before its first try.
+ */
+export async function likhLoAction(
+  businessId: string,
+  raw: { invoiceId: string; amount: string; receivedOn: string; method: 'upi' | 'cash' | 'bank-transfer' | 'other'; idempotencyKey: string },
+): Promise<ActionResult<{ balancePaise: number }>> {
+  try {
+    const { user } = await requireBusiness(businessId);
+    const invoice = await getInvoice(businessId, raw.invoiceId);
+    if (!invoice) return { ok: false, error: t('error.notFound'), code: 'not-found' };
+    let amountPaise: number;
+    try {
+      amountPaise = parseMoney(raw.amount);
+    } catch {
+      return { ok: false, error: t('error.amount'), code: 'validation' };
+    }
+    if (amountPaise <= 0) return { ok: false, error: t('error.amount'), code: 'validation' };
+    if (amountPaise > invoice.balancePaise) {
+      return { ok: false, error: t('paid.tooMuch', { amount: moneyForMessage(invoice.balancePaise) }), code: 'validation' };
+    }
+    await recordPayment({
+      businessId,
+      uid: user.uid,
+      customerId: invoice.customer.customerId,
+      receivedOn: assertCivilDate(raw.receivedOn, 'date'),
+      amountPaise,
+      method: raw.method,
+      reference: null,
+      note: null,
+      allocations: [{ invoiceId: invoice.id, amountPaise }],
+      idempotencyKey: raw.idempotencyKey,
+    });
+    const after = await getInvoice(businessId, raw.invoiceId);
+    revalidatePath('/home');
+    revalidatePath('/bills');
+    return ok({ balancePaise: after?.balancePaise ?? 0 });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/** The owner tapped through to WhatsApp with a reminder. */
+export async function noteReminderAction(businessId: string, invoiceId: string): Promise<ActionResult<null>> {
+  try {
+    await requireBusiness(businessId);
+    await noteReminder(businessId, invoiceId);
+    revalidatePath('/home');
+    return ok(null);
+  } catch (error) {
+    return toActionError(error);
+  }
 }
 
 export async function duplicateInvoiceAction(

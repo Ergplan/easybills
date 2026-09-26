@@ -111,7 +111,7 @@ export default async function HomePage() {
                     <div className="row-line__meta">{ageLine(row.days)} · {row.number}</div>
                   </Link>
                   <Money paise={row.balancePaise} whole />
-                  <Link href={`/bills/${row.id}`} className="btn btn--secondary btn--small">
+                  <Link href={`/bills/${row.id}/remind`} className="btn btn--secondary btn--small">
                     {t('remind.button')}
                   </Link>
                 </div>

@@ -134,52 +134,35 @@ try {
   await shot('02-settings');
   await layoutRules('settings');
 
-  console.log('\n5. The bill editor with its preview beside it');
-  await page.goto(`${BASE}/bills/new`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(600);
-  await shot('03-new-bill');
-  await page.getByText('Quick bill', { exact: true }).click();
+  console.log('\n5. The bill, three fields per line');
+  await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
+  await page.locator('.chip').first().click();
   await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 25000 });
   await page.waitForTimeout(1200);
-  await page.locator('input[id^="desc-"]').first().fill('Ceiling fan installation');
+  await page.locator('input[id^="what-"]').first().fill('Ceiling fan installation');
   await page.locator('input[id^="qty-"]').first().fill('2');
-  await page.locator('input[id^="price-"]').first().fill('850');
-  await page.waitForTimeout(1800);
+  await page.locator('input[id^="rate-"]').first().fill('850');
+  await page.waitForTimeout(600);
   await shot('04-editor');
   await layoutRules('editor');
-  const preview = await page.locator('.editor-preview').first().isVisible().catch(() => false);
-  check('the live preview sits beside the form', preview);
-  // A line item's fields go in one row, and fill it: no empty tracks left over
-  // because this business happens not to charge GST.
-  const grid = await page.evaluate(() => {
-    const g = document.querySelector('.line-item__grid');
-    if (!g) return null;
-    const tracks = getComputedStyle(g).gridTemplateColumns.split(' ').map(parseFloat);
-    const fields = [...g.children].length;
-    return { tracks: tracks.filter((t) => t > 0).length, fields, width: g.getBoundingClientRect().width,
-             covered: tracks.reduce((a, b) => a + b, 0) };
+  const total = (await page.locator('.bill-total').textContent())?.trim();
+  check('the total follows the typing', total === '₹1,700', `(saw ${total})`);
+  const nums = await page.evaluate(() => {
+    const g = document.querySelector('.bill-line__nums');
+    return g ? getComputedStyle(g).gridTemplateColumns.split(' ').length : 0;
   });
-  check('a line item lays its fields out in one row', grid !== null && grid.tracks === grid.fields, JSON.stringify(grid));
-  check(
-    'the fields fill the row rather than leaving empty columns',
-    grid !== null && grid.covered > grid.width - 60,
-    JSON.stringify(grid),
-  );
+  check('quantity and rate sit side by side', nums >= 2, `(saw ${nums} tracks)`);
 
-  console.log('\n6. Bills and customers lists');
+  console.log('\n6. Bheje hue bills');
   await page.goto(`${BASE}/bills`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(900);
   await shot('05-bills');
   await layoutRules('bills');
-  await page.goto(`${BASE}/customers`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(900);
-  await shot('06-customers');
-  await layoutRules('customers');
 
   console.log('\n7. An issued bill, and the GST returns screen');
   await page.goto(`${BASE}/bills`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);
-  await page.locator('.list__item').filter({ hasText: 'DEMO-' }).first().click();
+  await page.locator('.row-line').filter({ hasText: 'DEMO-' }).first().click();
   await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 20000 });
   await page.waitForTimeout(1500);
   await shot('07-issued-bill');

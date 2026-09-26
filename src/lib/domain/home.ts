@@ -52,6 +52,8 @@ export function summariseHome(args: {
   issued: InvoiceRecord[];
   customers: CustomerRecord[];
   today: CivilDate;
+  /** How many sent bills to list. Home shows a few; the bills page, all. */
+  recent?: number;
 }): HomeView {
   const { today } = args;
   const issued = args.issued
@@ -64,7 +66,7 @@ export function summariseHome(args: {
     return p.year === year && p.month === month;
   }).length;
 
-  const recentSent: SentRow[] = issued.slice(0, RECENT).map((inv) => ({
+  const recentSent: SentRow[] = issued.slice(0, args.recent ?? RECENT).map((inv) => ({
     id: inv.id,
     number: inv.number!,
     customerName: inv.customer.name,

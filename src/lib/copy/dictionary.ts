@@ -97,6 +97,11 @@ export const DICTIONARY = {
   'remind.tone.second': { en: 'Second reminder', hi: 'Doosri baar' },
   'remind.go': { en: 'Open WhatsApp', hi: 'WhatsApp kholo' },
   'remind.markPaid': { en: 'Mark as paid', hi: 'Paise aa gaye ✓' },
+  'remind.sub': { en: '{number} · {amount} · {days} days', hi: '{number} · {amount} · {days} din' },
+  'remind.before': { en: 'Reminded {n} times, last {when}', hi: '{n} baar yaad dilaya, aakhri baar {when}' },
+  'remind.beforeOne': { en: 'Reminded once, {when}', hi: 'Ek baar yaad dilaya, {when}' },
+  'remind.noPhone': { en: "No phone number for them. WhatsApp will open; pick their chat yourself.", hi: 'Unka phone number nahi hai. WhatsApp khulega, chat khud chun lena.' },
+  'remind.opened': { en: 'WhatsApp opened. Press send there.', hi: 'WhatsApp khul gaya. Wahan send dabao.' },
 
   // --------------------------------------------------------------- bill ----
   'bill.title': { en: 'Bill for {customer}', hi: '{customer} ka bill' },
@@ -141,6 +146,12 @@ export const DICTIONARY = {
   'bill.done.message': { en: 'The message that goes with it', hi: 'Saath mein yeh message jaayega' },
   'bill.done.copy': { en: 'Copy message', hi: 'Message copy karo' },
   'bill.done.copied': { en: 'Copied', hi: 'Copy ho gaya ✓' },
+  'bill.view.sentOn': { en: 'Sent {date}', hi: '{date} ko bheja' },
+  'bill.view.items': { en: 'What was billed', hi: 'Kya kya tha' },
+  'bill.view.share': { en: 'Send again on WhatsApp', hi: 'WhatsApp pe dobara bhejo' },
+  'bills.empty': { en: 'No bills yet. Go to Home and tap a name.', hi: 'Abhi koi bill nahi. Ghar pe jaake naam pe tap karo.' },
+  'bills.drafts': { en: 'Unfinished', hi: 'Adhoore bills' },
+  'bills.draft.open': { en: 'Finish it', hi: 'Poora karo' },
 
   // ------------------------------------------------------------- paid ----
   'paid.title': { en: 'How much came in?', hi: 'Kitne aaye?' },
@@ -155,6 +166,11 @@ export const DICTIONARY = {
   'paid.how.other': { en: 'Other', hi: 'Kuch aur' },
   'paid.save': { en: 'Note it down', hi: 'Likh lo' },
   'paid.remaining': { en: '{amount} still to come', hi: '{amount} abhi baaki' },
+  'paid.allDone': { en: 'All paid. Nice!', hi: 'Sab paise aa gaye ✓' },
+  'paid.saved': { en: 'Noted', hi: 'Likh liya' },
+  'paid.tooMuch': { en: 'More than the bill? Only {amount} is left on it.', hi: 'Bill se zyada? Sirf {amount} baaki hai.' },
+  'paid.list': { en: 'Money received', hi: 'Aaye hue paise' },
+  'paid.button': { en: 'Money came in', hi: 'Paise aa gaye' },
 
   // ---------------------------------------------------------- customer ----
   'customer.new.title': { en: 'New customer', hi: 'Naya customer' },
