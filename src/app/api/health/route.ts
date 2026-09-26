@@ -34,7 +34,10 @@ export async function GET() {
     projectId: firebaseProjectId(),
     database: firestoreDatabaseId() ?? '(default)',
     usingEmulators,
-    signIn: openAccess() ? 'switched off — open access' : 'required',
+    // Plain ASCII: this is read in terminals and consoles that do not all
+    // agree that an unlabelled JSON body is UTF-8, and an em dash comes back
+    // as mojibake in the ones that do not.
+    signIn: openAccess() ? 'switched off - OPEN ACCESS, anyone can read and write' : 'required',
     webConfig: publicFirebaseConfig().projectId ? 'present' : 'MISSING',
     backgroundWork: backgroundWorkConfigured() ? 'configured' : 'not configured',
   };
@@ -69,7 +72,10 @@ export async function GET() {
   }
 
   const ok = checks.firestore === 'ok';
-  return NextResponse.json({ ok, ...checks }, { status: ok ? 200 : 503 });
+  return NextResponse.json(
+    { ok, ...checks },
+    { status: ok ? 200 : 503, headers: { 'content-type': 'application/json; charset=utf-8' } },
+  );
 }
 
 class TimeoutError extends Error {
