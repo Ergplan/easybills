@@ -119,3 +119,60 @@ export async function setCustomerLanguageAction(
     return toActionError(error);
   }
 }
+
+/**
+ * The customers the owner ticked on the import screen, added. Each one goes
+ * through the same checks as the customer form, so a GSTIN that does not
+ * add up or a phone that is not one is refused by name rather than saved
+ * wrong. Duplicates of a record that already exists are skipped, not merged.
+ */
+export async function importCustomersAction(
+  businessId: string,
+  rows: CustomerInput[],
+): Promise<ActionResult<{ added: number; skipped: Array<{ name: string; reason: string }> }>> {
+  try {
+    const { user } = await requireBusiness(businessId);
+    const existing = await listCustomers(businessId);
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let added = 0;
+    const skipped: Array<{ name: string; reason: string }> = [];
+    for (const row of rows.slice(0, 200)) {
+      const checked = parseCustomer(row);
+      if (!checked.ok) {
+        skipped.push({ name: row.name, reason: checked.message });
+        continue;
+      }
+      const c = checked.customer;
+      const dup = existing.find(
+        (e) => (c.gstin && e.gstin === c.gstin) || (c.phone && e.phone === c.phone) || norm(e.name) === norm(c.name),
+      );
+      if (dup) {
+        skipped.push({ name: c.name, reason: t('import.already') });
+        continue;
+      }
+      const created = await createCustomer(businessId, user.uid, {
+        name: c.name,
+        phone: c.phone,
+        email: null,
+        addressLine1: c.addressLine1,
+        addressLine2: null,
+        city: c.city,
+        pincode: c.pincode,
+        stateCode: c.stateCode,
+        gstin: c.gstin,
+        pan: c.pan,
+        notes: null,
+        contactPerson: c.contactPerson,
+        language: c.language,
+        languageSource: c.language ? 'owner' : null,
+      });
+      existing.push(created);
+      added += 1;
+    }
+    revalidatePath('/home');
+    revalidatePath('/customers');
+    return ok({ added, skipped });
+  } catch (error) {
+    return toActionError(error);
+  }
+}

@@ -42,6 +42,13 @@ rate, the company (B2B) bills the CA reports one by one, and *CA ko bhejo* --
 one zip with the spreadsheet and every bill as PDF. Not returns. Not filing.
 The CA files.
 
+**Purane bills upload karo.** Ten customers on old bills should not be ten
+names typed in. Upload the PDFs (or a Tally/Vyapar/Excel party list) under
+*Aapke customers*; the app reads the "Bill to" block off each -- name, GSTIN,
+PAN, phone, address, state -- shows each one with where it was read from, and
+adds the ones you tick. Files are read once and not kept. Photos and scans have
+no text to read and say so; a typed PDF or a spreadsheet works.
+
 **Sign-in by phone.** Ten digits, a six-digit OTP, done. Then *Apne baare mein
 batayen*: name, phone, GST number (optional), UPI ID, city and state. That is
 the whole setup. (Sign-in is switched off on the deployed instance for now;

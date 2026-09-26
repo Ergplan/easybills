@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { ImportBills } from '@/components/customer/ImportBills';
 import { Icon } from '@/components/Icon';
 import { Money } from '@/components/Money';
 import { CUSTOMER_LANGUAGE_NAMES, t } from '@/lib/copy';
@@ -24,6 +25,7 @@ export default async function CustomersPage() {
         </Link>
         <h1 className="grow" style={{ fontSize: '1.3rem' }}>{t('customer.list.title')}</h1>
       </div>
+      <ImportBills businessId={business.id} />
       <section className="card stack stack--tight">
         {rows.length === 0 ? (
           <p className="muted">{t('customer.list.empty')}</p>

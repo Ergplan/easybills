@@ -1,0 +1,13 @@
+Tax Invoice
+Kumar Electrical Repairs
+Pune, Maharashtra
+GSTIN 27AAPFU0939F1ZV
+Invoice no. INV-001
+Date: 26 Sep 2026
+Bill to
+Ramesh Patil
+Phone: +91 98765 43210
+Description   Qty   Rate   Amount
+Repair visit  2  800.00  1,600.00
+Total ₹2,050.00
+Pay by UPI: kumar@upi

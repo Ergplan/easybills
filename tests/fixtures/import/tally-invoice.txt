@@ -1,0 +1,24 @@
+Sharma Electricals
+Shop 4, MG Road, Nagpur 440001
+GSTIN/UIN: 27AAPFU0939F1ZV
+State Name : Maharashtra, Code : 27
+Contact : 9822012345
+TAX INVOICE
+Invoice No.  INV/2025-26/042          Dated  12-Sep-2025
+Buyer (Bill to)
+Green Park Co-operative Housing Society
+Plot 12, Wardha Road
+Nagpur - 440015
+GSTIN/UIN : 27AABCG1234H1ZZ
+State Name : Maharashtra, Code : 27
+Contact person : Vinod Patil
+Mobile : 98765 43210
+Sl  Description of Goods   HSN   Qty   Rate   Amount
+1   AMC visit - September                1   3,500.00   3,500.00
+2   Ceiling fan install                  2   1,350.00   2,700.00
+                                          Sub Total   6,200.00
+                                          CGST 9%       558.00
+                                          SGST 9%       558.00
+Grand Total   ₹ 7,316.00
+Amount Chargeable (in words)
+INR Seven Thousand Three Hundred Sixteen Only

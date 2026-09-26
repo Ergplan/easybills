@@ -204,6 +204,30 @@ try {
   check('the state came from the GST number', (await page.locator('#c-stateCode').inputValue()) === '29');
   check('and the PAN from inside it', (await page.locator('#c-pan').inputValue()) === 'AABCG1234H');
 
+  console.log('\n10d. Purane bills upload karo: our own PDF, and a party list');
+  await page.goto(`${BASE}/customers`, { waitUntil: 'networkidle' });
+  const partyCsv = 'Party Name,GSTIN,Mobile,City\nMehta Traders,27AAPFU0939F1ZV,9876500001,Pune\nPriya Boutique,,9876500002,Chennai\nRamesh Patil,,,\n';
+  await page.locator('#import-files').setInputFiles([
+    { name: 'INV-001.pdf', mimeType: 'application/pdf', buffer: bytes },
+    { name: 'parties.csv', mimeType: 'text/csv', buffer: Buffer.from(partyCsv) },
+  ]);
+  await page.getByRole('button', { name: /customers add karo|customer add karo/ }).waitFor({ timeout: 40000 });
+  await shot('10-import');
+  const importText = await page.locator('main').innerText();
+  check('the PDF was read: 1 customer mila', /INV-001\.pdf · 1 customer mila/.test(importText));
+  check('the CSV was read: 3 customers mile', /parties\.csv · 3 customers mile/.test(importText));
+  const already = await page.locator('.import-row', { hasText: 'Pehle se hai' }).count();
+  check('Ramesh Patil is recognised as already there, from both files', already === 2, `(saw ${already})`);
+  check('the bill it came from is shown as evidence', /Bill INV-001 · .* · ₹2,050/.test(importText));
+  const addBtn = page.getByRole('button', { name: '2 customers add karo' });
+  check('only the two new ones are ticked', await addBtn.isVisible());
+  await addBtn.click();
+  await page.getByText('2 add ho gaye').waitFor({ timeout: 20000 });
+  await page.waitForTimeout(800);
+  check('Mehta Traders is now a customer with its GSTIN', (await page.locator('.row-line', { hasText: 'Mehta Traders' }).innerText()).includes('GST'));
+  await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
+  check('and a chip on Home', await page.locator('.chip', { hasText: 'Priya Boutique' }).isVisible());
+
   console.log('\n11. Bheje hue bills');
   await page.goto(`${BASE}/bills`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);

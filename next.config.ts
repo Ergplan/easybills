@@ -50,7 +50,7 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   // The PDF renderer drives a real Chromium via playwright-core. It must stay in the
   // Node runtime and must not be bundled by Next's server compiler.
-  serverExternalPackages: ['playwright-core', '@sparticuz/chromium', 'firebase-admin'],
+  serverExternalPackages: ['playwright-core', '@sparticuz/chromium', 'firebase-admin', 'pdfjs-dist'],
   // Next traces which files a build actually needs and copies only those into
   // the standalone server. It follows `import` and `require`, which is why it
   // misses both of these: playwright-core reads browsers.json as DATA at

@@ -1157,3 +1157,10 @@ textarea.msg { width: 100%; font: inherit; border: 1px solid var(--line-strong);
 .gst-table th, .gst-table td { padding: 8px 4px; border-top: 1px solid var(--line); text-align: left; }
 .gst-table th { color: var(--ink-faint); font-weight: 600; font-size: var(--text-xs); border-top: 0; }
 .gst-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ----------------------------------------------------------------- import ---
+   A candidate row: a tick, the name (editable, because a bill's idea of a
+   name is often wrong), and what it was read from. */
+.import-row { cursor: pointer; align-items: flex-start; }
+.import-row input[type='checkbox'] { width: 22px; height: 22px; margin-top: 12px; accent-color: var(--accent-fill); }
+.import-row__name { min-height: 40px; padding: 6px 10px; font-weight: 600; }
