@@ -21,7 +21,11 @@
     "e2e:desktop": "node scripts/e2e-desktop.mjs",
     "gst:audit-rules": "tsx --tsconfig tsconfig.scripts.json scripts/audit-rule-pack.ts"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
+    "@sparticuz/chromium": "^153.0.0",
     "firebase": "^12.19.0",
     "firebase-admin": "^14.5.0",
     "next": "^16.3.6",

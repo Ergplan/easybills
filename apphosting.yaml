@@ -1,0 +1,108 @@
+# Firebase App Hosting.
+#
+# App Hosting builds this repository from GitHub on every push to the connected
+# branch and serves it on Cloud Run behind a Google-managed domain and
+# certificate. It detects Next.js on its own, so there is no build command here.
+#
+# The app root is the REPOSITORY ROOT. package.json, next.config.ts and this
+# file all live at the top level; there is no subdirectory to point at.
+#
+# Almost nothing needs configuring:
+#
+#   - The Firebase Web config (API key, auth domain, project, app id) is handed
+#     to the build by App Hosting as FIREBASE_WEBAPP_CONFIG, and next.config.ts
+#     maps it onto the NEXT_PUBLIC_ names the browser reads. Nothing to copy.
+#   - The server's project id comes from GOOGLE_CLOUD_PROJECT, which Cloud Run
+#     sets. Nothing to copy.
+#   - Firebase access comes from the service account this runs as, through
+#     Application Default Credentials. There is no service account key file, and
+#     there should not be: it is a long-lived secret that need not exist.
+#
+# What is left is the two things only you know.
+
+runConfig:
+  # Rendering a bill's PDF starts a real Chromium inside this container. It
+  # needs the memory and the CPU to be worth having; 512MiB is not enough for a
+  # browser, and the render will be killed rather than slow.
+  memoryMiB: 1024
+  cpu: 1
+  # A cold instance unpacks Chromium before its first PDF. That is seconds, not
+  # milliseconds, so a request must be allowed to outlive the default.
+  timeoutSeconds: 120
+  # A PDF render is heavy and holds a browser. Twenty at once per instance is
+  # deliberate; the default of eighty would queue renders behind each other.
+  concurrency: 20
+  # Scale to zero. A very small business bills a few times a day, and an idle
+  # instance is a bill for nothing.
+  minInstances: 0
+  maxInstances: 4
+
+env:
+  # The public address of this service. Used for links that leave the app --
+  # the share link on a bill, and the PDF a customer opens.
+  #
+  # FILL THIS IN after the first rollout tells you the domain, or point it at
+  # your own domain if you attach one. Left wrong, bills still issue correctly
+  # and their figures are right, but a share link will point at localhost.
+  - variable: APP_BASE_URL
+    value: https://CHANGE-ME.web.app
+    availability: [RUNTIME]
+
+  # Five days. An owner billing from a shared shop counter should not stay
+  # signed in for a month.
+  - variable: SESSION_MAX_AGE_MS
+    value: "432000000"
+    availability: [RUNTIME]
+
+  # The shared secret the background job runner must present. Cloud Scheduler
+  # sends it; without it nothing can drain the queue. Create it with:
+  #   firebase apphosting:secrets:set job-runner-secret
+  # and paste the output of: openssl rand -hex 32
+  - variable: JOB_RUNNER_SECRET
+    secret: job-runner-secret
+    availability: [RUNTIME]
+
+  # --- the assistant --------------------------------------------------------
+  #
+  # The app is fully usable with this off, and off is the default: the bill
+  # editor is the product, and "speak or type your bill" is a shortcut into it.
+  #
+  # The API key NEVER goes in this file, in the console's environment-variable
+  # form, or in .env. Those are all read by anyone who can read the repository
+  # or open the console. It goes in Secret Manager:
+  #
+  #   firebase apphosting:secrets:set ai-llm-api-key
+  #   firebase apphosting:secrets:grantaccess ai-llm-api-key --backend easybills
+  #
+  # then uncomment the four lines below and set AI_ENABLED to "true". The key
+  # is read into the server process at boot and is never sent to the browser --
+  # every model call is made server-side, by design.
+  - variable: AI_ENABLED
+    value: "false"
+    availability: [RUNTIME]
+  # - variable: AI_LLM_PROVIDER
+  #   value: anthropic          # anthropic | openai | google
+  #   availability: [RUNTIME]
+  # - variable: AI_LLM_MODEL
+  #   value: claude-sonnet-5
+  #   availability: [RUNTIME]
+  # - variable: AI_LLM_API_KEY
+  #   secret: ai-llm-api-key
+  #   availability: [RUNTIME]
+  #
+  # Voice is a separate provider and a separate key, because transcription and
+  # text generation are separate services. Leave it out and the microphone
+  # button stays hidden rather than failing when tapped.
+  # - variable: AI_TRANSCRIPTION_PROVIDER
+  #   value: openai
+  #   availability: [RUNTIME]
+  # - variable: AI_TRANSCRIPTION_API_KEY
+  #   secret: ai-transcription-api-key
+  #   availability: [RUNTIME]
+
+  # --- connected GST filing -------------------------------------------------
+  # Stays off. It needs a GSP contract, and the tax rule pack still ships
+  # unverified -- read docs/compliance/README.md before changing this.
+  - variable: GSP_MODE
+    value: "off"
+    availability: [RUNTIME]

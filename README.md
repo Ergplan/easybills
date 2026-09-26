@@ -165,12 +165,22 @@ this for real billing. In short:
 
 ---
 
+## Deploying
+
+Firebase App Hosting builds this repository from GitHub and serves it on Cloud
+Run. The app root is the **repository root**; `apphosting.yaml` holds the
+configuration. Two things are not automatic — one secret and the Firestore
+rules and indexes — and both are in
+[docs/deployment.md](docs/deployment.md), along with the background worker
+schedule and what still is not ready for real money.
+
 ## Documentation
 
 | Document | What it covers |
 |---|---|
 | [docs/setup.md](docs/setup.md) | Local setup, Firebase project setup, deployment |
 | [docs/environment.md](docs/environment.md) | Every environment variable, and what happens without it |
+| [docs/deployment.md](docs/deployment.md) | Getting this onto a real URL, and what is still not ready |
 | [docs/owner-guide.md](docs/owner-guide.md) | Create a bill, repeat it monthly, record payment |
 | [docs/gst-owner-guide.md](docs/gst-owner-guide.md) | Prepared vs Uploaded vs Filed, and the four steps |
 | [docs/compliance/README.md](docs/compliance/README.md) | Supported and unsupported transactions, rule provenance |

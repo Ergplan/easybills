@@ -27,6 +27,7 @@ export function SettingsForm({
   ruleAudit,
   aiStatus,
   gspMode,
+  pdfStatus,
   supported,
   unsupported,
 }: {
@@ -37,6 +38,7 @@ export function SettingsForm({
   ruleAudit: RulePackAudit;
   aiStatus: { enabled: boolean; llmProvider: string; llmConfigured: boolean; transcriptionProvider: string; transcriptionConfigured: boolean };
   gspMode: string;
+  pdfStatus: { ok: boolean; detail: string };
   supported: string[];
   unsupported: string[];
 }) {
@@ -461,6 +463,16 @@ export function SettingsForm({
             We do not make a blanket claim that every bill is GST compliant. Where we cannot be sure, we say so and
             stop, rather than issuing a document that might be wrong.
           </p>
+          {!pdfStatus.ok && (
+            <div className="notice notice--danger">
+              <span className="notice__icon" aria-hidden="true">!</span>
+              <span className="small">
+                Bill PDFs cannot be produced on this installation, so sharing a bill with a customer will not
+                work. Everything else is unaffected — your bills are saved and their figures are correct.
+                Whoever looks after this app for you needs to fix the installation.
+              </span>
+            </div>
+          )}
           {!ruleAudit.fullyVerified && (
             <div className="notice notice--warn">
               <span className="notice__icon" aria-hidden="true">!</span>
@@ -482,6 +494,12 @@ export function SettingsForm({
           <div className="row row--between"><span className="muted">Assistant</span><span>{aiStatus.enabled ? `${aiStatus.llmProvider}${aiStatus.llmConfigured ? '' : ' (not configured)'}` : 'off'}</span></div>
           <div className="row row--between"><span className="muted">Voice</span><span>{aiStatus.transcriptionProvider}{aiStatus.transcriptionConfigured ? '' : ' (not configured)'}</span></div>
           <div className="row row--between"><span className="muted">GST filing</span><span>{gspMode}</span></div>
+          <div className="row row--between">
+            <span className="muted">Bill PDFs</span>
+            <span style={pdfStatus.ok ? undefined : { color: 'var(--danger)', fontWeight: 650 }}>
+              {pdfStatus.detail}
+            </span>
+          </div>
           <div className="row row--between"><span className="muted">Tax rules</span><span>{ruleAudit.verified}/{ruleAudit.total} confirmed</span></div>
         </div>
       </details>

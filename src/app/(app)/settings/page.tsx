@@ -4,6 +4,7 @@ import { TopBar } from '@/components/TopBar';
 import { requireCurrentContext } from '@/server/auth/current';
 import { describeAiConfiguration } from '@/server/ai/adapters';
 import { gspConfig } from '@/lib/env';
+import { pdfCapability } from '@/server/pdf/render';
 
 import { SettingsForm } from './SettingsForm';
 
@@ -24,6 +25,9 @@ export default async function SettingsPage({
   const audit = auditRulePack();
   const ai = describeAiConfiguration();
   const gsp = gspConfig();
+  // Whether this deployment can actually produce a PDF. Asked here rather than
+  // discovered when an owner taps Download on a bill they have already sent.
+  const pdf = await pdfCapability();
 
   return (
     <>
@@ -36,6 +40,7 @@ export default async function SettingsPage({
           ruleAudit={audit}
           aiStatus={ai}
           gspMode={gsp.mode}
+          pdfStatus={pdf}
           supported={[...SUPPORTED_SCENARIOS_SUMMARY]}
           unsupported={[...UNSUPPORTED_SCENARIOS_SUMMARY]}
         />

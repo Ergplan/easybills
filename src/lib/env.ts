@@ -34,8 +34,20 @@ export const runtime: Runtime =
 /** True when talking to the local Firebase emulator suite rather than a real project. */
 export const usingEmulators = Boolean(optional('FIRESTORE_EMULATOR_HOST'));
 
+/**
+ * The project this server talks to.
+ *
+ * On Google infrastructure -- App Hosting, Cloud Run, Cloud Functions -- the
+ * platform already says which project it is running in, so a deployment there
+ * does not have to repeat it and cannot get it wrong. Everywhere else it is
+ * configured, and a missing value still fails loudly.
+ */
 export const firebaseProjectId = (): string =>
-  optional('FIREBASE_PROJECT_ID') ?? optional('NEXT_PUBLIC_FIREBASE_PROJECT_ID') ?? required('FIREBASE_PROJECT_ID');
+  optional('FIREBASE_PROJECT_ID') ??
+  optional('NEXT_PUBLIC_FIREBASE_PROJECT_ID') ??
+  optional('GOOGLE_CLOUD_PROJECT') ??
+  optional('GCLOUD_PROJECT') ??
+  required('FIREBASE_PROJECT_ID');
 
 /** Public Firebase Web config. Safe to ship to the browser. */
 export const publicFirebaseConfig = () => ({
