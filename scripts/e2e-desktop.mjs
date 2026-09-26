@@ -168,56 +168,22 @@ try {
   await shot('07-issued-bill');
   await layoutRules('issued bill');
 
-  // The GST screen is hidden from businesses it does not apply to, and the
-  // demo one is not registered -- so register it. It is the densest screen in
-  // the app and the one a desktop layout has most to do for.
-  await page.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
-  await page.getByText('Regular GST', { exact: true }).click();
-  await page.waitForTimeout(400);
-  await page.locator('#gstin').fill('27AAAAA0000A1Z2');
-  await page.locator('#turnover').fill('4000000');
-  await page.getByText('I have checked, and the government e-invoice system does not apply to my business.').click();
-  await page.getByRole('button', { name: /Save GST status/ }).click();
-  await page.waitForTimeout(2500);
+  // The GST tab exists only once there is a GST number, and the demo shop has
+  // none -- so give it one under Aap, the way an owner would.
+  await page.goto(`${BASE}/you`, { waitUntil: 'networkidle' });
+  await page.locator('#you-gstin').fill('27AAAAA0000A1Z2');
+  await page.getByRole('button', { name: 'Save karo' }).click();
+  await page.getByText('Save ho gaya').waitFor({ timeout: 15000 });
+  await page.waitForTimeout(800);
 
   await page.goto(`${BASE}/gst`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
-  if (await page.locator('#g-gstin').count()) {
-    await page.locator('#g-gstin').fill('27AAAAA0000A1Z2');
-    await page.getByText('Every month', { exact: true }).click();
-    await page.locator('#g-start').fill(PERIOD);
-    await page.getByRole('button', { name: 'Save and continue' }).click();
-    await page.waitForTimeout(3000);
-  }
-  await page.goto(`${BASE}/gst?period=${PERIOD}`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2000);
   await shot('08-gst');
   await layoutRules('gst');
-
-  const steps = await page.evaluate(() => {
-    const strip = document.querySelector('.segmented');
-    if (!strip) return null;
-    return { scrolls: strip.scrollWidth > strip.clientWidth + 1, count: strip.children.length };
-  });
-  check('all four GST steps are visible at once', steps !== null && !steps.scrolls && steps.count === 4, JSON.stringify(steps));
-
-  // The drill-down is the widest thing in the app; a desktop is where it has
-  // room to be read rather than scrolled sideways.
-  const disclosure = page.getByText('See every sale behind these figures', { exact: true });
-  if (await disclosure.count()) {
-    await disclosure.click();
-    await page.waitForTimeout(800);
-    await shot('09-gst-drilldown');
-    await layoutRules('gst drill-down');
-    const wide = await page.evaluate(() => {
-      const t = document.querySelector('table.data');
-      if (!t) return null;
-      const box = t.closest('.table-scroll');
-      return box ? { scrolls: box.scrollWidth > box.clientWidth + 1 } : { scrolls: false };
-    });
-    check('the HSN table fits without sideways scrolling', wide !== null && !wide.scrolls, JSON.stringify(wide));
-  }
+  const gstText = await page.locator('main').innerText();
+  check('the GST screen is the quarter, in Hinglish', /GST ka hisaab/.test(gstText) && /Is quarter/.test(gstText));
+  check('and offers CA ko bhejo', await page.getByRole('button', { name: 'CA ko bhejo' }).isVisible());
+  check('it says the CA files, not the app', /file karna CA ka kaam hai/.test(gstText));
 
   console.log('\n8. Dark mode');
   await page.emulateMedia({ colorScheme: 'dark' });

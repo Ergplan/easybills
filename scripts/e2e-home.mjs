@@ -92,6 +92,24 @@ try {
   const tabsAfter = await page.locator('.tabbar__item').allInnerTexts();
   check('with a GST number: Ghar, GST, Aap', tabsAfter.map((t) => t.trim()).join(' / ') === 'Ghar / GST / Aap', `(saw ${tabsAfter.join(' / ')})`);
   check('the state followed the GST number', (await page.locator('#you-stateCode').inputValue()) === '27');
+
+  console.log('\n5b. GST ka hisaab');
+  await page.goto(`${BASE}/gst`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(800);
+  await shot('gst-01-360');
+  const gstText = await page.locator('main').innerText();
+  check('the quarter, with bills, sales and GST', /GST ka hisaab/.test(gstText) && /Bills/.test(gstText) && /Bikri/.test(gstText));
+  check('no returns, no filing, no review steps', !/GSTR|Review|Save and continue|GSTR-3B/.test(gstText));
+  const packBtn = page.getByRole('button', { name: 'CA ko bhejo' });
+  check('CA ko bhejo is offered', await packBtn.isVisible());
+  // The pack itself, through the same route the button fetches.
+  const packUrl = await packBtn.getAttribute('data-pack');
+  const pack = await page.request.get(`${BASE}${packUrl}`);
+  check('the pack is a zip', pack.ok() && (pack.headers()['content-type'] ?? '').includes('zip'), `(status ${pack.status()})`);
+  const packBytes = await pack.body();
+  check('with the sheet and the PDFs inside', packBytes.length > 5000 && packBytes.subarray(0, 2).toString() === 'PK');
+
+  await page.goto(`${BASE}/you`, { waitUntil: 'networkidle' });
   await page.locator('#you-gstin').fill('');
   await page.getByRole('button', { name: 'Save karo' }).click();
   await page.getByText('Save ho gaya').waitFor({ timeout: 15000 });

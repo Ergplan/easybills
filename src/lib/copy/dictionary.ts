@@ -201,6 +201,14 @@ export const DICTIONARY = {
   'gst.none.title': { en: 'No GST number?', hi: 'GST number nahi hai?' },
   'gst.none.body': { en: "That's fine. When you get one, add it under \"You\" and this tab will open.", hi: 'Koi baat nahi. Jab GST number mile, "Aap" mein daal dena — yeh tab tab khulega.' },
   'gst.empty': { en: 'No bills in this quarter yet.', hi: 'Is quarter mein abhi koi bill nahi.' },
+  'gst.prev': { en: 'Previous quarter', hi: 'Pichla quarter' },
+  'gst.next': { en: 'Next quarter', hi: 'Agla quarter' },
+  'gst.taxable': { en: 'Before GST', hi: 'GST se pehle' },
+  'gst.preparing': { en: 'Preparing the pack', hi: 'Pack ban raha hai…' },
+  'gst.packNote': { en: 'One file: the Excel sheet and every bill as PDF.', hi: 'Ek file: Excel sheet aur har bill ki PDF.' },
+  'gst.shareOpened': { en: 'Your share options opened. Pick WhatsApp or email.', hi: 'Share options khul gaye. WhatsApp ya email chuno.' },
+  'gst.downloaded': { en: 'Downloaded. Attach it to a WhatsApp or an email to your CA.', hi: 'Download ho gaya. CA ko WhatsApp ya email mein laga do.' },
+  'gst.notFiled': { en: 'This is a summary for your CA. It is not a filed return.', hi: 'Yeh CA ke liye hisaab hai. Return file karna CA ka kaam hai.' },
 
   // --------------------------------------------------------------- you ----
   'you.title': { en: 'Tell us about yourself', hi: 'Apne baare mein batayen' },

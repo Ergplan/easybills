@@ -18,7 +18,6 @@
     "e2e": "node scripts/e2e-smoke.mjs",
     "e2e:signin": "node scripts/e2e-signin.mjs",
     "e2e:home": "node scripts/e2e-home.mjs",
-    "e2e:gst": "node scripts/e2e-gst-drilldown.mjs",
     "e2e:concurrency": "node scripts/e2e-concurrency.mjs",
     "e2e:desktop": "node scripts/e2e-desktop.mjs",
     "gst:audit-rules": "tsx --tsconfig tsconfig.scripts.json scripts/audit-rule-pack.ts"

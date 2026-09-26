@@ -1147,3 +1147,13 @@ textarea.msg { width: 100%; font: inherit; border: 1px solid var(--line-strong);
   border-radius: 6px; border: 1px solid var(--line-strong); background: var(--paper-sunk);
   font-size: 0.7rem; font-weight: 700; color: var(--ink-faint);
 }
+
+/* -------------------------------------------------------------------- gst ---
+   Three figures across the top, then a small table: the shape a CA reads. */
+.gst-figures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gst-figure { font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.table-scroll { overflow-x: auto; }
+.gst-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.gst-table th, .gst-table td { padding: 8px 4px; border-top: 1px solid var(--line); text-align: left; }
+.gst-table th { color: var(--ink-faint); font-weight: 600; font-size: var(--text-xs); border-top: 0; }
+.gst-table .num { text-align: right; font-variant-numeric: tabular-nums; }

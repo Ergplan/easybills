@@ -463,6 +463,18 @@ export async function lastIssuedForCustomer(businessId: string, customerId: stri
   return bills[0] ?? null;
 }
 
+/** Issued bills in a date range, for the quarter's hisaab. Uses the (status, issueDate) index. */
+export async function listIssuedBetween(businessId: string, from: CivilDate, to: CivilDate): Promise<InvoiceRecord[]> {
+  const snap = await invoicesCol(businessId)
+    .where('status', '==', 'issued')
+    .where('issueDate', '>=', from)
+    .where('issueDate', '<=', to)
+    .orderBy('issueDate', 'asc')
+    .limit(1000)
+    .get();
+  return snap.docs.map((d) => asInvoice(d.data()));
+}
+
 /** Recompute stored balance fields after a payment or adjustment changes. */
 export function applyLedgerToInvoice(invoice: InvoiceRecord, ledger: {
   amountPaidPaise: number;

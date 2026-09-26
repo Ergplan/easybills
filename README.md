@@ -1,52 +1,56 @@
-# EasyBills
+# EkBill
 
-Simple billing for very small Indian businesses — freelancers, consultants, home
-businesses, repair providers and monthly service providers.
+Bill banao. WhatsApp pe bhejo. Dekho kiske paise aane hain.
 
-> Create a bill, share it and track payment. Next month, your repeat bills are
-> ready. Prepare your GST returns when due.
+Billing for the very small Indian business: the electrician with four housing
+societies on AMC, the tutor with nine students' parents, the tailor who stitches
+uniforms for two schools. About fifty bills a year, to the same dozen people,
+from a phone, on WhatsApp, in Hinglish.
 
-One owner, one business, one billing location, rupees, ordinary domestic
-transactions. Not a retail POS, not an accounting package.
+One owner, one business, rupees, ordinary domestic transactions. Not a retail
+POS, not an accounting package, not a GST filing tool.
 
 ---
 
 ## What it does
 
-**Billing.** Three navigation destinations — Home, Bills, Customers — and
-business settings behind the profile icon. Home shows one primary action, the
-monthly drafts waiting for review, and the money still to collect. No charts.
+**Three questions, three cards, nothing else on Home.**
+*Chalo, bill banate hain* -- the customers as chips; tap a name and a bill for
+them opens with their details on it. *Bheje hue bills* -- this month's, latest
+first. *Kiske paise aane hain* -- the total, then every unpaid bill, oldest
+first, each with one button: *Yaad dilao*.
 
-One editor serves both a Quick bill (walk-in, no customer record created) and a
-Customer invoice. Discount, payment terms, HSN and supply markings live under
-"More options". Drafts autosave with honest status: "Saved" means the server
-has it; "Saved on this device — waiting for internet" means it does not.
+**The bill is three fields per line.** Kya kiya, kitna, rate. The total updates
+as you type; *Bill banao* makes it, and the next screen is *Bill ban gaya!* with
+a WhatsApp button that hands the PDF and a Hinglish note to the share sheet. A
+customer with a previous bill is offered *Pichle jaisa hi?* -- last month's
+lines, one tap.
 
-**Issuing.** One transaction re-prices the bill from its stored lines, re-checks
-that the document may legally be issued, allocates the next number for the
-financial year, reserves that number, and writes an immutable snapshot of
-seller, customer, items and tax terms. Double-tapping cannot issue twice. A
-later profile edit cannot rewrite a bill already issued.
+**Two audiences, two registers.** The app speaks Hinglish to the owner. The bill
+is formal English, for the customer. Every owner-facing string lives in one
+dictionary (`src/lib/copy/dictionary.ts`); every customer message in
+`src/lib/copy/messages.ts`. See `docs/voice.md`.
 
-**Collecting.** Payments, part payments, reversals that keep the original entry,
-and settlement deductions (such as owner-confirmed TDS) that reduce what is owed
-without counting as cash or changing the invoice.
+**Yaad dilao.** The reminder written for them: three tones (*Pyaar se*,
+*Seedha*, *Doosri baar*), the first suggested from how old the bill is, the
+message drafted from the bill and the UPI id, editable, then WhatsApp with the
+PDF attached. *Likh lo* writes down what came in, all or part.
 
-**Correcting.** An issued bill is never edited. A linked credit or debit note
-carries the correction, with its own number and the owner's reason. Whether it
-changes GST liability is a separate, explicit answer — adjusting what a customer
-owes and adjusting a tax return are not the same act.
+**GST, only for the registered.** The GST tab exists once a GST number is
+entered under *Aap*. It is one screen: this quarter's bills, sales and GST by
+rate, the company (B2B) bills the CA reports one by one, and *CA ko bhejo* --
+one zip with the spreadsheet and every bill as PDF. Not returns. Not filing.
+The CA files.
 
-**Monthly drafts.** "Repeat every month" prepares a draft for review. Never
-issues, never sends, never collects. Runs in a durable background job, so it
-does not depend on anyone having the app open.
+**Sign-in by phone.** Ten digits, a six-digit OTP, done. Then *Apne baare mein
+batayen*: name, phone, GST number (optional), UPI ID, city and state. That is
+the whole setup. (Sign-in is switched off on the deployed instance for now;
+see `docs/deployment.md`.)
 
-**AI, optional.** "Speak or type your bill" fills in the ordinary form. The app
-is fully usable with it switched off.
-
-**GST returns.** For regular GST registrants only, hidden entirely from everyone
-else. Four guided steps: check sales, check purchases, review GST, file or hand
-to your accountant.
+**The engine underneath** is unchanged from the earlier build and tested:
+integer money in paise, Indian grouping, the GST tax engine and issuance
+checks, per-financial-year numbering, immutable issued snapshots, PDF
+rendering, Firestore repos with tenancy rules, idempotent payments.
 
 ---
 
@@ -61,13 +65,15 @@ npm run dev                       # terminal 2: the app on http://localhost:3000
 npm run worker                    # terminal 3 (optional): monthly-draft worker
 ```
 
-Open http://localhost:3000, create an account, name your business, and start a
-bill. Full instructions, including how to run against a real Firebase project,
+Open http://localhost:3000, type any ten-digit number (the Auth emulator
+prints the OTP), say who you are, and tap a name. Full instructions, including how to run against a real Firebase project,
 are in **[docs/setup.md](docs/setup.md)**.
 
 ```bash
-npm test                          # 255 tests (unit + integration against the emulator)
-npm run e2e                       # browser smoke test at 360px, needs dev + emulators running
+npm test                          # unit + integration tests against the emulator
+npm run e2e                       # browser journey at 360px, needs dev + emulators running
+npm run e2e:signin                # phone, OTP and the profile
+npm run e2e:home                  # Home, the tabs, Aap and GST
 npm run typecheck
 npm run build
 npm run gst:audit-rules           # which tax rules have been verified, and which have not
