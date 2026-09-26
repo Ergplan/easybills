@@ -37,6 +37,7 @@ export default async function YouPage() {
         }}
       />
       <div className="stack stack--tight" style={{ alignItems: 'flex-start' }}>
+        <Link href="/customers" className="btn btn--ghost">{t('customer.list.title')}</Link>
         <Link href="/settings" className="btn btn--ghost">{t('you.more')}</Link>
         {!openAccess() && <SignOut />}
       </div>

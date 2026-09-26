@@ -2,6 +2,7 @@
 
 import { t } from '@/lib/copy';
 import { billSentMessage, moneyForMessage } from '@/lib/copy/messages';
+import { parseCustomer } from '@/lib/domain/customer-form';
 
 import { revalidatePath } from 'next/cache';
 
@@ -224,7 +225,7 @@ export async function makeBillAction(
     invoiceId: string;
     baseRevision: number;
     issueDate: string;
-    customer: { customerId: string | null; name: string; phone: string | null };
+    customer: { customerId: string | null; name: string; phone: string | null; gstin?: string | null };
     lines: InvoiceLine[];
   },
 ): Promise<ActionResult<{ invoice: InvoiceRecord; message: string }>> {
@@ -247,17 +248,19 @@ export async function makeBillAction(
       if (!existing) return { ok: false, error: t('error.notFound'), code: 'not-found' };
       party = customerToParty(existing);
     } else if (raw.customer.name.trim()) {
+      const details = parseCustomer({ name, phone: raw.customer.phone, gstin: raw.customer.gstin ?? null });
+      if (!details.ok) return { ok: false, error: details.message, code: 'validation' };
       const created = await createCustomer(businessId, user.uid, {
         name,
-        phone: phoneOrNull(raw.customer.phone),
+        phone: details.customer.phone,
         email: null,
         addressLine1: null,
         addressLine2: null,
         city: null,
         pincode: null,
-        stateCode: null,
-        gstin: null,
-        pan: null,
+        stateCode: details.customer.stateCode,
+        gstin: details.customer.gstin,
+        pan: details.customer.pan,
         notes: null,
       });
       party = customerToParty(created);
@@ -309,10 +312,6 @@ function sentMessage(business: { legalName: string; bank: { upiId: string | null
   });
 }
 
-function phoneOrNull(raw: string | null): string | null {
-  const digits = (raw ?? '').replace(/[\s\-()]/g, '');
-  return digits ? digits : null;
-}
 
 /**
  * "Likh lo": the money came in. Amount, when, how -- and the errors in the

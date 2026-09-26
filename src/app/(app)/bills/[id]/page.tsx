@@ -14,6 +14,8 @@ import { requireCurrentContext } from '@/server/auth/current';
 import { getInvoice, lastIssuedForCustomer } from '@/server/repos/invoices';
 import { listPaymentsForInvoice } from '@/server/repos/payments';
 import { assessIssuance } from '@/lib/gst/scenarios';
+import { guessLanguage } from '@/lib/domain/language-guess';
+import { getCustomer } from '@/server/repos/customers';
 import { profileSetupStatus } from '@/lib/domain/setup-status';
 
 
@@ -35,6 +37,12 @@ export default async function BillPage({
   // Just made: "Bill ban gaya!" and the WhatsApp button. Its own address, so
   // a reload or a back-swipe from WhatsApp lands here and not on the ledger.
   if (invoice.status === 'issued' && done === '1') {
+    const customer = invoice.customer.customerId ? await getCustomer(business.id, invoice.customer.customerId) : null;
+    const current = customer?.language ?? 'hi';
+    const guess =
+      customer && customer.languageSource !== 'owner'
+        ? guessLanguage({ name: customer.name, contactPerson: customer.contactPerson, city: customer.city ?? business.city, stateCode: customer.stateCode ?? business.stateCode })
+        : null;
     return (
       <main className="page">
         <BillDone
@@ -44,10 +52,11 @@ export default async function BillPage({
           customerName={invoice.customer.name}
           totalPaise={invoice.totals.grandTotalPaise}
           message={billSentMessage({
-            customer: { name: invoice.customer.name },
+            customer: { name: invoice.customer.name, contactPerson: customer?.contactPerson, language: customer?.language },
             business: { name: business.legalName, upiId: business.bank.upiId },
             bill: { number: invoice.number ?? '', amountDuePaise: invoice.balancePaise, issueDate: invoice.issueDate },
           })}
+          language={customer ? { customerId: customer.id, current, suggestion: guess && guess.language !== current ? guess : null } : null}
         />
       </main>
     );
@@ -63,7 +72,15 @@ export default async function BillPage({
           </Link>
           <div className="grow">
             <h1 style={{ fontSize: '1.3rem' }}>{t('bill.title', { customer: invoice.customer.name })}</h1>
-            <p className="faint">{invoice.number}</p>
+            <p className="faint">
+              {invoice.number}
+              {invoice.customer.customerId && (
+                <>
+                  {' · '}
+                  <Link href={`/customers/${invoice.customer.customerId}`} className="btn btn--ghost btn--small" style={{ paddingInline: 6 }}>{t('customer.details')}</Link>
+                </>
+              )}
+            </p>
           </div>
         </div>
         <BillView
@@ -111,6 +128,11 @@ export default async function BillPage({
         </Link>
         <div className="grow">
           <h1 style={{ fontSize: '1.3rem' }}>{title}</h1>
+          {invoice.customer.customerId && (
+            <p className="faint">
+              <Link href={`/customers/${invoice.customer.customerId}`} className="btn btn--ghost btn--small" style={{ paddingInline: 6 }}>{t('customer.details')}</Link>
+            </p>
+          )}
         </div>
       </div>
       <BillForm

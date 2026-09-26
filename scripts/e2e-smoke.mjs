@@ -174,6 +174,36 @@ try {
   check('Seedha asks for it today', /aaj bhej dein/.test(direct));
   check('WhatsApp kholo is the button', await page.getByRole('button', { name: 'WhatsApp kholo' }).isVisible());
 
+  console.log('\n10b. Patil, so the app suggests Marathi; one tap and the message follows');
+  check('the suggestion names the surname and the language', /"Patil" naam se lagta hai Marathi/.test(remindText));
+  await page.getByRole('button', { name: 'Marathi mein bhejo' }).click();
+  await page.waitForTimeout(1500);
+  const marathi = await page.locator('#remind-text').inputValue();
+  check('the draft is now Marathi, still to Ramesh ji, still with the amount', /^नमस्कार Ramesh ji/.test(marathi) && /₹1,050/.test(marathi) && /INV-001/.test(marathi), `(saw ${marathi.slice(0, 40)})`);
+  check('and says so, with a note to read it once', /Message Marathi mein hai/.test(await page.locator('main').innerText()));
+  await shot('08b-remind-marathi');
+
+  console.log('\n10c. Customer ke baare mein batayen');
+  await page.goto(`${BASE}/customers`, { waitUntil: 'networkidle' });
+  await page.locator('.row-line', { hasText: 'Ramesh Patil' }).click();
+  await page.waitForURL(/\/customers\/[0-9a-f-]{36}/, { timeout: 15000 });
+  await page.waitForTimeout(600);
+  await shot('09-customer');
+  check('the language is remembered on the customer', (await page.locator('#c-language').inputValue()) === 'mr');
+  await page.locator('#c-gstin').fill('29AABCG1234H1ZV');
+  await page.locator('#c-pan').fill('WRONG');
+  await page.getByRole('button', { name: 'Customer save karo' }).click();
+  await page.getByText('PAN aisa dikhta hai').waitFor({ timeout: 5000 });
+  check('a bad PAN is caught before saving', true);
+  await page.locator('#c-pan').fill('');
+  await page.locator('#c-addressLine1').fill('12 MG Road');
+  await page.locator('#c-city').fill('Bengaluru');
+  await page.getByRole('button', { name: 'Customer save karo' }).click();
+  await page.getByText('Save ho gaya').waitFor({ timeout: 15000 });
+  await page.waitForTimeout(800);
+  check('the state came from the GST number', (await page.locator('#c-stateCode').inputValue()) === '29');
+  check('and the PAN from inside it', (await page.locator('#c-pan').inputValue()) === 'AABCG1234H');
+
   console.log('\n11. Bheje hue bills');
   await page.goto(`${BASE}/bills`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);

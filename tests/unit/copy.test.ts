@@ -16,6 +16,8 @@ import {
   reminderMessage,
   salutationFor,
   suggestedTone,
+  templateFor,
+  WRITTEN_LANGUAGES,
 } from '@/lib/copy/messages';
 
 const KEYS = Object.keys(DICTIONARY) as CopyKey[];
@@ -179,11 +181,36 @@ describe('the reminder', () => {
     }
   });
 
-  it('speaks Hinglish to a customer whose language is not written yet', () => {
-    // A Tamil customer today gets Hinglish, not a blank, not a crash. The day
-    // Tamil templates exist, this test is where that changes.
+  it('speaks Tamil to a Tamil customer, and greets them the Tamil way', () => {
     const msg = reminderMessage({ customer: { ...customer, language: 'ta' }, business, bill, tone: 'gentle', today: '2026-09-26' });
-    expect(msg).toMatch(/^Namaste Vinod ji/);
+    expect(msg).toMatch(/^வணக்கம் Vinod sir/);
+    expect(msg).toContain('INV-040');
+    expect(msg).toContain('₹9,450');
+    expect(msg).toContain('sharma@upi');
+    expect(msg).toMatch(/— Sharma Electricals$/);
+  });
+
+  it('uses the honorific each language uses', () => {
+    expect(salutationFor({ name: 'Srinivas Reddy' }, 'te')).toBe('Srinivas garu');
+    expect(salutationFor({ name: 'Manjunath Gowda' }, 'kn')).toBe('Manjunath avare');
+    expect(salutationFor({ name: 'Kirit Patel' }, 'gu')).toBe('Kiritbhai');
+    expect(salutationFor({ name: 'Anirban Das' }, 'bn')).toBe('Anirban babu');
+    expect(salutationFor({ name: 'Vinod Patil' }, 'en')).toBe('Vinod');
+    expect(salutationFor({ name: 'Mehta Traders' }, 'ta')).toBe('Mehta Traders');
+  });
+
+  it.each(WRITTEN_LANGUAGES)('%s says everything Hinglish says, in every tone', (lang) => {
+    for (const tone of ['gentle', 'direct', 'second', 'billSent'] as const) {
+      expect(placeholdersOf(templateFor(lang, tone)), `${lang}/${tone}`).toEqual(placeholdersOf(templateFor('hi', tone)));
+      const msg =
+        tone === 'billSent'
+          ? billSentMessage({ customer: { ...customer, language: lang }, business, bill })
+          : reminderMessage({ customer: { ...customer, language: lang }, business, bill, tone, today: '2026-10-20' });
+      expect(msg).not.toMatch(/\{[a-z]+\}/i);
+      expect(msg).toContain('INV-040');
+      expect(msg).toContain('sharma@upi');
+      expect(msg).not.toMatch(/legal|action|penalty|interest|sorry|warning/i);
+    }
   });
 
   it('suggests gentle, then direct after two weeks, then second once one has gone', () => {

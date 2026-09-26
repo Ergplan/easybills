@@ -17,9 +17,16 @@ always formal English. A bill is a document that lands on somebody's desk.
 "Chalo" does not belong on it.
 
 A reminder sent to a customer is written in the customer's language, which the
-customer record carries. Today that is Hinglish for everyone; the field exists
-so that a Chennai customer can be spoken to in Tamil the day the templates are
-written, and so a suggestion made from their name and city has somewhere to go.
+customer record carries: Hinglish by default, or Marathi, Gujarati, Tamil,
+Telugu, Kannada, Bengali or English, in their own script, the way people
+actually type on WhatsApp. The app suggests one from the name and the place
+(`src/lib/domain/language-guess.ts`) and never applies it on its own: a wrong
+language is the mistake a customer remembers. The honorific follows the
+language -- *Patil ji*, *Reddy garu*, *Gowda avare*, *Patelbhai*, *Das babu*.
+
+The Indian-language templates were written by a model. They are simple and
+polite by design; a native reader should look them over before a business
+relies on them.
 
 ## Rules
 
@@ -95,7 +102,7 @@ apologises for asking.
 ## Adding a language
 
 Add a column to the dictionary for the owner's interface, or a template set to
-`messages.ts` for what customers receive. The test suite will tell you which
-keys are missing and which placeholders do not match. Do not translate
-literally; write what the friend-who-does-the-paperwork would say in that
-language.
+`messages.ts` for what customers receive, plus its honorific and its UPI line.
+The test suite will tell you which keys are missing and which placeholders do
+not match. Do not translate literally; write what the
+friend-who-does-the-paperwork would say in that language.

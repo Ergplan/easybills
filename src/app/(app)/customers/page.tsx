@@ -1,60 +1,55 @@
 import Link from 'next/link';
 
-import { Money } from '@/components/Money';
 import { Icon } from '@/components/Icon';
-import { TopBar } from '@/components/TopBar';
+import { Money } from '@/components/Money';
+import { CUSTOMER_LANGUAGE_NAMES, t } from '@/lib/copy';
+import { initialOf } from '@/lib/domain/home';
 import { requireCurrentContext } from '@/server/auth/current';
 import { listCustomers } from '@/server/repos/customers';
 import { customerBalance } from '@/server/services/bill-search';
 
 export const dynamic = 'force-dynamic';
 
+/** Aapke customers: everyone the owner has billed, and what each still owes. */
 export default async function CustomersPage() {
   const { business } = await requireCurrentContext();
   const customers = await listCustomers(business.id);
-
-  const withBalances = await Promise.all(
-    customers.map(async (c) => ({ customer: c, balance: await customerBalance(business.id, c.id) })),
-  );
+  const rows = await Promise.all(customers.map(async (c) => ({ c, balance: await customerBalance(business.id, c.id) })));
 
   return (
-    <>
-      <TopBar title="Customers" />
-      <main className="page">
-        {customers.length === 0 ? (
-          <div className="card empty">
-            <Icon name="customers" size={40} className="empty__icon" />
-            <p>No customers yet.</p>
-            <p className="small">
-              You do not need to add customers first — you can add one while making a bill.
-            </p>
-            <Link href="/bills/new" className="btn btn--primary" style={{ marginTop: 12 }}>
-              Create a bill
-            </Link>
-          </div>
+    <main className="page">
+      <div className="row">
+        <Link href="/you" className="btn btn--ghost" aria-label={t('common.back')} style={{ paddingInline: 8 }}>
+          <Icon name="back" size={20} />
+        </Link>
+        <h1 className="grow" style={{ fontSize: '1.3rem' }}>{t('customer.list.title')}</h1>
+      </div>
+      <section className="card stack stack--tight">
+        {rows.length === 0 ? (
+          <p className="muted">{t('customer.list.empty')}</p>
         ) : (
-          <div className="card card--flush">
-            <div className="list">
-              {withBalances.map(({ customer, balance }) => (
-                <Link key={customer.id} href={`/customers/${customer.id}`} className="list__item">
-                  <div className="grow stack" style={{ gap: 2, minWidth: 0 }}>
-                    <span className="strong truncate">{customer.name}</span>
-                    {customer.phone && <span className="faint">{customer.phone}</span>}
+          <div className="rows">
+            {rows.map(({ c, balance }) => (
+              <Link key={c.id} href={`/customers/${c.id}`} className="row-line">
+                <span className="chip__initial" aria-hidden="true">{initialOf(c.name)}</span>
+                <div className="row-line__link">
+                  <div className="row-line__name">{c.name}</div>
+                  <div className="row-line__meta">
+                    {[c.city, c.gstin ? 'GST' : null, c.language && c.language !== 'hi' ? CUSTOMER_LANGUAGE_NAMES[c.language].hi : null]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </div>
-                  {balance.outstandingPaise > 0 ? (
-                    <div className="list__meta">
-                      <span className="tiny muted list__meta-note">to collect</span>
-                      <span className="list__meta-amount"><Money paise={balance.outstandingPaise} /></span>
-                    </div>
-                  ) : (
-                    <span className="pill pill--paid">Settled</span>
-                  )}
-                </Link>
-              ))}
-            </div>
+                </div>
+                {balance.outstandingPaise > 0 ? (
+                  <span className="amount" style={{ color: 'var(--danger)' }}><Money paise={balance.outstandingPaise} whole /></span>
+                ) : (
+                  <span className="pill pill--paid">{t('customer.settled')}</span>
+                )}
+              </Link>
+            ))}
           </div>
         )}
-      </main>
-    </>
+      </section>
+    </main>
   );
 }

@@ -23,6 +23,8 @@ export interface LineDraft {
 export interface BillDraft {
   customerName: string;
   customerPhone: string;
+  /** Only asked when the owner charges GST: it decides IGST or CGST+SGST. */
+  customerGstin: string;
   lines: LineDraft[];
   /** Basis points, one rate for the whole bill. Only asked of a GST-registered owner. */
   gstRateBp: number | null;

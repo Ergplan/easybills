@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { noteReminderAction } from '@/app/actions/invoices';
 import { t } from '@/lib/copy';
 import type { ReminderTone } from '@/lib/copy/messages';
 import { whatsappLink } from '@/lib/domain/whatsapp';
+import { LanguageChoice, type LanguageState } from '@/components/customer/LanguageChoice';
 
 const TONES: Array<{ key: ReminderTone; label: 'remind.tone.gentle' | 'remind.tone.direct' | 'remind.tone.second' }> = [
   { key: 'gentle', label: 'remind.tone.gentle' },
@@ -32,9 +33,16 @@ export function RemindScreen(props: {
   drafts: Record<ReminderTone, string>;
   remindersSent: number;
   lastRemindedAt: string | null;
+  language: LanguageState;
 }) {
   const [tone, setTone] = useState<ReminderTone>(props.suggested);
   const [text, setText] = useState(props.drafts[props.suggested]);
+  const [edited, setEdited] = useState(false);
+  // The drafts change when the customer's language does; an untouched
+  // message follows them, one the owner has edited stays theirs.
+  useEffect(() => {
+    if (!edited) setText(props.drafts[tone]);
+  }, [props.drafts, tone, edited]);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const pdfUrl = `/api/invoices/${props.invoiceId}/pdf?b=${encodeURIComponent(props.businessId)}`;
@@ -79,6 +87,8 @@ export function RemindScreen(props: {
         </p>
       )}
 
+      <LanguageChoice businessId={props.businessId} state={props.language} />
+
       <section className="card stack stack--tight">
         <span className="field__label">{t('remind.tone')}</span>
         <div className="chips" role="group" aria-label={t('remind.tone')}>
@@ -91,6 +101,7 @@ export function RemindScreen(props: {
               onClick={() => {
                 setTone(tn.key);
                 setText(props.drafts[tn.key]);
+                setEdited(false);
               }}
             >
               <span className="chip__name">{t(tn.label)}</span>
@@ -106,7 +117,10 @@ export function RemindScreen(props: {
           className="textarea msg"
           rows={6}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            setEdited(true);
+          }}
           aria-label={t('remind.note')}
         />
         <div className="row row--tight">

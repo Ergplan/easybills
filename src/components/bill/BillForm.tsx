@@ -59,6 +59,7 @@ export function BillForm(props: BillFormProps) {
   const [draft, setDraft] = useState<BillDraft>({
     customerName: props.customer.name,
     customerPhone: props.customer.phone ?? '',
+    customerGstin: '',
     lines: [blankLine(newId())],
     gstRateBp: props.chargesGst ? props.defaultGstRateBp : null,
   });
@@ -91,6 +92,7 @@ export function BillForm(props: BillFormProps) {
         customerId: props.customer.customerId,
         name: draft.customerName,
         phone: draft.customerPhone || null,
+        gstin: draft.customerGstin || null,
       },
       lines: checked.lines,
     });
@@ -183,6 +185,26 @@ export function BillForm(props: BillFormProps) {
               maxLength={16}
             />
           </div>
+          {props.chargesGst && (
+            <div className="field">
+              <label className="field__label" htmlFor="bill-gstin">{t('customer.gstin')}</label>
+              <input
+                id="bill-gstin"
+                className="input"
+                value={draft.customerGstin}
+                onChange={(e) => {
+                  setDraft((d) => ({ ...d, customerGstin: e.target.value.toUpperCase() }));
+                  setError(null);
+                }}
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                maxLength={15}
+                placeholder="27ABCDE1234F1Z5"
+              />
+              <span className="field__hint">{t('customer.gstinHint')}</span>
+            </div>
+          )}
         </section>
       )}
 

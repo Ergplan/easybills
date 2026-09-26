@@ -23,9 +23,8 @@ export const OWNER_LOCALE: OwnerLocale = 'hi';
  * owner may work in Hinglish and have a customer in Chennai who should not be
  * reminded in it.
  *
- * Today only Hinglish is written. The type is here so a customer record can
- * carry a preference from the first day, and so the model-suggested language
- * (from a name and a city) has somewhere to land when it arrives.
+ * A customer record carries the preference; `lib/domain/language-guess.ts`
+ * suggests one from the name and the place when the owner has not said.
  */
 export type CustomerLanguage = 'hi' | 'mr' | 'gu' | 'ta' | 'te' | 'kn' | 'bn' | 'en';
 
@@ -40,8 +39,8 @@ export const CUSTOMER_LANGUAGE_NAMES: Record<CustomerLanguage, { en: string; hi:
   en: { en: 'English', hi: 'English' },
 };
 
-/** The languages a customer can actually be messaged in today. */
-export const CUSTOMER_LANGUAGES_AVAILABLE: readonly CustomerLanguage[] = ['hi'];
+/** The languages a customer can actually be messaged in today: all of them. */
+export const CUSTOMER_LANGUAGES_AVAILABLE: readonly CustomerLanguage[] = ['hi', 'mr', 'gu', 'ta', 'te', 'kn', 'bn', 'en'];
 
 type Params = Record<string, string | number>;
 

@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { Money } from '@/components/Money';
 import { t } from '@/lib/copy';
+import { LanguageChoice, type LanguageState } from '@/components/customer/LanguageChoice';
 
 /**
  * Bill ban gaya. The next thing is WhatsApp.
@@ -22,6 +23,7 @@ export function BillDone(props: {
   message: string;
   totalPaise: number;
   customerName: string;
+  language: LanguageState | null;
 }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -103,6 +105,8 @@ export function BillDone(props: {
           {copied ? t('bill.done.copied') : t('bill.done.copy')}
         </button>
       </section>
+
+      {props.language && <LanguageChoice businessId={props.businessId} state={props.language} />}
 
       <div className="row row--tight">
         <a className="btn btn--secondary grow" href={`${pdfUrl}&download=1`}>{t('bill.done.pdf')}</a>
