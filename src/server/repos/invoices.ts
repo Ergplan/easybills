@@ -436,6 +436,23 @@ export async function listInvoices(businessId: string, filter: InvoiceListFilter
   return snap.docs.map((d) => asInvoice(d.data()));
 }
 
+/**
+ * The customer's most recent issued bill, for "Pichle jaisa hi?".
+ *
+ * No orderBy: the composite index that exists is (customer, status), and a
+ * customer's bills are few enough to sort here.
+ */
+export async function lastIssuedForCustomer(businessId: string, customerId: string): Promise<InvoiceRecord | null> {
+  const snap = await invoicesCol(businessId)
+    .where('customer.customerId', '==', customerId)
+    .where('status', '==', 'issued')
+    .limit(100)
+    .get();
+  const bills = snap.docs.map((d) => asInvoice(d.data()));
+  bills.sort((a, b) => (a.issueDate < b.issueDate ? 1 : a.issueDate > b.issueDate ? -1 : (b.numberSequence ?? 0) - (a.numberSequence ?? 0)));
+  return bills[0] ?? null;
+}
+
 /** Recompute stored balance fields after a payment or adjustment changes. */
 export function applyLedgerToInvoice(invoice: InvoiceRecord, ledger: {
   amountPaidPaise: number;

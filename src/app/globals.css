@@ -1101,3 +1101,39 @@ table.data td.num, table.data th.num {
 }
 
 .btn--small { min-height: var(--tap); padding: 6px 12px; font-size: var(--text-sm); border-radius: var(--radius-xs); }
+
+/* ------------------------------------------------------------------- bill ---
+   Three fields per line: what, how many, rate. The numbers sit side by side
+   under the description, and a line that is not the only one can be removed. */
+.bill-line { display: flex; flex-direction: column; gap: 10px; padding-bottom: 14px; border-bottom: 1px dashed var(--line-strong); }
+.bill-line:last-of-type { border-bottom: 0; padding-bottom: 0; }
+.bill-line__nums { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+.bill-line__remove { min-width: var(--tap); font-size: 1.4rem; line-height: 1; color: var(--ink-faint); }
+.bill-total { font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; }
+
+.card--offer { background: var(--accent-soft); border-color: transparent; }
+
+.done { text-align: center; padding: 20px 8px 4px; }
+.done__tick {
+  width: 72px; height: 72px; border-radius: 50%;
+  margin: 0 auto 12px;
+  display: grid; place-items: center;
+  background: var(--ok-soft); color: var(--ok);
+  font-family: var(--font-display); font-weight: 800; font-size: 2rem;
+}
+.done__title { font-size: 1.7rem; }
+
+/* WhatsApp's green, on WhatsApp's button only: people recognise it before
+   they read it. Dark ink on it in both themes, as WhatsApp itself does. */
+.btn--whatsapp { background: #25d366; color: #0b2e1a; font-weight: 700; }
+.btn--whatsapp:hover:not(:disabled) { filter: brightness(1.05); }
+
+.msg {
+  background: var(--paper-sunk);
+  border-radius: 14px 14px 14px 4px;
+  padding: 12px 14px;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

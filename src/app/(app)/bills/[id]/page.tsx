@@ -1,13 +1,17 @@
 import { notFound } from 'next/navigation';
 
-import { aiConfig } from '@/lib/env';
 import { DEFAULT_RULE_PACK } from '@/lib/gst/ruleset';
 import { TopBar } from '@/components/TopBar';
-import { InvoiceEditor } from '@/components/editor/InvoiceEditor';
+import { BillDone } from '@/components/bill/BillDone';
+import { BillForm } from '@/components/bill/BillForm';
+import { billSentMessage } from '@/lib/copy/messages';
+import { Icon } from '@/components/Icon';
+import { t } from '@/lib/copy';
+import { formatDateShort } from '@/lib/dates';
+import { summariseLines } from '@/lib/domain/bill-form';
+import Link from 'next/link';
 import { requireCurrentContext } from '@/server/auth/current';
-import { getInvoice } from '@/server/repos/invoices';
-import { recentCustomers } from '@/server/repos/customers';
-import { listItems } from '@/server/repos/items';
+import { getInvoice, lastIssuedForCustomer } from '@/server/repos/invoices';
 import { listPaymentsForInvoice } from '@/server/repos/payments';
 import { listAdjustmentsForInvoice } from '@/server/repos/adjustments';
 import { getSchedule, listSchedules } from '@/server/repos/schedules';
@@ -15,15 +19,42 @@ import { assessIssuance } from '@/lib/gst/scenarios';
 import { profileSetupStatus } from '@/lib/domain/setup-status';
 
 import { IssuedInvoiceView } from './IssuedInvoiceView';
-import { ScheduledDraftBanner } from './ScheduledDraftBanner';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BillPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function BillPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ done?: string }>;
+}) {
   const { id } = await params;
+  const { done } = await searchParams;
   const { business } = await requireCurrentContext();
   const invoice = await getInvoice(business.id, id);
   if (!invoice) notFound();
+
+  // Just made: "Bill ban gaya!" and the WhatsApp button. Its own address, so
+  // a reload or a back-swipe from WhatsApp lands here and not on the ledger.
+  if (invoice.status === 'issued' && done === '1') {
+    return (
+      <main className="page">
+        <BillDone
+          businessId={business.id}
+          invoiceId={invoice.id}
+          number={invoice.number ?? ''}
+          customerName={invoice.customer.name}
+          totalPaise={invoice.totals.grandTotalPaise}
+          message={billSentMessage({
+            customer: { name: invoice.customer.name },
+            business: { name: business.legalName, upiId: business.bank.upiId },
+            bill: { number: invoice.number ?? '', amountDuePaise: invoice.balancePaise, issueDate: invoice.issueDate },
+          })}
+        />
+      </main>
+    );
+  }
 
   if (invoice.status === 'issued') {
     const [payments, adjustments] = await Promise.all([
@@ -55,11 +86,9 @@ export default async function BillPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  const [customers, items] = await Promise.all([recentCustomers(business.id), listItems(business.id)]);
-  const draftSchedule = invoice.scheduleId ? await getSchedule(business.id, invoice.scheduleId) : null;
-
-  // Whether the editor shows tax fields at all is decided here, once, from the
-  // business's confirmed standing -- not by a toggle the owner can flip.
+  // The three-field bill. What the engine needs to know is settled here,
+  // once, from the business's standing: whether GST is charged at all, and
+  // whether anything in the profile stops a bill going out.
   const assessment = assessIssuance({
     registrationType: business.registrationType,
     sellerStateCode: business.stateCode,
@@ -70,38 +99,42 @@ export default async function BillPage({ params }: { params: Promise<{ id: strin
     eInvoicingSelfDeclaredNotApplicable: business.eInvoicingSelfDeclaredNotApplicable,
     issueDate: invoice.issueDate,
   });
+  const setup = profileSetupStatus(business, invoice.issueDate);
+
+  const last = invoice.customer.customerId ? await lastIssuedForCustomer(business.id, invoice.customer.customerId) : null;
+  const lastTime = last
+    ? {
+        month: formatDateShort(last.issueDate).split(' ')[1] ?? '',
+        summary: summariseLines(last.lines),
+        amountPaise: last.totals.grandTotalPaise,
+        lines: last.lines,
+      }
+    : null;
+
+  const title = invoice.customer.name ? t('bill.title', { customer: invoice.customer.name }) : t('bill.titleNew');
 
   return (
-    <>
-      <TopBar
-        title={invoice.kind === 'quick-bill' ? 'Quick bill' : 'Invoice'}
-        back={{ href: '/bills' }}
+    <main className="page">
+      <div className="row">
+        <Link href="/home" className="btn btn--ghost" aria-label={t('common.back')} style={{ paddingInline: 8 }}>
+          <Icon name="back" size={20} />
+        </Link>
+        <div className="grow">
+          <h1 style={{ fontSize: '1.3rem' }}>{title}</h1>
+        </div>
+      </div>
+      <BillForm
+        businessId={business.id}
+        invoiceId={invoice.id}
+        baseRevision={invoice.revision}
+        issueDate={invoice.issueDate}
+        customer={{ customerId: invoice.customer.customerId, name: invoice.customer.name, phone: invoice.customer.phone }}
+        chargesGst={assessment.chargesGst}
+        gstRatesBp={[...DEFAULT_RULE_PACK.selectableRates.value]}
+        defaultGstRateBp={business.defaultTaxRateBp ?? (assessment.chargesGst ? 1800 : null)}
+        lastTime={lastTime}
+        blockers={setup.blockers.map((b) => ({ message: b.message, whatYouCanDo: b.whatYouCanDo }))}
       />
-      <main className="page page--wide">
-        {draftSchedule && (
-          <ScheduledDraftBanner
-            businessId={business.id}
-            invoiceId={invoice.id}
-            scheduleId={draftSchedule.id}
-            billingPeriod={invoice.billingPeriod}
-            issueDate={invoice.issueDate}
-          />
-        )}
-        <InvoiceEditor
-          bootstrap={{
-            businessId: business.id,
-            invoice,
-            recentCustomers: customers,
-            savedItems: items,
-            sellerStateCode: business.stateCode,
-            chargesGst: assessment.chargesGst,
-            setupBlockers: profileSetupStatus(business, invoice.issueDate).blockers,
-            selectableRatesBp: [...DEFAULT_RULE_PACK.selectableRates.value],
-            defaultTaxRateBp: business.defaultTaxRateBp,
-            aiEnabled: aiConfig().enabled,
-          }}
-        />
-      </main>
-    </>
+    </main>
   );
 }

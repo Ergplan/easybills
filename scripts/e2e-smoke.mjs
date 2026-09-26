@@ -63,11 +63,10 @@ try {
   });
   check('Home touch targets are at least 44px', homeSmall.length === 0, `(${homeSmall.join(', ')})`);
 
-  console.log('\n3. Quick bill at 360px');
-  await page.goto(`${BASE}/bills/new`, { waitUntil: 'networkidle' });
-  await page.getByText('Quick bill', { exact: true }).click();
+  console.log('\n3. A bill from the Naya customer chip, at 360px');
+  await page.getByRole('button', { name: 'Naya customer' }).click();
   await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 20000 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(800);
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   check('no horizontal scrolling at 360px', overflow <= 0, `(overflow ${overflow}px)`);
@@ -77,15 +76,8 @@ try {
       const s = getComputedStyle(el);
       return s.visibility === 'hidden' || s.display === 'none' || el.closest('.sr-only') !== null;
     };
-    // A checkbox or radio inside a label is tapped via the LABEL, so the label
-    // is the real target; measure that rather than the 24px box inside it.
-    const effective = (el) => {
-      if ((el.type === 'checkbox' || el.type === 'radio') && el.closest('label')) return el.closest('label');
-      return el;
-    };
     return [...document.querySelectorAll('button, a, input, select, textarea')]
       .filter((el) => !isHidden(el))
-      .map(effective)
       .filter((el) => {
         const r = el.getBoundingClientRect();
         if (r.width === 0 || r.height === 0) return false;
@@ -95,44 +87,48 @@ try {
   });
   check('all visible touch targets are at least 44px', smallTargets.length === 0, `(${smallTargets.join(', ')})`);
 
-  console.log('\n4. Enter the worked example (2 visits at 800 + parts 450)');
-  await page.locator('input[id^="desc-"]').first().fill('Repair visit');
+  console.log('\n4. The worked example: 2 visits at 800 + parts 450');
+  const billText = await page.locator('main').innerText();
+  check('the bill asks the three questions, in Hinglish', /Kya kiya\?/.test(billText) && /Kitna/.test(billText) && /Rate \(₹\)/.test(billText));
+  check('a non-GST owner is not asked for a GST rate', !/GST rate/.test(billText));
+  await page.locator('#bill-customer').fill('Ramesh Patil');
+  await page.locator('input[id^="what-"]').first().fill('Repair visit');
   await page.locator('input[id^="qty-"]').first().fill('2');
-  await page.locator('input[id^="price-"]').first().fill('800');
-  await page.getByRole('button', { name: '+ Add another item' }).click();
+  await page.locator('input[id^="rate-"]').first().fill('800');
+  await page.getByRole('button', { name: '+ Aur kuch' }).click();
+  await page.locator('input[id^="what-"]').nth(1).fill('Spare parts');
+  await page.locator('input[id^="rate-"]').nth(1).fill('450');
   await page.waitForTimeout(300);
-  await page.locator('input[id^="desc-"]').nth(1).fill('Spare parts');
-  await page.locator('input[id^="qty-"]').nth(1).fill('1');
-  await page.locator('input[id^="price-"]').nth(1).fill('450');
-  await page.waitForTimeout(1200);
-  await shot('02-editor');
+  await shot('02-bill');
+  const total = (await page.locator('.bill-total').textContent())?.trim();
+  check('the total updates as you type: 2,050', total === '₹2,050', `(saw ${total})`);
 
-  const total = (await page.locator('.sticky-total .amount').first().textContent())?.trim();
-  check('sticky total is the expected 2,050 before tax', total === '₹2,050.00', `(saw ${total})`);
+  console.log('\n5. Bill banao');
+  await page.getByRole('button', { name: 'Bill banao' }).click();
+  await page.waitForURL(/\/bills\/[0-9a-f-]{36}\?done=1/, { timeout: 25000 });
+  await page.getByText('Bill ban gaya!').waitFor({ timeout: 25000 });
+  await page.waitForTimeout(400);
+  await shot('05-done');
+  const doneText = await page.locator('main').innerText();
+  check('the bill has a number', /INV-\d+/.test(doneText), `(text: ${doneText.slice(0, 80)})`);
+  check('and the total', doneText.includes('₹2,050'));
+  check('WhatsApp is the next thing', await page.getByRole('button', { name: 'WhatsApp pe bhejo' }).isVisible());
+  check('the message greets the customer with ji and gives the amount', /Namaste Ramesh ji/.test(doneText) && /₹2,050/.test(doneText));
 
-  // Wait for autosave to settle rather than assuming a fixed delay.
-  await page.locator('.save-state').first().filter({ hasText: 'Saved' }).waitFor({ timeout: 15000 }).catch(() => {});
-  const saveState = (await page.locator('.save-state').first().textContent())?.trim();
-  check('autosave reports Saved once the server has it', saveState === 'Saved', `(saw "${saveState}")`);
-
-  console.log('\n5. Review and issue');
-  // GST status was settled on the first screen: no GST number given means not
-  // registered, so nothing blocks issuing and there is no detour to settings.
-  await page.getByRole('button', { name: 'Review' }).click();
-  await page.waitForTimeout(2000);
-  await shot('04-review-ok');
-  const reviewText = await page.locator('main').innerText();
-  check('review does not ask about GST status, the profile already answered', !/GST status/i.test(reviewText));
-  const issueNow = page.getByRole('button', { name: /^Issue/ });
-  check('issue button is enabled straight away', await issueNow.isEnabled());
-
-  await issueNow.click();
-  await page.waitForTimeout(3500);
+  console.log('\n6. The new customer is now a chip, and the bill is on Home');
+  await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
+  const homeText = await page.locator('main').innerText();
+  check('Ramesh Patil is a chip', await page.locator('.chip', { hasText: 'Ramesh Patil' }).isVisible());
+  check('the bill is under Bheje hue bills', /1 bill is mahine/.test(homeText));
+  check('and under Kiske paise aane hain', /₹2,050/.test(homeText) && /Yaad dilao/.test(homeText));
+  await page.locator('section[aria-labelledby=sent-heading] .row-line').first().click();
+  await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 20000 });
+  await page.waitForTimeout(800);
   await shot('05-issued');
   const issuedText = await page.locator('main').innerText();
-  check('issued bill shows a number', /INV-\d+/.test(issuedText), `(text: ${issuedText.slice(0, 80)})`);
-  check('issued bill shows the total', issuedText.includes('2,050.00'));
-  check('issued bill shows it is unpaid', /Unpaid/i.test(issuedText));
+  check('the issued bill shows its number', /INV-\d+/.test(issuedText));
+  check('and shows it is unpaid', /Unpaid/i.test(issuedText));
 
   console.log('\n7. Record a part payment');
   await page.getByRole('button', { name: 'Payment received' }).click();
@@ -166,18 +162,6 @@ try {
   check('credit note is listed with its own number', /CN-001/.test(correctedText));
   check('credit note is recorded as balance-only by default', /GST unchanged/i.test(correctedText));
   check('balance drops by the credit note', correctedText.includes('1,000.00'), '(expected 1,050 - 50)');
-
-  console.log('\n10. Turn on monthly repeat');
-  // A quick bill has no saved customer, so the monthly option must say so
-  // rather than silently failing.
-  await page.getByRole('button', { name: 'Repeat every month' }).click();
-  await page.waitForTimeout(500);
-  await shot('09-repeat');
-  const repeatText = await page.locator('main').innerText();
-  check('monthly setup states that a draft is prepared for review', /prepare a draft for you to review/i.test(repeatText));
-  check('monthly setup explains a saved customer is needed for a walk-in bill', /needs a saved customer/i.test(repeatText));
-  const turnOn = page.getByRole('button', { name: 'Turn on monthly bills' });
-  check('monthly cannot be turned on without a customer', await turnOn.isDisabled());
 
   console.log('\n11. Bills list and search');
   await page.goto(`${BASE}/bills`, { waitUntil: 'networkidle' });

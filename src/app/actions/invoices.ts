@@ -1,12 +1,14 @@
 'use server';
 
 import { t } from '@/lib/copy';
+import { billSentMessage } from '@/lib/copy/messages';
 
 import { revalidatePath } from 'next/cache';
 
-import { todayIst } from '@/lib/dates';
+import { assertCivilDate, todayIst } from '@/lib/dates';
 import { saveDraftInput, paymentInput } from '@/lib/domain/validation';
-import type { InvoiceRecord } from '@/lib/domain/types';
+import type { InvoiceLine, InvoiceRecord } from '@/lib/domain/types';
+import { formatMoneyPlain, formatPercentPlain, formatQuantityPlain } from '@/lib/money';
 import { requireBusiness } from '@/server/auth/guard';
 import { requireCurrentContext } from '@/server/auth/current';
 import {
@@ -18,7 +20,7 @@ import {
   newInvoiceId,
   saveDraft,
 } from '@/server/repos/invoices';
-import { customerToParty, getCustomer, markBilled } from '@/server/repos/customers';
+import { createCustomer, customerToParty, getCustomer, markBilled } from '@/server/repos/customers';
 import { createItem } from '@/server/repos/items';
 import { recordPayment, recordSettlementDeduction, reversePayment } from '@/server/repos/payments';
 import { createAdjustment } from '@/server/repos/adjustments';
@@ -204,6 +206,111 @@ export async function startBillForCustomerAction(
   } catch (error) {
     return toActionError(error);
   }
+}
+
+/**
+ * "Bill banao": one tap from typing to a numbered bill.
+ *
+ * Saves the lines and the customer, creates the customer record if this is a
+ * new name, then issues -- in that order, so the invoice snapshot carries the
+ * customer and the customer carries the bill. The old flow was save, review,
+ * issue as three screens; the review is the total the owner has been
+ * watching while typing.
+ */
+export async function makeBillAction(
+  businessId: string,
+  raw: {
+    invoiceId: string;
+    baseRevision: number;
+    issueDate: string;
+    customer: { customerId: string | null; name: string; phone: string | null };
+    lines: InvoiceLine[];
+  },
+): Promise<ActionResult<{ invoice: InvoiceRecord; message: string }>> {
+  try {
+    const { business, user } = await requireBusiness(businessId);
+    const draft = await getInvoice(businessId, raw.invoiceId);
+    if (!draft) return { ok: false, error: t('error.notFound'), code: 'not-found' };
+    if (draft.status === 'issued') {
+      return ok({ invoice: draft, message: sentMessage(business, draft) });
+    }
+
+    // Who the bill is for. A name with no id is a new customer: remembered
+    // now, so the chip is there next time and the reminder knows who to greet.
+    const name = raw.customer.name.trim() || t('bill.forWalkIn');
+    let party = draft.customer;
+    if (raw.customer.customerId && raw.customer.customerId === draft.customer.customerId) {
+      party = { ...draft.customer, phone: raw.customer.phone ?? draft.customer.phone };
+    } else if (raw.customer.customerId) {
+      const existing = await getCustomer(businessId, raw.customer.customerId);
+      if (!existing) return { ok: false, error: t('error.notFound'), code: 'not-found' };
+      party = customerToParty(existing);
+    } else if (raw.customer.name.trim()) {
+      const created = await createCustomer(businessId, user.uid, {
+        name,
+        phone: phoneOrNull(raw.customer.phone),
+        email: null,
+        addressLine1: null,
+        addressLine2: null,
+        city: null,
+        pincode: null,
+        stateCode: null,
+        gstin: null,
+        pan: null,
+        notes: null,
+      });
+      party = customerToParty(created);
+    } else {
+      party = emptyParty(name);
+    }
+
+    const issueDate = assertCivilDate(raw.issueDate, 'date');
+    const saved = await saveDraft({
+      business,
+      uid: user.uid,
+      invoiceId: raw.invoiceId,
+      kind: draft.kind,
+      issueDate,
+      customer: party,
+      placeOfSupplyStateCode: party.stateCode ?? business.stateCode,
+      supplyFlags: [],
+      lines: saveDraftInput.shape.lines.parse(
+        raw.lines.map((l) => ({
+          ...l,
+          quantityMilli: formatQuantityPlain(l.quantityMilli),
+          unitPricePaise: formatMoneyPlain(l.unitPricePaise),
+          discountPaise: formatMoneyPlain(l.discountPaise),
+          taxRateBp: l.taxRateChosen ? formatPercentPlain(l.taxRateBp) : '',
+          cessRateBp: formatPercentPlain(l.cessRateBp),
+        })),
+      ),
+      notes: draft.notes,
+      baseRevision: raw.baseRevision,
+    });
+
+    const result = await issueInvoice({ business, uid: user.uid, invoiceId: raw.invoiceId, expectedRevision: saved.revision });
+    if (result.invoice.customer.customerId) {
+      await markBilled(businessId, result.invoice.customer.customerId).catch(() => undefined);
+    }
+    revalidatePath('/home');
+    revalidatePath('/bills');
+    return ok({ invoice: result.invoice, message: sentMessage(business, result.invoice) });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+function sentMessage(business: { legalName: string; bank: { upiId: string | null } }, invoice: InvoiceRecord): string {
+  return billSentMessage({
+    customer: { name: invoice.customer.name },
+    business: { name: business.legalName, upiId: business.bank.upiId },
+    bill: { number: invoice.number ?? '', amountDuePaise: invoice.balancePaise, issueDate: invoice.issueDate },
+  });
+}
+
+function phoneOrNull(raw: string | null): string | null {
+  const digits = (raw ?? '').replace(/[\s\-()]/g, '');
+  return digits ? digits : null;
 }
 
 export async function duplicateInvoiceAction(

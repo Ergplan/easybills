@@ -1,18 +1,15 @@
-import { requireCurrentContext } from '@/server/auth/current';
-import { TopBar } from '@/components/TopBar';
+import { redirect } from 'next/navigation';
 
-import { NewBillChooser } from './NewBillChooser';
+import { startBillForCustomerAction } from '@/app/actions/invoices';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * A bill with nobody on it yet. Home's chips are the usual way in; this is
+ * the address for a link that says "new bill" without naming a customer.
+ */
 export default async function NewBillPage() {
-  const { business } = await requireCurrentContext();
-  return (
-    <>
-      <TopBar title="Create bill" back={{ href: '/home' }} />
-      <main className="page">
-        <NewBillChooser businessName={business.legalName} />
-      </main>
-    </>
-  );
+  const r = await startBillForCustomerAction(null);
+  if (!r.ok) redirect('/home');
+  redirect(`/bills/${r.data.invoiceId}`);
 }
