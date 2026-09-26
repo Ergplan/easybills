@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { db } from '@/server/firebase/admin';
 import { membersCol, businessDoc } from '@/server/firebase/paths';
 import type { BusinessRecord } from '@/lib/domain/types';
 
@@ -38,11 +39,16 @@ export async function requireBusiness(businessId: string): Promise<BusinessConte
   const user = await requireUser();
   if (!businessId || typeof businessId !== 'string') throw new NotAuthorisedError();
 
-  const membership = await membersCol(businessId).doc(user.uid).get();
-  if (!membership.exists) throw new NotAuthorisedError();
-
-  const snap = await businessDoc(businessId).get();
-  if (!snap.exists) throw new NotFoundError('Business not found.');
+  // Both documents in one round trip. Which business is being asked for is in
+  // the request, so there is nothing to learn before fetching either, and every
+  // server action -- every save, every payment -- paid for two crossings to the
+  // database rather than one.
+  const [membership, snap] = await db().getAll(
+    membersCol(businessId).doc(user.uid),
+    businessDoc(businessId),
+  );
+  if (!membership!.exists) throw new NotAuthorisedError();
+  if (!snap!.exists) throw new NotFoundError('Business not found.');
 
   return { user, businessId, business: { id: snap.id, ...(snap.data() as Omit<BusinessRecord, 'id'>) } };
 }
