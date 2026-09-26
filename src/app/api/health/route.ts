@@ -96,6 +96,17 @@ function hintFor(e: { code?: string | number; message?: string }): string {
     return 'This service cannot read Firestore. Grant its service account ' +
       '(firebase-app-hosting-compute@…) the Cloud Datastore User role in IAM.';
   }
+  if (/database.*not found|NOT_FOUND.*database|does not exist/i.test(text)) {
+    return 'The project has no database by that name. Check FIRESTORE_DATABASE_ID ' +
+      'against Firebase Console > Firestore Database: a database named something ' +
+      'other than (default) must be named here exactly.';
+  }
+  if (/INVALID_ARGUMENT|not supported|unimplemented|UNIMPLEMENTED/i.test(text)) {
+    return 'The database rejected a normal Firestore call. Check its EDITION in ' +
+      'Firebase Console: this app speaks the Firestore API and uses Firestore ' +
+      'security rules, which is Standard edition. Enterprise edition is the ' +
+      'MongoDB-compatible offering and is a different query surface.';
+  }
   if (/TIMEOUT/i.test(text)) {
     return 'Firestore did not answer at all. That is usually no database in ' +
       'this project yet: create one in Firebase Console > Firestore Database > ' +
