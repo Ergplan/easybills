@@ -30,9 +30,20 @@ function firebaseWebEnv(): Record<string, string> {
   );
 }
 
+/**
+ * When this server was built.
+ *
+ * "Is my change actually deployed yet?" has no obvious answer on a platform
+ * that rebuilds on push: the app looks the same either way, and a setting that
+ * has not landed yet is indistinguishable from a setting that is wrong. This
+ * is stamped at build time and reported by /api/health, so the question takes
+ * one request instead of a guess.
+ */
+const BUILD_STAMP = new Date().toISOString();
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  env: firebaseWebEnv(),
+  env: { ...firebaseWebEnv(), NEXT_PUBLIC_BUILD_STAMP: BUILD_STAMP },
   // Emit a self-contained server with only the dependencies it actually uses,
   // so the deployable image carries the app rather than node_modules. Harmless
   // in development; `next dev` ignores it.

@@ -30,6 +30,7 @@ export const runtime = 'nodejs';
  */
 export async function GET() {
   const checks: Record<string, unknown> = {
+    builtAt: process.env.NEXT_PUBLIC_BUILD_STAMP ?? 'unknown',
     projectId: firebaseProjectId(),
     database: firestoreDatabaseId() ?? '(default)',
     usingEmulators,
@@ -89,8 +90,12 @@ function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
 function hintFor(e: { code?: string | number; message?: string }): string {
   const text = `${e.code ?? ''} ${e.message ?? ''}`;
   if (/NOT_FOUND|5 NOT_FOUND|database.*does not exist/i.test(text)) {
-    return 'No Firestore database exists in this project yet. Create one in ' +
-      'Firebase Console > Firestore Database > Create database, in Native mode.';
+    return 'No database by the name shown above exists in this project. Either ' +
+      'it has not been created (Firebase Console > Firestore Database > Create ' +
+      'database, Native mode), or the name is wrong. If the database above says ' +
+      '(default) but yours has a name, FIRESTORE_DATABASE_ID has not reached ' +
+      'this server -- check builtAt above against when that setting was pushed, ' +
+      'because a rollout built before it will not have it.';
   }
   if (/PERMISSION_DENIED|7 PERMISSION_DENIED|IAM/i.test(text)) {
     return 'This service cannot read Firestore. Grant its service account ' +
