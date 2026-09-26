@@ -169,6 +169,21 @@ export const aiConfig = () => ({
   maxRequestsPerDay: Number(optional('AI_MAX_REQUESTS_PER_DAY') ?? 300),
 });
 
+// --- Voice: talk to the app ---------------------------------------------------
+/**
+ * Speech in, speech out, over OpenAI's Realtime API. The browser connects to
+ * OpenAI directly (WebRTC), using a short-lived client secret this server
+ * mints from the real key; the real key never leaves the server. Off unless a
+ * key is configured, and the screen says so rather than failing on tap.
+ */
+export const voiceConfig = () => ({
+  enabled: (optional('VOICE_ENABLED') ?? 'true') !== 'false' && optional('OPENAI_API_KEY') !== null,
+  apiKey: optional('OPENAI_API_KEY'),
+  model: optional('OPENAI_REALTIME_MODEL') ?? 'gpt-realtime',
+  voice: optional('OPENAI_REALTIME_VOICE') ?? 'marin',
+  baseUrl: optional('OPENAI_BASE_URL') ?? 'https://api.openai.com',
+});
+
 // --- GST filing provider (GSP) ---------------------------------------------
 export type GspMode = 'unconfigured' | 'sandbox' | 'production';
 

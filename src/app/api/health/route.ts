@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import {
   backgroundWorkConfigured,
+  voiceConfig,
   firebaseProjectId,
   firestoreDatabaseId,
   openAccess,
@@ -40,6 +41,7 @@ export async function GET() {
     signIn: openAccess() ? 'switched off - OPEN ACCESS, anyone can read and write' : 'required',
     webConfig: publicFirebaseConfig().projectId ? 'present' : 'MISSING',
     backgroundWork: backgroundWorkConfigured() ? 'configured' : 'not configured',
+    voice: voiceConfig().enabled ? `configured (${voiceConfig().model})` : 'off - no OPENAI_API_KEY',
   };
 
   // The one that matters. Every page reads Firestore before it renders

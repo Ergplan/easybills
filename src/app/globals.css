@@ -1164,3 +1164,15 @@ textarea.msg { width: 100%; font: inherit; border: 1px solid var(--line-strong);
 .import-row { cursor: pointer; align-items: flex-start; }
 .import-row input[type='checkbox'] { width: 22px; height: 22px; margin-top: 12px; accent-color: var(--accent-fill); }
 .import-row__name { min-height: 40px; padding: 6px 10px; font-weight: 600; }
+
+/* ------------------------------------------------------------------ voice ---
+   One button that is a microphone. Red while it listens, with a pulse, so
+   an open microphone is never a surprise. */
+.voice { display: flex; flex-direction: column; gap: 8px; }
+.voice__btn { gap: 10px; }
+.voice__dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ink-faint); }
+.voice__dot--live { background: #fff; animation: voice-pulse 1.2s ease-in-out infinite; }
+@keyframes voice-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.6); opacity: .6; } }
+@media (prefers-reduced-motion: reduce) { .voice__dot--live { animation: none; } }
+.voice__log { display: flex; flex-direction: column; gap: 6px; }
+.voice__turn--you { border-radius: 14px 14px 4px 14px; background: var(--accent-soft); }

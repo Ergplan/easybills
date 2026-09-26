@@ -157,6 +157,22 @@ env:
   #   secret: ai-llm-api-key
   #   availability: [RUNTIME]
   #
+  # Talking to the app ("Bolke bill banao") runs on OpenAI's Realtime API.
+  # The key goes in Secret Manager, never here:
+  #
+  #   firebase apphosting:secrets:set openai-api-key
+  #   firebase apphosting:secrets:grantaccess openai-api-key --backend easybills
+  #
+  # then uncomment the lines below. The server only mints a ten-minute client
+  # secret from it; the browser then talks to OpenAI directly over WebRTC, and
+  # the owner's voice goes to OpenAI -- the button says so before it listens.
+  # - variable: OPENAI_API_KEY
+  #   secret: openai-api-key
+  #   availability: [RUNTIME]
+  # - variable: OPENAI_REALTIME_MODEL
+  #   value: gpt-realtime
+  #   availability: [RUNTIME]
+
   # Voice is a separate provider and a separate key, because transcription and
   # text generation are separate services. Leave it out and the microphone
   # button stays hidden rather than failing when tapped.

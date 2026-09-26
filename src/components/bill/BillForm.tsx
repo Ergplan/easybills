@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { makeBillAction } from '@/app/actions/invoices';
 import { Money } from '@/components/Money';
@@ -18,6 +18,7 @@ import {
   type LineDraft,
 } from '@/lib/domain/bill-form';
 import type { InvoiceLine } from '@/lib/domain/types';
+import { PREFILL_KEY } from '@/lib/voice/intents';
 
 export interface LastTime {
   /** "Aug" -- the month of the last bill, for the offer. */
@@ -67,6 +68,25 @@ export function BillForm(props: BillFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [offerLastTime, setOfferLastTime] = useState(Boolean(props.lastTime));
+  const [spoken, setSpoken] = useState(false);
+
+  // A bill started by voice arrives with its lines waiting in session storage.
+  // Read once, then cleared, so a reload does not re-fill over an edit.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(PREFILL_KEY(props.invoiceId));
+      if (!raw) return;
+      sessionStorage.removeItem(PREFILL_KEY(props.invoiceId));
+      const prefill = JSON.parse(raw) as { lines?: LineDraft[]; customerName?: string };
+      if (prefill.lines?.length) {
+        setDraft((d) => ({ ...d, lines: prefill.lines!, customerName: d.customerName || prefill.customerName || '' }));
+        setOfferLastTime(false);
+        setSpoken(true);
+      }
+    } catch {
+      // Storage unavailable or unreadable: an empty bill is the honest fallback.
+    }
+  }, [props.invoiceId]);
 
   const setLine = (id: string, patch: Partial<LineDraft>) => {
     setDraft((d) => ({ ...d, lines: d.lines.map((l) => (l.id === id ? { ...l, ...patch } : l)) }));
@@ -122,6 +142,13 @@ export function BillForm(props: BillFormProps) {
               <span key={i} className="small">{b.message} {b.whatYouCanDo}</span>
             ))}
           </div>
+        </div>
+      )}
+
+      {spoken && (
+        <div className="notice notice--info" role="status">
+          <span className="notice__icon" aria-hidden="true">i</span>
+          <span className="small">{t('voice.prefilled')}</span>
         </div>
       )}
 

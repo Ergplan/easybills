@@ -57,6 +57,10 @@ try {
   check('the money owed is the biggest thing on the third card', await page.locator('.home__big').isVisible());
   check('every unpaid row offers Yaad dilao', (await page.locator('.row-line', { hasText: 'Yaad dilao' }).count()) === (await page.locator('.home__big').count() ? (await page.locator('section[aria-labelledby=due-heading] .row-line').count()) : 0));
 
+  check('Bolke karo is there, and says voice is off without a key', await page.getByRole('button', { name: 'Bolke karo' }).isVisible());
+  await page.getByRole('button', { name: 'Bolke karo' }).click();
+  check('tapping it explains, nothing else happens', await page.getByText('Bolke karna abhi chalu nahi hai').isVisible());
+
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   check('no horizontal scrolling at 360px', overflow <= 0, `(overflow ${overflow}px)`);
   const small = await page.evaluate(() =>

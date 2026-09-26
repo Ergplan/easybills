@@ -385,6 +385,29 @@ all still converges on the right drafts.
 
 ---
 
+## 5b. Voice: Bolke karo
+
+"Bolke karo" on Home lets the owner talk to the app: "Mehta Traders ka bill
+banao, AMC visit 3500 aur do fan 1350" opens that bill with the lines filled
+in; "kiske paise aane hain" is read back; "Ramesh ko yaad dilao" opens the
+reminder. It runs on OpenAI's Realtime API (`gpt-realtime`, speech in and
+out, function calling), over WebRTC from the browser.
+
+- The key goes in Secret Manager: `firebase apphosting:secrets:set openai-api-key`,
+  grant it to the backend, and uncomment the `OPENAI_API_KEY` lines in
+  `apphosting.yaml`. Without a key the button says *Bolke karna abhi chalu
+  nahi hai* and does nothing else.
+- The server never proxies audio. `POST /api/voice/session` mints a ten-minute
+  client secret with the instructions and the four tools baked in; the browser
+  then talks to OpenAI directly. The owner's voice goes to OpenAI, and the
+  button says so before the first session.
+- Voice never issues a bill, records money or sends a message. The tools open
+  screens and fill forms; the owner's tap does the rest. That is deliberate:
+  a misheard number stays on a screen the owner can see.
+- Cost: Realtime audio is billed per minute of input and output. A session
+  ends when the owner taps *Bas* or a tool navigates away, and the secret
+  expires in ten minutes regardless.
+
 ## 5. The assistant, if you want it
 
 The app is complete without it: the bill editor is the product and "speak or

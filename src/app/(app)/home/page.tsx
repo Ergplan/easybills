@@ -10,6 +10,9 @@ import { initialOf } from '@/lib/domain/home';
 import { requireCurrentContext } from '@/server/auth/current';
 import { loadHome } from '@/server/services/home';
 
+import { VoiceButton } from '@/components/voice/VoiceButton';
+import { voiceConfig } from '@/lib/env';
+
 import { CustomerChips } from './CustomerChips';
 
 export const dynamic = 'force-dynamic';
@@ -58,6 +61,12 @@ export default async function HomePage() {
             <p className="card__sub">{home.customers.length ? t('home.bill.sub') : t('home.bill.subEmpty')}</p>
           </div>
           <CustomerChips customers={home.customers.map((c) => ({ id: c.id, name: c.name }))} />
+          <VoiceButton
+            businessId={business.id}
+            enabled={voiceConfig().enabled}
+            customers={home.customers.map((c) => ({ id: c.id, name: c.name }))}
+            due={home.due.map((d) => ({ invoiceId: d.id, customerId: d.customerId, customerName: d.customerName, amountPaise: d.balancePaise, days: d.days }))}
+          />
         </section>
 
         {/* 2. Bheje hue bills */}
