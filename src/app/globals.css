@@ -967,3 +967,41 @@ table.data td.num, table.data th.num {
      container -- which also stops it clipping a focus ring. */
   .segmented { overflow: visible; }
 }
+
+/* ---------------------------------------------------------------- sign-in ---
+   The phone number is typed after a fixed +91: the owner never types a country
+   code, and never wonders whether to. The OTP is six digits set wide enough to
+   read back against the SMS. */
+.signin__brand { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+.signin__title { font-size: 1.375rem; }
+
+.tel { display: flex; align-items: stretch; }
+.tel__prefix {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+  background: var(--paper-sunk);
+  border: 1px solid var(--line-strong);
+  border-right: 0;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+.tel__input {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.otp-input {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
+  letter-spacing: 0.35em;
+  text-align: center;
+}
+
+.you-place { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px) { .you-place { grid-template-columns: 1fr; } }

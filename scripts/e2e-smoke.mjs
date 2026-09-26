@@ -6,12 +6,14 @@
  *   Terminal 3: node scripts/e2e-smoke.mjs
  *
  * It drives a real browser at 360px -- the width the product must work at -- and
- * walks the whole journey: sign up, name the business, quick bill, settle GST
- * status, issue, record a payment, download the PDF. It asserts the things that
+ * walks the whole journey: sign in by phone, say who you are, quick bill,
+ * issue, record a payment, download the PDF. It asserts the things that
  * would be embarrassing to get wrong, and fails loudly rather than logging.
  */
 import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
+
+import { fillProfile, signInByPhone } from './e2e-auth.mjs';
 
 const OUT = process.env.E2E_OUT ?? './e2e-output';
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
@@ -34,22 +36,15 @@ const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(String(e)));
 
 const shot = (n) => page.screenshot({ path: `${OUT}/${n}.png` });
-const email = `owner${Date.now()}@example.test`;
 
 try {
   console.log('\n1. Sign up');
-  await page.goto(`${BASE}/signin`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Create account' }).click();
-  await page.locator('#email').fill(email);
-  await page.locator('#password').fill('testpassword123');
-  await page.getByRole('button', { name: 'Create account', exact: true }).last().click();
+  await signInByPhone(page, BASE);
   await page.waitForURL('**/start', { timeout: 20000 });
   check('reaches business setup after sign up', true);
 
   console.log('\n2. Name the business');
-  await page.locator('#biz-name').fill('Kumar Electrical Repairs');
-  await page.getByRole('button', { name: 'Start billing' }).click();
-  await page.waitForURL('**/home', { timeout: 20000 });
+  await fillProfile(page, BASE, { name: 'Kumar Electrical Repairs', city: 'Pune', stateCode: '27' });
   await page.waitForTimeout(600);
   await shot('01-home');
   check('Home shows one primary action', await page.getByRole('link', { name: '+ Create bill' }).isVisible());
@@ -120,28 +115,16 @@ try {
   const saveState = (await page.locator('.save-state').first().textContent())?.trim();
   check('autosave reports Saved once the server has it', saveState === 'Saved', `(saw "${saveState}")`);
 
-  console.log('\n5. Review blocks while GST status is unconfirmed');
-  await page.getByRole('button', { name: 'Review' }).click();
-  await page.waitForTimeout(1500);
-  await shot('03-review-blocked');
-  const reviewText = await page.locator('main').innerText();
-  check('review explains why it cannot issue', /GST status/i.test(reviewText));
-  const issueBtn = page.getByRole('button', { name: /^Issue/ });
-  check('issue button is disabled while blocked', await issueBtn.isDisabled());
-
-  console.log('\n6. Settle GST status, then issue');
-  const billUrl = page.url();
-  await page.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
-  await page.getByText('Not registered for GST', { exact: true }).click();
-  await page.getByRole('button', { name: /Save GST status/ }).click();
-  await page.waitForTimeout(1500);
-  await page.goto(billUrl, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1200);
+  console.log('\n5. Review and issue');
+  // GST status was settled on the first screen: no GST number given means not
+  // registered, so nothing blocks issuing and there is no detour to settings.
   await page.getByRole('button', { name: 'Review' }).click();
   await page.waitForTimeout(2000);
   await shot('04-review-ok');
+  const reviewText = await page.locator('main').innerText();
+  check('review does not ask about GST status, the profile already answered', !/GST status/i.test(reviewText));
   const issueNow = page.getByRole('button', { name: /^Issue/ });
-  check('issue button is enabled once GST status is settled', await issueNow.isEnabled());
+  check('issue button is enabled straight away', await issueNow.isEnabled());
 
   await issueNow.click();
   await page.waitForTimeout(3500);

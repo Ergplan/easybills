@@ -1,18 +1,19 @@
 import { redirect } from 'next/navigation';
 
+import { t } from '@/lib/copy';
 import { currentUser } from '@/server/auth/session';
 import { usersCol } from '@/server/firebase/paths';
 
-import { StartForm } from './StartForm';
+import { ProfileForm } from './ProfileForm';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * The only thing asked before billing can start: the business name.
+ * The one screen between signing in and the first bill.
  *
- * GST status, address, numbering and bank details are all collected later --
- * before the FIRST ISSUE, not before the first draft. An owner can open this
- * app and be typing a bill within seconds.
+ * Name, phone, GST number (or not), UPI, and where they are. The address, the
+ * bank account and the bill numbering all have defaults that are right for
+ * most people; they can be changed under "Aap" later, never here.
  */
 export default async function StartPage() {
   const user = await currentUser();
@@ -23,12 +24,12 @@ export default async function StartPage() {
   if (ids.length) redirect('/home');
 
   return (
-    <main className="page" style={{ maxWidth: 480, paddingTop: 40 }}>
-      <div className="stack" style={{ gap: 6 }}>
-        <h1>What is your business called?</h1>
-        <p className="muted">This is the name your customers will see on the bill. You can change it later.</p>
+    <main className="page" style={{ maxWidth: 480, paddingTop: 32 }}>
+      <div className="stack" style={{ gap: 4 }}>
+        <h1>{t('you.title')}</h1>
+        <p className="muted">{t('you.sub')}</p>
       </div>
-      <StartForm />
+      <ProfileForm phone={user.phone} />
     </main>
   );
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { financialYearOf, todayIst } from '@/lib/dates';
+import { parseProfile, type ProfileField, type ProfileInput } from '@/lib/domain/profile';
 import { numberingInput } from '@/lib/domain/validation';
 import { checkGstin, checkPan } from '@/lib/gst/gstin';
 import { stateName } from '@/lib/gst/state-codes';
@@ -14,17 +15,37 @@ import { createBusiness, updateBusiness } from '@/server/repos/business';
 
 import { ok, toActionError, type ActionResult } from './common';
 
-export async function createBusinessAction(legalName: string): Promise<ActionResult<{ businessId: string }>> {
+/**
+ * The first screen: "Apne baare mein batayen". Five fields, checked by
+ * `parseProfile` in the browser as the owner types and again here, and then a
+ * business exists and the owner is on Home.
+ *
+ * The phone is the one they signed in with. It is accepted from the form so the
+ * checks are the same everywhere, but the session's number wins when there is
+ * one, because that is the number an OTP actually reached.
+ */
+export async function createBusinessAction(
+  input: ProfileInput,
+): Promise<ActionResult<{ businessId: string }> | { ok: false; error: string; field: ProfileField }> {
   try {
     const user = await requireUser();
-    const name = legalName.trim();
-    if (!name) return { ok: false, error: 'Please enter your business name.' };
-    if (name.length > 200) return { ok: false, error: 'That name is too long.' };
+    const checked = parseProfile({ ...input, phone: user.phone ?? input.phone });
+    if (!checked.ok) return { ok: false, error: checked.message, field: checked.field };
+    const { profile } = checked;
     const business = await createBusiness({
       uid: user.uid,
+      phone: profile.phone,
       email: user.email,
-      displayName: user.name,
-      legalName: name,
+      displayName: user.name ?? profile.name,
+      legalName: profile.name,
+      profile: {
+        phone: profile.phone,
+        gstin: profile.gstin,
+        upiId: profile.upiId,
+        city: profile.city,
+        stateCode: profile.stateCode,
+        registrationType: profile.registrationType,
+      },
     });
     return ok({ businessId: business.id });
   } catch (error) {

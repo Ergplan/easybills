@@ -72,12 +72,12 @@ sample records, so nothing real is ever mixed into it.
 1. Set `AUTH_BYPASS` to `"false"` in `apphosting.yaml` (or delete those three
    lines), commit and push.
 2. In **Firebase Console › Authentication › Sign-in method**, enable
-   **Email/Password**. Without it, every sign-in raises
-   `auth/configuration-not-found` — which is what the app reports, in words,
-   as "this way of signing in is not switched on for this app yet".
-3. Enable **Google** as well if you want the *Continue with Google* button to
-   work. The button is always shown, because the page cannot see what the
-   project has enabled.
+   **Phone**. Without it, sending an OTP raises
+   `auth/configuration-not-found` — which the app reports, in words, as
+   "Phone se login abhi chalu nahi hai".
+3. In **Authentication › Settings › Authorized domains**, make sure the
+   App Hosting domain (`easybills--ekbill.us-east4.hosted.app`) is listed. The
+   invisible reCAPTCHA that guards the SMS refuses a domain that is not.
 
 Nothing else changes: the bypass is a single branch in `currentUser()`, the one
 question every page, server action and API route asks. Switching it off
@@ -87,17 +87,32 @@ restores the ordinary path exactly.
 
 ## Sign-in providers
 
-Nothing in this app can switch a sign-in method on; that lives in the Firebase
-project. In **Firebase Console › Authentication › Sign-in method**, enable:
+The owner signs in with their phone: the number, then a 6-digit OTP by SMS.
+There is no password, no email and no Google button. Nothing in this app can
+switch a sign-in method on; that lives in the Firebase project. In
+**Firebase Console › Authentication › Sign-in method**, enable:
 
-- **Email/Password** — required. Without it every sign-in and sign-up fails.
-- **Google** — optional. The *Continue with Google* button is always shown,
-  because the page has no way to know what the project has enabled.
+- **Phone** — required. Without it every sign-in fails.
 
-Either one switched off raises `auth/configuration-not-found`, which the
-sign-in page translates into "this way of signing in is not switched on for
-this app yet" and names the method, rather than showing an owner a code they
-can do nothing with.
+Switched off, it raises `auth/configuration-not-found`, which the sign-in page
+translates into "Phone se login abhi chalu nahi hai. Jo app sambhalta hai,
+usse kaho" rather than showing an owner a code they can do nothing with.
+
+Two things to know about phone sign-in on Firebase:
+
+- **The SMS costs money past the free allowance.** Firebase's no-cost tier
+  covers a number of verifications a month; beyond that the project must be on
+  the Blaze plan and each SMS is billed. For a business making 50 bills a year
+  this is a few rupees a year, but it is a real bill and the project owner sees
+  it.
+- **The invisible reCAPTCHA** loads a script from google.com on the sign-in
+  page only. It never shows anything unless Google is unsure a person is
+  typing. There is no App Check in this app; add it in the Firebase console if
+  SMS abuse ever becomes a cost.
+
+For testing without spending SMS, add **test phone numbers** under
+Authentication › Sign-in method › Phone › *Phone numbers for testing*: a
+number and the OTP it will always accept. Those never send an SMS.
 
 The app requires a password of at least 8 characters. That is this app's rule,
 not Firebase's, which stops at 6.

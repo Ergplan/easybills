@@ -9,6 +9,8 @@ export const SESSION_COOKIE = 'eb_session';
 
 export interface SessionUser {
   uid: string;
+  /** E.164, from Firebase phone sign-in. Null for the open-access test user. */
+  phone: string | null;
   email: string | null;
   name: string | null;
   emailVerified: boolean;
@@ -42,6 +44,7 @@ export async function createSession(idToken: string): Promise<SessionUser> {
   });
   return {
     uid: decoded.uid,
+    phone: decoded.phone_number ?? null,
     email: decoded.email ?? null,
     name: (decoded.name as string | undefined) ?? null,
     emailVerified: Boolean(decoded.email_verified),
@@ -72,6 +75,7 @@ export async function currentUser(): Promise<SessionUser | null> {
   if (openAccess()) {
     return {
       uid: OPEN_ACCESS_UID,
+      phone: null,
       email: 'test@example.invalid',
       name: 'Test user',
       emailVerified: false,
@@ -85,6 +89,7 @@ export async function currentUser(): Promise<SessionUser | null> {
     const decoded = await adminAuth().verifySessionCookie(cookie, true);
     return {
       uid: decoded.uid,
+      phone: decoded.phone_number ?? null,
       email: decoded.email ?? null,
       name: (decoded.name as string | undefined) ?? null,
       emailVerified: Boolean(decoded.email_verified),

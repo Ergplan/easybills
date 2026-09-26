@@ -22,6 +22,8 @@ export type Iso = string;
 
 export interface UserRecord {
   uid: string;
+  /** E.164. The phone is the identity; email is only there for older accounts. */
+  phone: string | null;
   email: string | null;
   displayName: string | null;
   /** Businesses this user can reach. Authorisation still re-checks membership. */

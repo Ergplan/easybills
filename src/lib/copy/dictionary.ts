@@ -28,6 +28,7 @@ export interface Entry {
 export const DICTIONARY = {
   // ------------------------------------------------------------ common ----
   'app.name': { en: 'EkBill', hi: 'EkBill' },
+  'app.tagline': { en: 'Make a bill. Send it on WhatsApp. Know who owes you.', hi: 'Bill banao. WhatsApp pe bhejo. Dekho kiske paise aane hain.' },
   'common.ok': { en: 'OK', hi: 'Theek hai' },
   'common.cancel': { en: 'Cancel', hi: 'Rehne do' },
   'common.save': { en: 'Save', hi: 'Save karo' },
@@ -176,6 +177,12 @@ export const DICTIONARY = {
   'you.state': { en: 'State', hi: 'Rajya' },
   'you.stateHint': { en: 'Needed to work out GST correctly', hi: 'GST sahi lagane ke liye chahiye' },
   'you.logout': { en: 'Sign out', hi: 'Logout' },
+  'you.stateChoose': { en: 'Choose your state', hi: 'Rajya chuno' },
+  'you.start': { en: "Let's start", hi: 'Chalo, shuru karte hain' },
+  'you.demo': { en: 'Want to look around first? Open a demo shop', hi: 'Pehle demo dekhna hai? Demo dukaan kholo' },
+  'you.demoNote': { en: 'Sample bills and customers, kept separate from your real ones.', hi: 'Sample bills aur customers. Aapke asli bills se bilkul alag rehta hai.' },
+  'you.nameHint': { en: 'Exactly as it should appear on the bill', hi: 'Jaisa bill pe dikhna chahiye, waisa hi' },
+  'you.upiExample': { en: 'like sharma@upi or 98765xxxxx@ybl', hi: 'jaise sharma@upi ya 98765xxxxx@ybl' },
 
   // -------------------------------------------------------------- auth ----
   'auth.phone.title': { en: 'Enter your phone number', hi: 'Apna phone number daalo' },
@@ -187,11 +194,31 @@ export const DICTIONARY = {
   'auth.otp.verify': { en: 'Continue', hi: 'Aage badho' },
   'auth.otp.wrong': { en: 'That OTP is not right. Check and try again.', hi: 'OTP galat hai. Dobara dekho.' },
   'auth.otp.expired': { en: 'That OTP has expired. We sent a new one.', hi: 'OTP purana ho gaya. Naya bhej diya hai.' },
+  'auth.phone.label': { en: 'Phone number', hi: 'Phone number' },
+  'auth.phone.change': { en: 'Change number', hi: 'Number badlo' },
+  'auth.phone.notEnabled': {
+    en: 'Signing in by phone is not switched on for this app yet. Ask whoever looks after it.',
+    hi: 'Phone se login abhi chalu nahi hai. Jo app sambhalta hai, usse kaho.',
+  },
+  'auth.phone.captcha': { en: "Couldn't confirm you're a person. Reload and try again.", hi: 'Check nahi ho paaya. Page reload karke dobara try karo.' },
+  'auth.otp.label': { en: '6-digit OTP', hi: '6 digit ka OTP' },
+  'auth.otp.sent': { en: 'OTP sent', hi: 'OTP bhej diya' },
+  'auth.otp.short': { en: 'The OTP has 6 digits', hi: 'OTP 6 digit ka hota hai' },
+  'auth.tooMany': { en: 'Too many tries. Wait a minute, then try again.', hi: 'Bahut baar try ho gaya. Ek minute ruko, phir karo.' },
+  'auth.network': { en: 'No internet. Check and try again.', hi: 'Internet nahi hai. Check karke dobara try karo.' },
+  'auth.again': { en: 'Please sign in again.', hi: 'Dobara login karo.' },
 
   // ------------------------------------------------------------ errors ----
   'error.required': { en: 'This is needed', hi: 'Yeh zaroori hai' },
   'error.phone': { en: 'A phone number has 10 digits', hi: 'Phone number 10 digit ka hona chahiye' },
   'error.gstin': { en: "That GST number doesn't look right. Check it again.", hi: 'GST number theek nahi lag raha. Dobara dekho.' },
+  'error.gstinState': {
+    en: 'This GST number is from {gstState}, but you chose {chosen}. Fix whichever is wrong.',
+    hi: 'Yeh GST number {gstState} ka hai, par aapne {chosen} chuna. Jo galat hai, theek karo.',
+  },
+  'error.upi': { en: 'A UPI ID looks like name@bank', hi: 'UPI ID aisi dikhti hai: naam@bank' },
+  'error.state': { en: 'Choose a state from the list', hi: 'List mein se rajya chuno' },
+  'error.tooLong': { en: 'Keep this under {n} letters', hi: 'Isse {n} akshar se chhota rakho' },
   'error.amount': { en: 'Write the amount properly', hi: 'Rakam theek se likho' },
   'error.generic': { en: 'Something went wrong. Try again.', hi: 'Kuch gadbad ho gayi. Dobara try karo.' },
   'error.offline': { en: "No internet. It will save when you're back online.", hi: 'Internet nahi hai. Jab aayega, save ho jaayega.' },

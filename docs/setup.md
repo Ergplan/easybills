@@ -32,9 +32,10 @@ npm run worker      # optional: prepares monthly drafts every minute
 The first emulator run downloads the Firestore emulator (about 130 MB) into
 `~/.cache/firebase`.
 
-Open http://localhost:3000, create an account with any email and password (the
-Auth emulator accepts anything), name your business, and you can start a bill
-immediately.
+Open http://localhost:3000 and type any ten-digit mobile number. The Auth
+emulator sends no SMS: it prints the OTP in the emulator terminal, and lists it
+at http://127.0.0.1:9099/emulator/v1/projects/easybills-dev/verificationCodes.
+Type that in, tell the app your name, and you can start a bill immediately.
 
 ### Sample data
 
@@ -78,6 +79,7 @@ PLAYWRIGHT_CHROMIUM_PATH=/path/to/chrome
 npm test          # 255 tests; integration tests need the emulators running
 npm run typecheck
 npm run e2e       # browser smoke test; needs `npm run dev` and the emulators
+npm run e2e:signin  # phone, OTP and the profile screen, end to end
 ```
 
 The integration tests refuse to run unless `FIRESTORE_EMULATOR_HOST` is set, so

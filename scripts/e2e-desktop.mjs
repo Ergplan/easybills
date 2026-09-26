@@ -16,6 +16,8 @@
 import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
 
+import { signInByPhone } from './e2e-auth.mjs';
+
 const OUT = process.env.E2E_OUT ?? './e2e-output/desktop';
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 const CHROMIUM = process.env.PLAYWRIGHT_CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -48,7 +50,6 @@ const page = await context.newPage();
 const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(String(e)));
 const shot = (n) => page.screenshot({ path: `${OUT}/${n}.png`, fullPage: true });
-const email = `desk${Date.now()}@example.test`;
 const PERIOD = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 7);
 
 /** Everything a layout has to get right, whatever page it is. */
@@ -88,18 +89,14 @@ async function layoutRules(name) {
 
 try {
   console.log(`\n1. Sign up at ${WIDTH}x${HEIGHT}`);
-  await page.goto(`${BASE}/signin`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Create account' }).click();
-  await page.locator('#email').fill(email);
-  await page.locator('#password').fill('testpassword123');
-  await page.getByRole('button', { name: 'Create account', exact: true }).last().click();
+  await signInByPhone(page, BASE);
   await page.waitForURL('**/start', { timeout: 25000 });
   await shot('00-start');
 
   // The demo business, not an empty one. A layout judged on a blank account
   // looks fine and tells you nothing: what has to hold is a Home with figures
   // on it, a list with rows in it and a customer with history.
-  await page.getByRole('button', { name: /Try a demo business/ }).click();
+  await page.getByRole('button', { name: /demo/i }).click();
   await page.waitForURL('**/home', { timeout: 40000 });
   await page.waitForTimeout(1500);
 

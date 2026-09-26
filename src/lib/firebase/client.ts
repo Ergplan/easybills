@@ -4,19 +4,18 @@ import { getApp, getApps, initializeApp } from 'firebase/app';
 import {
   connectAuthEmulator,
   getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
   type Auth,
+  type ConfirmationResult,
 } from 'firebase/auth';
 
 import { authEmulatorHost, publicFirebaseConfig, type PublicFirebaseConfig } from '@/lib/env';
 
 /**
- * Firebase Auth is the managed authentication provider. We do not implement
- * password hashing, token minting, reset flows or session rotation ourselves.
+ * Firebase Auth is the managed authentication provider, and the phone is the
+ * identity: the owner types their number, Firebase sends an OTP by SMS, the
+ * owner types it back. No password to choose, forget or reset.
  *
  * The browser's job ends at obtaining a Firebase ID token. That token is POSTed
  * once to our own server, which verifies it with the Admin SDK and exchanges it
@@ -56,30 +55,51 @@ export function firebaseAuth(): Auth {
     const emulator = authEmulatorHost();
     if (emulator) {
       // Local development only. Never reached when the env var is absent.
+      // Connecting to the emulator also switches the reCAPTCHA below to a
+      // mock, so no Google script is loaded and any number gets an OTP that
+      // the emulator prints and exposes on its REST API.
       connectAuthEmulator(authInstance, `http://${emulator}`, { disableWarnings: true });
     }
   }
   return authInstance;
 }
 
-export async function signInWithGoogle(): Promise<string> {
-  const provider = new GoogleAuthProvider();
-  const result = await signInWithPopup(firebaseAuth(), provider);
-  return result.user.getIdToken();
+/**
+ * Firebase requires proof that a browser, not a script, is asking for an SMS.
+ * The invisible reCAPTCHA does that without the owner seeing anything unless
+ * Google is unsure about them. One verifier per page; it is torn down and
+ * rebuilt on a retry because a used one cannot be reused.
+ */
+let verifier: RecaptchaVerifier | null = null;
+
+function freshVerifier(containerId: string): RecaptchaVerifier {
+  verifier?.clear();
+  verifier = new RecaptchaVerifier(firebaseAuth(), containerId, { size: 'invisible' });
+  return verifier;
 }
 
-export async function signInWithPassword(email: string, password: string): Promise<string> {
-  const result = await signInWithEmailAndPassword(firebaseAuth(), email, password);
-  return result.user.getIdToken();
+/**
+ * Send an OTP to a phone number in E.164 form ("+919876543210").
+ *
+ * Returns the confirmation to hand to `finishPhoneSignIn` along with what the
+ * owner types. `containerId` names an empty element the reCAPTCHA can attach
+ * itself to; it stays invisible in the normal case.
+ */
+export async function startPhoneSignIn(phoneE164: string, containerId: string): Promise<ConfirmationResult> {
+  try {
+    return await signInWithPhoneNumber(firebaseAuth(), phoneE164, freshVerifier(containerId));
+  } catch (error) {
+    // A failed attempt leaves the widget in a state Firebase will not reuse.
+    verifier?.clear();
+    verifier = null;
+    throw error;
+  }
 }
 
-export async function registerWithPassword(email: string, password: string): Promise<string> {
-  const result = await createUserWithEmailAndPassword(firebaseAuth(), email, password);
+/** Confirm the OTP. Resolves to the ID token our server exchanges for a session. */
+export async function finishPhoneSignIn(confirmation: ConfirmationResult, code: string): Promise<string> {
+  const result = await confirmation.confirm(code);
   return result.user.getIdToken();
-}
-
-export async function sendReset(email: string): Promise<void> {
-  await sendPasswordResetEmail(firebaseAuth(), email);
 }
 
 /** Hand the ID token to our server, which sets the httpOnly session cookie. */

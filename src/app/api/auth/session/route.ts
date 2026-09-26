@@ -27,7 +27,7 @@ export async function POST(request: Request) {
 
   try {
     const user = await createSession(idToken);
-    await ensureUserRecord({ uid: user.uid, email: user.email, displayName: user.name });
+    await ensureUserRecord({ uid: user.uid, phone: user.phone, email: user.email, displayName: user.name });
     return NextResponse.json({ ok: true, uid: user.uid });
   } catch (error) {
     // Deliberately generic: token verification failures should not describe

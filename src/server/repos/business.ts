@@ -20,25 +20,27 @@ export function blankBusiness(args: {
   id: string;
   legalName: string;
   isDemo?: boolean;
+  profile?: Partial<BusinessProfile>;
 }): BusinessRecord {
   const now = new Date().toISOString();
+  const p = args.profile ?? {};
   return {
     id: args.id,
     legalName: args.legalName,
     tradeName: null,
     addressLine1: null,
     addressLine2: null,
-    city: null,
+    city: p.city ?? null,
     pincode: null,
-    stateCode: null,
-    phone: null,
+    stateCode: p.stateCode ?? null,
+    phone: p.phone ?? null,
     email: null,
-    registrationType: 'not-sure',
-    gstin: null,
+    registrationType: p.registrationType ?? 'not-sure',
+    gstin: p.gstin ?? null,
     pan: null,
     declaredAggregateTurnoverPaise: null,
     eInvoicingSelfDeclaredNotApplicable: false,
-    bank: { accountHolderName: null, accountNumber: null, ifsc: null, bankName: null, upiId: null },
+    bank: { accountHolderName: null, accountNumber: null, ifsc: null, bankName: null, upiId: p.upiId ?? null },
     logoDataUrl: null,
     signatureDataUrl: null,
     accentColour: null,
@@ -56,15 +58,30 @@ export function blankBusiness(args: {
   };
 }
 
+/**
+ * What the owner tells us on the first screen (see `lib/domain/profile.ts`).
+ * All of it optional here so a test or a demo can create a bare business.
+ */
+export interface BusinessProfile {
+  phone: string | null;
+  gstin: string | null;
+  upiId: string | null;
+  city: string | null;
+  stateCode: string | null;
+  registrationType: BusinessRecord['registrationType'];
+}
+
 export async function createBusiness(args: {
   uid: string;
+  phone?: string | null;
   email: string | null;
   displayName: string | null;
   legalName: string;
   isDemo?: boolean;
+  profile?: Partial<BusinessProfile>;
 }): Promise<BusinessRecord> {
   const id = randomUUID();
-  const business = blankBusiness({ id, legalName: args.legalName, isDemo: args.isDemo });
+  const business = blankBusiness({ id, legalName: args.legalName, isDemo: args.isDemo, profile: args.profile });
   const now = new Date().toISOString();
 
   const batch = db().batch();
@@ -78,6 +95,7 @@ export async function createBusiness(args: {
   } else {
     batch.set(userRef, {
       uid: args.uid,
+      phone: args.phone ?? null,
       email: args.email,
       displayName: args.displayName,
       businessIds: [id],
@@ -131,6 +149,7 @@ export async function updateBusiness(
 
 export async function ensureUserRecord(args: {
   uid: string;
+  phone?: string | null;
   email: string | null;
   displayName: string | null;
 }): Promise<UserRecord> {
@@ -138,11 +157,15 @@ export async function ensureUserRecord(args: {
   const now = new Date().toISOString();
   const snap = await ref.get();
   if (snap.exists) {
-    await ref.update({ lastSeenAt: now });
-    return { ...(snap.data() as UserRecord), lastSeenAt: now };
+    // The phone is kept current: an account that predates phone sign-in
+    // has none on record until its owner signs in this way.
+    const patch = args.phone ? { lastSeenAt: now, phone: args.phone } : { lastSeenAt: now };
+    await ref.update(patch);
+    return { ...(snap.data() as UserRecord), ...patch };
   }
   const record: UserRecord = {
     uid: args.uid,
+    phone: args.phone ?? null,
     email: args.email,
     displayName: args.displayName,
     businessIds: [],

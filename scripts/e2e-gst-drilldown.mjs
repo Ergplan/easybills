@@ -14,6 +14,8 @@
 import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
 
+import { signUp } from './e2e-auth.mjs';
+
 const OUT = process.env.E2E_OUT ?? './e2e-output/gst-drilldown';
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 const CHROMIUM = process.env.PLAYWRIGHT_CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -30,7 +32,6 @@ const page = await browser.newPage({ viewport: { width: 360, height: 780 }, devi
 const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(String(e)));
 const shot = (n) => page.screenshot({ path: `${OUT}/${n}.png`, fullPage: true });
-const email = `gstowner${Date.now()}@example.test`;
 // The bills are issued today, so they land in this month's return.
 const PERIOD = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 7);
 
@@ -83,15 +84,7 @@ async function quickBill(desc, qty, price, ratePercent, { expectRateBlock = fals
 
 try {
   console.log('\n1. Sign up and name the business');
-  await page.goto(`${BASE}/signin`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Create account' }).click();
-  await page.locator('#email').fill(email);
-  await page.locator('#password').fill('testpassword123');
-  await page.getByRole('button', { name: 'Create account', exact: true }).last().click();
-  await page.waitForURL('**/start', { timeout: 25000 });
-  await page.locator('#biz-name').fill('Deshmukh Hardware');
-  await page.getByRole('button', { name: 'Start billing' }).click();
-  await page.waitForURL('**/home', { timeout: 25000 });
+  await signUp(page, BASE, { name: 'Deshmukh Hardware' });
 
   console.log('\n2. Give the business an address and a state');
   await page.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
