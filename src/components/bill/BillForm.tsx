@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { declareEInvoicingAction } from '@/app/actions/business';
 import { makeBillAction } from '@/app/actions/invoices';
 import { Money } from '@/components/Money';
 import { t } from '@/lib/copy';
@@ -42,13 +43,15 @@ export interface BillFormProps {
   defaultGstRateBp: number | null;
   lastTime: LastTime | null;
   /** Things that stop a bill going out, from the profile. English from the engine for now. */
-  blockers: Array<{ message: string; whatYouCanDo: string }>;
+  blockers: Array<{ code: string; message: string; whatYouCanDo: string }>;
   /** What this customer already owes across other bills, in paise. */
   outstandingPaise: number;
   /** True when the chip picked up a bill the owner had started earlier. */
   resumed: boolean;
   /** Lines already on this draft: a resumed bill, or one redone from a cancelled bill. */
   initialLines: LineDraft[];
+  /** Set when this bill is a share of a contract the helper worked out. */
+  project: { id: string; name: string; stage: string } | null;
 }
 
 let counter = 0;
@@ -168,23 +171,80 @@ export function BillForm(props: BillFormProps) {
         <p className="faint">{t('owing.note', { name: props.customer.name, amount: moneyForMessage(props.outstandingPaise) })}</p>
       )}
 
-      {props.blockers.length > 0 && (
+      {props.blockers.some((b) => b.code === 'e-invoicing-unscreened') ? (
+        <div className="notice notice--info">
+          <span className="notice__icon" aria-hidden="true">?</span>
+          <div className="stack stack--tight">
+            <strong>{t('einv.blocker')}</strong>
+            <span className="small">{t('einv.ask')}</span>
+            <div className="row row--tight">
+              <button
+                type="button"
+                className="btn btn--primary btn--small"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  await declareEInvoicingAction(props.businessId, false);
+                  setBusy(false);
+                  router.refresh();
+                }}
+              >
+                {t('einv.no')}
+              </button>
+              <button
+                type="button"
+                className="btn btn--secondary btn--small"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  await declareEInvoicingAction(props.businessId, true);
+                  setBusy(false);
+                  router.refresh();
+                }}
+              >
+                {t('einv.yes')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : props.blockers.length > 0 ? (
         <div className="notice notice--warn">
           <span className="notice__icon" aria-hidden="true">!</span>
           <div className="stack" style={{ gap: 4 }}>
             <strong>{t('bill.cannotYet')}</strong>
             {props.blockers.map((b, i) => (
-              <span key={i} className="small">{b.message} {b.whatYouCanDo}</span>
+              <span key={i} className="small">
+                {b.code === 'e-invoicing-applicable' ? t('einv.applies') : `${b.message} ${b.whatYouCanDo}`}
+              </span>
             ))}
           </div>
         </div>
-      )}
+      ) : null}
 
       {spoken && (
         <div className="notice notice--info" role="status">
           <span className="notice__icon" aria-hidden="true">i</span>
           <span className="small">{t('voice.prefilled')}</span>
         </div>
+      )}
+
+      {props.project ? (
+        <div className="card card--offer stack stack--tight">
+          <strong>{t('help.project.card', { name: props.project.name, stage: props.project.stage })}</strong>
+          <Link
+            href={`/bills/help?customer=${props.customer.customerId}&project=${props.project.id}`}
+            className="btn btn--ghost btn--small help-link"
+          >
+            {t('help.project.see')}
+          </Link>
+        </div>
+      ) : (
+        <Link
+          href={`/bills/help?${props.customer.customerId ? `customer=${props.customer.customerId}&` : ''}from=${props.invoiceId}`}
+          className="btn btn--secondary help-link"
+        >
+          {t('help.entry')}
+        </Link>
       )}
 
       {offerLastTime && props.lastTime && (

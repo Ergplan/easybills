@@ -176,6 +176,8 @@ export async function saveDraft(args: {
       scheduleId: existing?.scheduleId ?? null,
       occurrenceKey: existing?.occurrenceKey ?? null,
       duplicatedFromInvoiceId: existing?.duplicatedFromInvoiceId ?? null,
+      projectId: existing?.projectId ?? null,
+      projectStage: existing?.projectStage ?? null,
       revision: (existing?.revision ?? 0) + 1,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
@@ -409,10 +411,12 @@ export async function duplicateInvoice(args: {
     notes: source.notes,
     baseRevision: 0,
   }).then(async (draft) => {
+    // A redone contract bill is still that instalment of that contract.
+    const link = { projectId: source.projectId ?? null, projectStage: source.projectStage ?? null };
     await invoicesCol(args.business.id)
       .doc(draft.id)
-      .update({ duplicatedFromInvoiceId: source.id, scheduleId: null, occurrenceKey: null });
-    return { ...draft, duplicatedFromInvoiceId: source.id };
+      .update({ duplicatedFromInvoiceId: source.id, scheduleId: null, occurrenceKey: null, ...link });
+    return { ...draft, duplicatedFromInvoiceId: source.id, ...link };
   });
 }
 

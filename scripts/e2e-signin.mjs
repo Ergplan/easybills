@@ -101,6 +101,8 @@ try {
   check('a bad GST number is caught on the phone, before saving', page.url().includes('/start'));
 
   await page.locator('#you-gstin').fill('27AAPFU0939F1ZV');
+  check('a GST number brings the e-invoice question', await page.getByText(/sarkari e-invoice \(IRN\)/).isVisible());
+  await page.getByRole('button', { name: 'Nahi, mujhe nahi' }).click();
   await page.locator('#you-stateCode').selectOption('29');
   await page.getByRole('button', { name: 'Chalo, shuru karte hain' }).click();
   await page.locator('.field__error').waitFor({ timeout: 5000 });

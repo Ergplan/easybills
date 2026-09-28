@@ -35,6 +35,7 @@ export default async function YouPage() {
           upiId: business.bank.upiId ?? '',
           city: business.city ?? '',
           stateCode: business.stateCode ?? '',
+          eInvoicingApplies: business.gstin ? (business.eInvoicingSelfDeclaredNotApplicable ? false : null) : null,
         }}
       />
       <NumberingForm businessId={business.id} numbering={business.numbering} fy={business.activeFinancialYear} />

@@ -29,7 +29,9 @@ const placeholdersOf = (s: string) => [...s.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].ma
  * of these is the right word, docs/voice.md is wrong and should change first.
  */
 const JARGON = [
-  /\binvoice/i,
+  // "e-invoice" is the name of the government system (IRN) and is what a CA
+  // calls it; a bill is still never an "invoice".
+  /(?<!e-)\binvoice/i,
   /\breceivable/i,
   /\boutstanding\b/i,
   /\badjustment/i,

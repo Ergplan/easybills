@@ -29,6 +29,7 @@ export const occurrencesCol = (b: string) => sub(b, 'occurrences');
 export const countersCol = (b: string) => sub(b, 'counters');
 export const auditCol = (b: string) => sub(b, 'auditEvents');
 export const aiUsageCol = (b: string) => sub(b, 'aiUsage');
+export const projectsCol = (b: string) => sub(b, 'projects');
 
 // GST return module -- isolated collections, scoped by business and GSTIN.
 export const supplierBillsCol = (b: string) => sub(b, 'supplierBills');

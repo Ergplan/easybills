@@ -79,7 +79,7 @@ function kindOf(filename: string, bytes: Uint8Array): FileReading['kind'] {
  * their y position, left to right, so "Bill to" and the name under it
  * come out on consecutive lines the way a person reads them.
  */
-async function pdfPages(bytes: Uint8Array): Promise<string[]> {
+export async function pdfPages(bytes: Uint8Array): Promise<string[]> {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const doc = await pdfjs.getDocument({ data: bytes, useSystemFonts: true, isEvalSupported: false, disableFontFace: true }).promise;
   const pages: string[] = [];

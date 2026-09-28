@@ -43,16 +43,26 @@ describe('the profile', () => {
       city: 'Pune',
       stateCode: '27',
       registrationType: 'not-registered',
+      eInvoicingNotApplicable: false,
     });
   });
 
   it('is registered when there is a GST number, and takes the state from it', () => {
-    const r = parseProfile({ ...good, gstin: '27aapfu0939f1zv', stateCode: '' });
+    const r = parseProfile({ ...good, gstin: '27aapfu0939f1zv', stateCode: '', eInvoicingApplies: false });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.profile.gstin).toBe('27AAPFU0939F1ZV');
     expect(r.profile.stateCode).toBe('27');
     expect(r.profile.registrationType).toBe('regular');
+    expect(r.profile.eInvoicingNotApplicable).toBe(true);
+  });
+
+  it('asks a GST owner, once, whether e-invoicing applies, and never guesses the answer', () => {
+    expect(parseProfile({ ...good, gstin: '27AAPFU0939F1ZV', stateCode: '' })).toEqual({ ok: false, field: 'eInvoicingApplies', message: 'Yeh batana zaroori hai' });
+    const yes = parseProfile({ ...good, gstin: '27AAPFU0939F1ZV', stateCode: '', eInvoicingApplies: true });
+    expect(yes.ok && yes.profile.eInvoicingNotApplicable).toBe(false);
+    const noGst = parseProfile({ ...good, eInvoicingApplies: false });
+    expect(noGst.ok && noGst.profile.eInvoicingNotApplicable).toBe(false);
   });
 
   it('needs only a name and a phone', () => {

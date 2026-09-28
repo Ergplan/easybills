@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { requireCurrentContext } from '@/server/auth/current';
 import { getInvoice, lastIssuedForCustomer, listInvoices } from '@/server/repos/invoices';
 import { listAdjustmentsForInvoice } from '@/server/repos/adjustments';
+import { getProject } from '@/server/repos/projects';
 import { Money } from '@/components/Money';
 import { listPaymentsForInvoice } from '@/server/repos/payments';
 import { assessIssuance } from '@/lib/gst/scenarios';
@@ -139,6 +140,7 @@ export default async function BillPage({
   const setup = profileSetupStatus(business, invoice.issueDate);
 
   const last = invoice.customer.customerId ? await lastIssuedForCustomer(business.id, invoice.customer.customerId) : null;
+  const project = invoice.projectId ? await getProject(business.id, invoice.projectId) : null;
   const outstandingPaise = invoice.customer.customerId
     ? (await listInvoices(business.id, { status: 'issued', customerId: invoice.customer.customerId, limit: 100 })).reduce((s, b) => s + Math.max(0, b.balancePaise), 0)
     : 0;
@@ -176,12 +178,17 @@ export default async function BillPage({
         customer={{ customerId: invoice.customer.customerId, name: invoice.customer.name, phone: invoice.customer.phone }}
         chargesGst={assessment.chargesGst}
         gstRatesBp={[...DEFAULT_RULE_PACK.selectableRates.value]}
-        defaultGstRateBp={business.defaultTaxRateBp ?? (assessment.chargesGst ? 1800 : null)}
+        defaultGstRateBp={
+          invoice.lines[0]?.taxRateChosen && invoice.lines[0].taxRateBp > 0
+            ? invoice.lines[0].taxRateBp
+            : business.defaultTaxRateBp ?? (assessment.chargesGst ? 1800 : null)
+        }
         lastTime={lastTime}
-        blockers={setup.blockers.map((b) => ({ message: b.message, whatYouCanDo: b.whatYouCanDo }))}
+        blockers={setup.blockers.map((b) => ({ code: b.code, message: b.message, whatYouCanDo: b.whatYouCanDo }))}
         outstandingPaise={outstandingPaise}
         resumed={resumed === '1'}
         initialLines={invoice.lines.some((l) => l.description.trim()) ? linesToDraft(invoice.lines, () => crypto.randomUUID()) : []}
+        project={project ? { id: project.id, name: project.name, stage: invoice.projectStage?.label ?? '' } : null}
       />
     </main>
   );

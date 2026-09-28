@@ -90,7 +90,7 @@ export function VoiceButton({ businessId, enabled, customers, due }: Props) {
       }
       case 'open_screen': {
         const screen = String(args.screen ?? 'home');
-        const href = { home: '/home', gst: '/gst', customers: '/customers', bills: '/bills' }[screen] ?? '/home';
+        const href = { home: '/home', gst: '/gst', customers: '/customers', bills: '/bills', help: '/bills/help' }[screen] ?? '/home';
         stop();
         router.push(href);
         return { ok: true };

@@ -49,6 +49,15 @@ PAN, phone, address, state -- shows each one with where it was read from, and
 adds the ones you tick. Files are read once and not kept. Photos and scans have
 no text to read and say so; a typed PDF or a spreadsheet works.
 
+**Mera bill thoda complex hai? Help karo.** A bill that is a share of a
+bigger deal -- 30% advance, 40% on delivery, a running bill for work done
+so far -- is worked out by a helper that asks for the deal once (or reads it
+from a sentence or the contract PDF): contract value, GST on top or inside,
+instalments or running bills, retention. Each bill then shows its working:
+the percentage, what was billed before, what is left, what the retention
+holds back. It opens on the ordinary bill form with that written under the
+line in English, and an instalment already billed cannot be billed again.
+
 **Sign-in by phone.** Ten digits, a six-digit OTP, done. Then *Apne baare mein
 batayen*: name, phone, GST number (optional), UPI ID, city and state. That is
 the whole setup. (Sign-in is switched off on the deployed instance for now;

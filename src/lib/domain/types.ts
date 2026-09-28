@@ -336,6 +336,9 @@ export interface InvoiceRecord {
   lastRemindedAt?: Iso | null;
   /** When this issued bill was cancelled and redone, the bill that took its place. */
   redoneAsInvoiceId?: string | null;
+  /** The contract this bill is a share of, and which share. See lib/domain/contract.ts. */
+  projectId?: string | null;
+  projectStage?: ProjectStage | null;
 
   /** Optimistic concurrency for autosave. Incremented on every server write. */
   revision: number;
@@ -478,4 +481,37 @@ export interface AuditEventRecord {
   subjectId: string;
   /** Small, non-sensitive detail. Never bank details or full payloads. */
   detail: Record<string, unknown> | null;
+}
+
+// ---------------------------------------------------------------------------
+// Contracts ("Mera bill thoda complex hai")
+// ---------------------------------------------------------------------------
+
+/** Which share of a contract a bill is. */
+export interface ProjectStage {
+  milestoneId: string | null;
+  label: string;
+  /** What the bill counts towards the contract value, in paise. */
+  basisPaise: number;
+  /** For a running bill, the share of the work it bills up to. */
+  cumulativeBp: number | null;
+}
+
+export interface ProjectRecord {
+  id: string;
+  customerId: string;
+  customerName: string;
+  name: string;
+  totalPaise: number;
+  gstMode: 'extra' | 'included' | 'none';
+  gstRateBp: number | null;
+  billing: 'milestones' | 'progress';
+  milestones: Array<{ id: string; label: string; pctBp: number }>;
+  retentionBp: number;
+  /** Where the terms came from: typed step by step, read from text, or from a PDF. */
+  source: 'guided' | 'text' | 'pdf';
+  status: 'active' | 'closed';
+  createdAt: Iso;
+  updatedAt: Iso;
+  createdByUid: string;
 }

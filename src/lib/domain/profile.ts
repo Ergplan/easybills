@@ -23,6 +23,12 @@ export interface ProfileInput {
   upiId?: string | null;
   city?: string | null;
   stateCode?: string | null;
+  /**
+   * Asked only with a GST number: does the owner have to make government
+   * e-invoices? The threshold is not verified in the rule pack, so the
+   * owner's answer is the gate, given once.
+   */
+  eInvoicingApplies?: boolean | null;
 }
 
 export type ProfileField = keyof ProfileInput;
@@ -37,6 +43,8 @@ export interface Profile {
   stateCode: string | null;
   /** Follows from the GST number: registered if there is one, not if not. */
   registrationType: 'regular' | 'not-registered';
+  /** True once a GST owner has said e-invoicing does not apply to them. */
+  eInvoicingNotApplicable: boolean;
 }
 
 export type ProfileCheck = { ok: true; profile: Profile } | { ok: false; field: ProfileField; message: string };
@@ -101,10 +109,22 @@ export function parseProfile(input: ProfileInput): ProfileCheck {
       };
     }
     stateCode = check.stateCode!;
+    if (input.eInvoicingApplies !== true && input.eInvoicingApplies !== false) {
+      return { ok: false, field: 'eInvoicingApplies', message: t('einv.required') };
+    }
   }
 
   return {
     ok: true,
-    profile: { name, phone, gstin, upiId, city, stateCode, registrationType: gstin ? 'regular' : 'not-registered' },
+    profile: {
+      name,
+      phone,
+      gstin,
+      upiId,
+      city,
+      stateCode,
+      registrationType: gstin ? 'regular' : 'not-registered',
+      eInvoicingNotApplicable: Boolean(gstin) && input.eInvoicingApplies === false,
+    },
   };
 }

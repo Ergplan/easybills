@@ -184,6 +184,19 @@ export const voiceConfig = () => ({
   baseUrl: optional('OPENAI_BASE_URL') ?? 'https://api.openai.com',
 });
 
+/**
+ * Reading contract terms with a model, for "Mera bill thoda complex hai".
+ * Same OpenAI key as voice; without it the app's own rules read the terms.
+ * Either way the owner sees what was read and confirms it.
+ */
+export const contractReaderConfig = () => ({
+  enabled: optional('OPENAI_API_KEY') !== null && (optional('CONTRACT_READER_ENABLED') ?? 'true') !== 'false',
+  apiKey: optional('OPENAI_API_KEY'),
+  model: optional('OPENAI_TEXT_MODEL') ?? 'gpt-4.1-mini',
+  baseUrl: optional('OPENAI_BASE_URL') ?? 'https://api.openai.com',
+  timeoutMs: Number(optional('CONTRACT_READER_TIMEOUT_MS') ?? 15_000),
+});
+
 // --- GST filing provider (GSP) ---------------------------------------------
 export type GspMode = 'unconfigured' | 'sandbox' | 'production';
 

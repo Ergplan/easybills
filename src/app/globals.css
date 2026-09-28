@@ -1176,3 +1176,43 @@ textarea.msg { width: 100%; font: inherit; border: 1px solid var(--line-strong);
 @media (prefers-reduced-motion: reduce) { .voice__dot--live { animation: none; } }
 .voice__log { display: flex; flex-direction: column; gap: 6px; }
 .voice__turn--you { border-radius: 14px 14px 4px 14px; background: var(--accent-soft); }
+
+/* ------------------------------------------------------------------- help ---
+   "Mera bill thoda complex hai": a conversation. The app on the left in
+   paper, the owner on the right in haldi, the current question slightly
+   bolder, and the answer controls in a card underneath. */
+.help__log { display: flex; flex-direction: column; gap: 8px; }
+.help__bubble {
+  max-width: 88%;
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.help__bubble--you {
+  align-self: flex-end;
+  border-radius: 16px 16px 4px 16px;
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--ink);
+}
+.help__bubble--now { font-weight: 600; font-size: var(--text-base); }
+.help__choice { flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; min-height: 60px; }
+.help__ms { display: grid; grid-template-columns: 1fr 88px auto; gap: 8px; align-items: center; }
+.help__ms-row { cursor: pointer; }
+.help__ms-row input[type='radio'] { width: 20px; height: 20px; accent-color: var(--accent-fill); }
+.help__working {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--paper-sunk);
+  font-variant-numeric: tabular-nums;
+}
+.help__working-main { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; }
+.help-link { align-self: flex-start; }
+
+.help__bar { height: 6px; border-radius: 999px; background: var(--paper-sunk); overflow: hidden; margin-top: 6px; }
+.help__bar > span { display: block; height: 100%; background: var(--accent-fill); border-radius: 999px; }

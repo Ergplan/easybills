@@ -68,6 +68,7 @@ export default async function HomePage() {
             <p className="card__sub">{home.customers.length ? t('home.bill.sub') : t('home.bill.subEmpty')}</p>
           </div>
           <CustomerChips customers={home.customers.map((c) => ({ id: c.id, name: c.name }))} />
+          <Link href="/bills/help" className="btn btn--ghost btn--small help-link">{t('help.entry')}</Link>
           <VoiceButton
             businessId={business.id}
             enabled={voiceConfig().enabled}

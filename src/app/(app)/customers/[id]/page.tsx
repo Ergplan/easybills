@@ -11,6 +11,8 @@ import { guessLanguage } from '@/lib/domain/language-guess';
 import { requireCurrentContext } from '@/server/auth/current';
 import { getCustomer } from '@/server/repos/customers';
 import { listInvoices } from '@/server/repos/invoices';
+import { billsForProject, listProjectsForCustomer } from '@/server/repos/projects';
+import { moneyForMessage } from '@/lib/copy/messages';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +25,14 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const bills = await listInvoices(business.id, { customerId: id, status: 'issued', limit: 100 });
   const view = summariseHome({ issued: bills, customers: [], today: todayIst(), recent: 100 });
   const owed = bills.reduce((s, b) => s + Math.max(0, b.balancePaise), 0);
+  const contracts = await Promise.all(
+    (await listProjectsForCustomer(business.id, customer.id)).map(async (p) => ({
+      id: p.id,
+      name: p.name,
+      totalPaise: p.totalPaise,
+      billedPaise: (await billsForProject(business.id, p.id)).entries.filter((e) => e.status === 'issued').reduce((s, e) => s + e.basisPaise, 0),
+    })),
+  );
 
   // The suggestion is offered only while the owner has not said.
   const suggestion =
@@ -65,6 +75,28 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         suggestion={suggestion && suggestion.language !== (customer.language ?? 'hi') ? suggestion : null}
       />
       {customer.gstin && <p className="faint">{t('customer.gstNote')}</p>}
+
+      {contracts.length > 0 && (
+        <section className="card stack stack--tight">
+          <h2 className="card__title" style={{ fontSize: '1.1rem' }}>{t('help.projects')}</h2>
+          <div className="rows">
+            {contracts.map((c) => (
+              <Link key={c.id} href={`/bills/help?customer=${customer.id}&project=${c.id}`} className="row-line">
+                <div className="row-line__link">
+                  <div className="row-line__name">{c.name}</div>
+                  <div className="row-line__meta">
+                    {t('help.progressLine', { billed: moneyForMessage(c.billedPaise), total: moneyForMessage(c.totalPaise) })}
+                  </div>
+                  <div className="help__bar" aria-hidden="true">
+                    <span style={{ width: `${Math.min(100, Math.round((c.billedPaise * 100) / Math.max(1, c.totalPaise)))}%` }} />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <Link href={`/bills/help?customer=${customer.id}`} className="btn btn--ghost btn--small help-link">{t('help.newProject')}</Link>
+        </section>
+      )}
 
       <section className="card stack stack--tight">
         <div className="row row--between">

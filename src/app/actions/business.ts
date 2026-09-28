@@ -51,6 +51,9 @@ export async function createBusinessAction(
         registrationType: profile.registrationType,
       },
     });
+    if (profile.eInvoicingNotApplicable) {
+      await updateBusiness(business.id, user.uid, { eInvoicingSelfDeclaredNotApplicable: true });
+    }
     return ok({ businessId: business.id });
   } catch (error) {
     return toActionError(error);
@@ -85,6 +88,7 @@ export async function saveProfileAction(
       stateCode: profile.stateCode,
       city: profile.city,
       bank: { ...business.bank, upiId: profile.upiId },
+      eInvoicingSelfDeclaredNotApplicable: profile.eInvoicingNotApplicable,
     });
     revalidatePath('/home');
     revalidatePath('/you');
@@ -308,6 +312,22 @@ export async function setNumberingAction(
     await updateBusiness(businessId, user.uid, { numbering, numberingConfirmed: true });
     revalidatePath('/you');
     return ok({ preview: previewNumber(numbering, business.activeFinancialYear) });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
+ * The e-invoicing question, answered from the bill form where it blocks
+ * the first GST bill. "Nahi" clears it; "Haan" keeps bills from being made
+ * here, with the reason said plainly.
+ */
+export async function declareEInvoicingAction(businessId: string, applies: boolean): Promise<ActionResult<null>> {
+  try {
+    const { user } = await requireBusiness(businessId);
+    await updateBusiness(businessId, user.uid, { eInvoicingSelfDeclaredNotApplicable: !applies });
+    revalidatePath('/home');
+    return ok(null);
   } catch (error) {
     return toActionError(error);
   }

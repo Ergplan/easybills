@@ -3,6 +3,9 @@
 import { t } from '@/lib/copy';
 import { billSentMessage, moneyForMessage } from '@/lib/copy/messages';
 import { parseCustomer } from '@/lib/domain/customer-form';
+import { contractNotes } from '@/lib/domain/contract';
+import { billsForProject, getProject } from '@/server/repos/projects';
+import { invoicesCol } from '@/server/firebase/paths';
 import { findDuplicate, proportionalCredit, type DuplicateHit } from '@/lib/domain/bill-guard';
 
 import { revalidatePath } from 'next/cache';
@@ -285,7 +288,22 @@ export async function makeBillAction(
 
     // "Didn't I bill them this already?" Same customer, same total, within a
     // week: asked once, and made anyway when the owner says so.
-    if (!raw.force) {
+    // A contract bill: the words under the lines are restated from the final
+    // figures, in case the owner changed the amount on the form.
+    let notes = draft.notes;
+    let stageBasis: number | null = null;
+    if (draft.projectId && draft.projectStage) {
+      const project = await getProject(businessId, draft.projectId);
+      if (project) {
+        const priced = priceInvoice({ business, lines: raw.lines, placeOfSupplyStateCode: party.stateCode ?? business.stateCode, supplyFlags: [], issueDate });
+        stageBasis = project.gstMode === 'included' ? priced.totals.totalBeforeRoundingPaise : priced.totals.taxableValuePaise;
+        const { entries } = await billsForProject(businessId, project.id);
+        const before = entries.filter((e) => e.status === 'issued' && e.invoiceId !== draft.id).reduce((s, e) => s + e.basisPaise, 0);
+        notes = contractNotes(project, before, stageBasis, priced.totals.grandTotalPaise);
+      }
+    }
+
+    if (!raw.force && !draft.projectId) {
       const priced = priceInvoice({ business, lines: raw.lines, placeOfSupplyStateCode: party.stateCode ?? business.stateCode, supplyFlags: [], issueDate });
       const recent = party.customerId
         ? await listInvoices(businessId, { status: 'issued', customerId: party.customerId, limit: 20 })
@@ -323,11 +341,14 @@ export async function makeBillAction(
           cessRateBp: formatPercentPlain(l.cessRateBp),
         })),
       ),
-      notes: draft.notes,
+      notes,
       baseRevision: raw.baseRevision,
     });
 
     const result = await issueInvoice({ business, uid: user.uid, invoiceId: raw.invoiceId, expectedRevision: saved.revision });
+    if (stageBasis !== null && draft.projectStage) {
+      await invoicesCol(businessId).doc(raw.invoiceId).update({ projectStage: { ...draft.projectStage, basisPaise: stageBasis } });
+    }
     if (result.invoice.customer.customerId) {
       await markBilled(businessId, result.invoice.customer.customerId).catch(() => undefined);
     }

@@ -408,6 +408,15 @@ out, function calling), over WebRTC from the browser.
   ends when the owner taps *Bas* or a tool navigates away, and the secret
   expires in ten minutes regardless.
 
+## 5c. Mera bill thoda complex hai: the contract helper
+
+Nothing to set up. The helper reads contract terms typed in a sentence or
+from a contract PDF with the app's own rules. If `OPENAI_API_KEY` is set (the
+same secret as voice), it uses an OpenAI model for that reading instead
+(`OPENAI_TEXT_MODEL`, default `gpt-4.1-mini`), and falls back to the rules on
+any error. Either way the owner sees what was read and confirms it; the
+helper never makes a bill, only prepares one on the ordinary bill form.
+
 ## 5. The assistant, if you want it
 
 The app is complete without it: the bill editor is the product and "speak or

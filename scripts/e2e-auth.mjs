@@ -47,7 +47,10 @@ export async function signInByPhone(page, base, digits = freshPhone()) {
 export async function fillProfile(page, base, profile) {
   await page.waitForURL('**/start', { timeout: 20000 });
   await page.locator('#you-name').fill(profile.name);
-  if (profile.gstin) await page.locator('#you-gstin').fill(profile.gstin);
+  if (profile.gstin) {
+    await page.locator('#you-gstin').fill(profile.gstin);
+    await page.getByRole('button', { name: 'Nahi, mujhe nahi' }).click();
+  }
   if (profile.upiId) await page.locator('#you-upiId').fill(profile.upiId);
   if (profile.city) await page.locator('#you-city').fill(profile.city);
   if (profile.stateCode) await page.locator('#you-stateCode').selectOption(profile.stateCode);

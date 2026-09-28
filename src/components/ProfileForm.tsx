@@ -38,6 +38,7 @@ export function ProfileForm({ phone, mode, businessId, initial }: Props) {
     upiId: initial?.upiId ?? '',
     city: initial?.city ?? '',
     stateCode: initial?.stateCode ?? '',
+    eInvoicingApplies: initial?.eInvoicingApplies ?? null,
   });
   const [problem, setProblem] = useState<{ field: ProfileField; message: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -142,6 +143,40 @@ export function ProfileForm({ phone, mode, businessId, initial }: Props) {
             placeholder="27ABCDE1234F1Z5"
           />
         </Field>
+
+        {(form.gstin ?? '').trim() && (
+          <div className="field">
+            <span className="field__label" id="you-einv-label">{t('einv.ask')}</span>
+            <div className="chips" role="group" aria-labelledby="you-einv-label">
+              <button
+                type="button"
+                id="you-eInvoicingApplies"
+                className="chip"
+                aria-pressed={form.eInvoicingApplies === false}
+                onClick={() => {
+                  setForm((f) => ({ ...f, eInvoicingApplies: false }));
+                  setSaved(false);
+                  if (problem?.field === 'eInvoicingApplies') setProblem(null);
+                }}
+              >
+                <span className="chip__name">{t('einv.no')}</span>
+              </button>
+              <button
+                type="button"
+                className="chip"
+                aria-pressed={form.eInvoicingApplies === true}
+                onClick={() => {
+                  setForm((f) => ({ ...f, eInvoicingApplies: true }));
+                  setSaved(false);
+                  if (problem?.field === 'eInvoicingApplies') setProblem(null);
+                }}
+              >
+                <span className="chip__name">{t('einv.yes')}</span>
+              </button>
+            </div>
+            {errorFor('eInvoicingApplies') && <span className="field__error" role="alert">{errorFor('eInvoicingApplies')}</span>}
+          </div>
+        )}
 
         <Field
           id="you-upiId"
