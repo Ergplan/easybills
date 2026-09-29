@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
+import { askAction } from '@/app/actions/ask';
 import { startBillForCustomerAction } from '@/app/actions/invoices';
 import { t } from '@/lib/copy';
 import { linesFromSpeech, matchCustomer, PREFILL_KEY, whoOwesReply } from '@/lib/voice/intents';
@@ -87,6 +88,18 @@ export function VoiceButton({ businessId, enabled, customers, due }: Props) {
         stop();
         router.push(`/bills/${row.invoiceId}/remind`);
         return { ok: true, reply: `${row.customerName} ka reminder khul gaya. WhatsApp kholo dabao.` };
+      }
+      case 'ask_records': {
+        const question = String(args.question ?? '').trim();
+        if (!question) return { ok: false, reply: 'Kya poochna hai?' };
+        const r = await askAction(businessId, question);
+        if (!r.ok) return { ok: false, reply: r.error };
+        if (r.data.answer) return { ok: true, reply: r.data.answer.replace(/\s*\[\d+\]/g, '') };
+        if (!r.data.sources.length) return { ok: true, reply: 'Records mein yeh nahi mila.' };
+        // No model for answers: show the matches on screen rather than read them out.
+        stop();
+        router.push(`/ask?q=${encodeURIComponent(question)}`);
+        return { ok: true, reply: 'Jo mila, screen pe dikha diya.' };
       }
       case 'open_screen': {
         const screen = String(args.screen ?? 'home');

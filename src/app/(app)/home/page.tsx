@@ -99,11 +99,16 @@ export default async function HomePage() {
               ))}
             </div>
           )}
-          {home.recentSent.length > 0 && (
-            <Link href="/bills" className="btn btn--ghost" style={{ alignSelf: 'flex-start' }}>
-              {t('common.seeAll')}
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            {home.recentSent.length > 0 && (
+              <Link href="/bills" className="btn btn--ghost">
+                {t('common.seeAll')}
+              </Link>
+            )}
+            <Link href="/ask" className="btn btn--ghost">
+              {t('ask.entry')}
             </Link>
-          )}
+          </div>
         </section>
 
         {/* 3. Kiske paise aane hain */}

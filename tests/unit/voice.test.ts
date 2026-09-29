@@ -59,12 +59,12 @@ describe('kiske paise aane hain, spoken', () => {
 });
 
 describe('the session', () => {
-  it('names the business and the customers, and offers exactly the four tools', () => {
+  it('names the business and the customers, and offers exactly the five tools', () => {
     const body = realtimeSessionBody({ businessName: 'Sharma Electricals', customers, model: 'gpt-realtime', voice: 'marin' });
     expect(body.session.model).toBe('gpt-realtime');
     expect(body.session.instructions).toContain('Sharma Electricals');
     expect(body.session.instructions).toContain('Mehta Traders');
-    expect(body.session.tools.map((t) => t.name)).toEqual(['start_bill', 'who_owes', 'remind', 'open_screen']);
+    expect(body.session.tools.map((t) => t.name)).toEqual(['start_bill', 'who_owes', 'remind', 'ask_records', 'open_screen']);
     expect(body.expires_after.seconds).toBeLessThanOrEqual(600);
     expect(() => JSON.stringify(body)).not.toThrow();
   });

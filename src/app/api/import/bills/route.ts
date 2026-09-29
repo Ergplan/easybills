@@ -4,6 +4,7 @@ import type { ImportedCustomer } from '@/lib/import/types';
 import { requireBusiness } from '@/server/auth/guard';
 import { readFile, type FileReading } from '@/server/import/read-file';
 import { listCustomers } from '@/server/repos/customers';
+import { indexUpload } from '@/server/search/index-records';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,9 +17,10 @@ export interface ImportReading extends FileReading {
 }
 
 /**
- * "Purane bills upload karo": up to ten files, read on the spot, nothing
- * stored. What comes back is candidates for the owner to look at; the
- * files themselves are not kept. Uploaded text is data, never instructions.
+ * "Purane bills upload karo": up to ten files, read on the spot. What comes
+ * back is candidates for the owner to look at. The files are not kept; the
+ * text read from them is, for "Poocho", until the owner removes it. Uploaded
+ * text is data, never instructions.
  */
 export async function POST(request: Request) {
   const form = await request.formData().catch(() => null);
@@ -39,7 +41,13 @@ export async function POST(request: Request) {
       } catch {
         reading = { filename: file.name, kind: 'unknown', customers: [], problem: 'unrecognised', pages: 0, reader: null, text: [] };
       }
-      // The text stays on the server; the screen needs only what was found.
+      // The text is kept (never the file) so "Poocho" can answer from old
+      // bills; the owner can remove it there. The screen needs only what was found.
+      if (reading.text.length) {
+        await indexUpload(business.id, file.name, reading.text, { reader: reading.reader }).catch((error) =>
+          console.error('[ekbill] could not keep upload text', (error as Error)?.message),
+        );
+      }
       readings.push({ ...reading, text: [], existing: reading.customers.map((c) => matchExisting(c, existing)) });
     }
     return NextResponse.json({ readings });

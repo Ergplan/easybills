@@ -1216,3 +1216,9 @@ textarea.msg { width: 100%; font: inherit; border: 1px solid var(--line-strong);
 
 .help__bar { height: 6px; border-radius: 999px; background: var(--paper-sunk); overflow: hidden; margin-top: 6px; }
 .help__bar > span { display: block; height: 100%; background: var(--accent-fill); border-radius: 999px; }
+
+/* ------------------------------------------------------------------ Poocho */
+.ask__answer { font-size: 1.1rem; line-height: 1.5; margin: 0; }
+.ask__sources { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.ask__sources a { color: var(--accent); font-weight: 600; }
+.ask__snippet { margin-top: 2px; overflow-wrap: anywhere; }

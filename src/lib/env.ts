@@ -184,6 +184,23 @@ export const contractReaderConfig = () => ({
   timeoutMs: Number(optional('CONTRACT_READER_TIMEOUT_MS') ?? 15_000),
 });
 
+// --- Poocho: questions about the owner's own records --------------------------
+/**
+ * Search always works by words (Postgres full-text). With an OpenAI key it
+ * also searches by meaning (embeddings in pgvector) and writes a short
+ * answer from what it found, citing the bills it used.
+ */
+export const askConfig = () => ({
+  apiKey: optional('OPENAI_API_KEY'),
+  enabled: (optional('ASK_ENABLED') ?? 'true') !== 'false',
+  baseUrl: optional('OPENAI_BASE_URL') ?? 'https://api.openai.com',
+  embeddingModel: optional('OPENAI_EMBEDDING_MODEL') ?? 'text-embedding-3-small',
+  /** Fixed by the schema (chunks.embedding vector(1536)). */
+  embeddingDimensions: 1536,
+  answerModel: optional('OPENAI_TEXT_MODEL') ?? 'gpt-4.1-mini',
+  timeoutMs: Number(optional('ASK_TIMEOUT_MS') ?? 20_000),
+});
+
 // --- Docling: reading photos and scans of old bills --------------------------
 /**
  * A docling-serve container that reads a scanned PDF or a phone photo of a
