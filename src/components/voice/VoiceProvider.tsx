@@ -70,7 +70,16 @@ function store(kind: 'local' | 'session', key: string, value?: string): string |
  * time, a friendly one-tap offer, because browsers let a page use the
  * microphone and play sound only after a tap.
  */
-export function VoiceProvider({ businessId, enabled, children }: { businessId: string; enabled: boolean; children: React.ReactNode }) {
+export function VoiceProvider({
+  businessId,
+  enabled,
+  children,
+}: {
+  /** Null during first-time setup: there are no records yet, only the screen to walk. */
+  businessId: string | null;
+  enabled: boolean;
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname() ?? '/';
   const guide = useGuide();
@@ -108,7 +117,7 @@ export function VoiceProvider({ businessId, enabled, children }: { businessId: s
 
   /** Tell the model what is on the screen now. */
   const describeScreen = useCallback(
-    (reason: 'opened-by-owner' | 'opened-by-voice' | 'start') => {
+    (reason: 'opened-by-owner' | 'opened-by-voice' | 'start' | 'next-question') => {
       const g = guideRef.current;
       if (!g) return;
       const screen = screenOf(window.location.pathname);
@@ -136,6 +145,7 @@ export function VoiceProvider({ businessId, enabled, children }: { businessId: s
   );
 
   const refreshContext = useCallback(async () => {
+    if (!businessId) return null;
     const r = await voiceContextAction(businessId);
     if (r.ok) ctx.current = r.data;
     return ctx.current;
@@ -158,6 +168,7 @@ export function VoiceProvider({ businessId, enabled, children }: { businessId: s
           return { reply: whoOwesReply(c?.due ?? []) };
         }
         case 'start_bill': {
+          if (!businessId) return { ok: false, reply: 'Pehle dukaan ki jaankari poori karo, phir bill banayenge.' };
           const c = ctx.current ?? (await refreshContext());
           const said = String(args.customer_name ?? '').trim();
           const customer = said ? matchCustomer(said, c?.customers ?? []) : null;
@@ -181,6 +192,7 @@ export function VoiceProvider({ businessId, enabled, children }: { businessId: s
         case 'ask_records': {
           const question = String(args.question ?? '').trim();
           if (!question) return { ok: false, reply: 'Kya poochna hai?' };
+          if (!businessId) return { ok: false, reply: 'Pehle dukaan ki jaankari poori karo, phir records se pooch sakte ho.' };
           const r = await askAction(businessId, question);
           if (!r.ok) return { ok: false, reply: r.error };
           if (r.data.answer) return { ok: true, reply: r.data.answer.replace(/\s*\[\d+\]/g, '') };
@@ -190,6 +202,7 @@ export function VoiceProvider({ businessId, enabled, children }: { businessId: s
         }
         case 'go_to':
         case 'open_screen': {
+          if (!businessId) return { ok: false, reply: 'Pehle yeh setup poora karte hain, phir baaki screens khulengi.' };
           const href = SCREENS[String(args.screen ?? 'home')] ?? '/home';
           if (href === window.location.pathname) return { ok: true, note: 'already on this screen' };
           navigate(href);
@@ -315,7 +328,9 @@ export function VoiceProvider({ businessId, enabled, children }: { businessId: s
           type: 'response.create',
           response: {
             instructions:
-              screen === 'home'
+              screen === 'start'
+                ? 'Greet the owner warmly in a few words ("Namaste ji! Chaliye, 1 minute mein aapki dukaan set karte hain."). Then show() the question on the screen and ask it in one short sentence. After each answer, fill() it and tap() Aage; the next question appears and you are told about it.'
+                : screen === 'home'
                 ? `Greet the owner warmly and briefly by name if it is a person's name (${name}), e.g. "Namaste ji! Haan ji, kaise help karein? Bill banana hai, paise dekhne hain, ya kuch poochna hai?" Then wait.`
                 : 'Greet the owner in a few words, say in one sentence what this screen is for, and show() the first useful thing.',
           },
@@ -369,6 +384,27 @@ export function VoiceProvider({ businessId, enabled, children }: { businessId: s
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+
+  // The same screen, a new question (the first-time setup asks one at a time).
+  useEffect(() => {
+    if (state !== 'live') return;
+    let id = 0;
+    const onStep = () => {
+      window.clearTimeout(id);
+      id = window.setTimeout(() => {
+        describeScreen('next-question');
+        send({
+          type: 'response.create',
+          response: { instructions: 'A new question is on the screen. show() it and ask it in one short sentence. If it is the last screen with every answer, read the answers back briefly and ask the owner to tap the button to start.' },
+        });
+      }, 400);
+    };
+    window.addEventListener('ekbill:step', onStep);
+    return () => {
+      window.clearTimeout(id);
+      window.removeEventListener('ekbill:step', onStep);
+    };
+  }, [state, describeScreen, send]);
 
   const api: VoiceApi = { state, enabled, note, turns, start: () => void start(), stop };
 

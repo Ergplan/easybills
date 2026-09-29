@@ -1,49 +1,65 @@
-import Link from 'next/link';
+import { AapForm, type AppInfo } from '@/components/AapForm';
 import { TopBar } from '@/components/TopBar';
-
-import { NumberingForm } from '@/components/NumberingForm';
-import { ProfileForm } from '@/components/ProfileForm';
 import { t } from '@/lib/copy';
-import { openAccess } from '@/lib/env';
+import { openAccess, voiceConfig } from '@/lib/env';
 import { requireCurrentContext } from '@/server/auth/current';
+import { doclingHealth } from '@/server/import/docling';
+import { pdfCapability } from '@/server/pdf/render';
 
 import { SignOut } from './SignOut';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * "Aap": the same five fields as the first day, to change later. Everything
- * the older, fuller settings screen holds (bank account, numbering, logo)
- * stays reachable behind one link, for the owner who needs it.
+ * "Aap": everything about the owner's business on one screen, with one Save.
+ * It took over what the old English settings page held (address, bank
+ * account, numbering, payment terms) and says, folded away, what this
+ * installation can and cannot do.
  */
 export default async function YouPage() {
   const { business, user } = await requireCurrentContext();
+  const [pdf, photos] = await Promise.all([pdfCapability().catch(() => ({ ok: false })), doclingHealth()]);
+  const info: AppInfo = {
+    signInOn: !openAccess(),
+    pdf: pdf.ok ? 'on' : 'broken',
+    voice: voiceConfig().enabled ? 'on' : 'off',
+    photos: photos === 'ok' ? 'on' : photos === 'off' ? 'off' : 'broken',
+  };
 
   return (
     <>
-    <TopBar title={t('you.title')} sub={t('you.sub')} back={{ href: '/home' }} />
-    <main className="page">
-      <ProfileForm
-        mode="edit"
-        businessId={business.id}
-        phone={user.phone ?? business.phone}
-        initial={{
-          name: business.legalName,
-          phone: business.phone ?? '',
-          gstin: business.gstin ?? '',
-          upiId: business.bank.upiId ?? '',
-          city: business.city ?? '',
-          stateCode: business.stateCode ?? '',
-          eInvoicingApplies: business.gstin ? (business.eInvoicingSelfDeclaredNotApplicable ? false : null) : null,
-        }}
-      />
-      <NumberingForm businessId={business.id} numbering={business.numbering} fy={business.activeFinancialYear} />
-      <div className="stack stack--tight" style={{ alignItems: 'flex-start' }}>
-        <Link href="/customers" className="btn btn--ghost">{t('customer.list.title')}</Link>
-        <Link href="/settings" className="btn btn--ghost">{t('you.more')}</Link>
+      <TopBar title={t('aap.title')} sub={t('aap.sub')} back={{ href: '/home' }} />
+      <main className="page">
+        <AapForm
+          businessId={business.id}
+          phone={user.phone ?? business.phone}
+          minNextNumber={business.numbering.nextNumber > 1 ? business.numbering.nextNumber : 1}
+          fy={business.activeFinancialYear}
+          padding={business.numbering.padding}
+          info={info}
+          initial={{
+            name: business.legalName,
+            phone: business.phone ?? '',
+            gstin: business.gstin ?? '',
+            upiId: business.bank.upiId ?? '',
+            city: business.city ?? '',
+            stateCode: business.stateCode ?? '',
+            eInvoicingApplies: business.gstin ? (business.eInvoicingSelfDeclaredNotApplicable ? false : null) : null,
+            addressLine1: business.addressLine1 ?? '',
+            pincode: business.pincode ?? '',
+            email: business.email ?? '',
+            accountHolderName: business.bank.accountHolderName ?? '',
+            accountNumber: business.bank.accountNumber ?? '',
+            ifsc: business.bank.ifsc ?? '',
+            bankName: business.bank.bankName ?? '',
+            prefix: business.numbering.prefix,
+            nextNumber: String(business.numbering.nextNumber),
+            includeFinancialYear: business.numbering.includeFinancialYear,
+            paymentTermsDays: String([0, 7, 15, 30].includes(business.defaultPaymentTermsDays) ? business.defaultPaymentTermsDays : 7),
+          }}
+        />
         {!openAccess() && <SignOut />}
-      </div>
-    </main>
+      </main>
     </>
   );
 }

@@ -23,6 +23,7 @@ export type ScreenKey =
   | 'dues'
   | 'customers'
   | 'customer'
+  | 'customer-new'
   | 'ask'
   | 'help'
   | 'you'
@@ -41,6 +42,7 @@ export function screenOf(pathname: string): ScreenKey {
   if (p === '/bills') return 'bills';
   if (p === '/dues') return 'dues';
   if (p === '/customers') return 'customers';
+  if (p === '/customers/new') return 'customer-new';
   if (/^\/customers\/[^/]+$/.test(p)) return 'customer';
   if (p === '/ask') return 'ask';
   if (p === '/you') return 'you';
@@ -60,11 +62,12 @@ export const SCREEN_PURPOSE: Record<ScreenKey, string> = {
   dues: 'Who owes money: the total, then each unpaid bill with Yaad dilao and Paise aa gaye.',
   customers: 'All customers, and uploading old bills to add customers from them.',
   customer: "One customer's details, their bills and contracts, and Inka bill banao.",
+  'customer-new': 'Adding a new customer without making a bill: only the name is needed.',
   ask: 'Poocho: ask a question about past bills, rates and contracts.',
   help: 'The helper for a bill that is part of a contract or project.',
   you: "The owner's own details, bill numbering, and customers.",
   gst: "The quarter's GST summary and sending it to the CA.",
-  start: 'First-time setup of the business details.',
+  start: 'First-time setup, one question per screen (shop name, phone, GST or not, GST number, UPI, city and state, then a review screen with a start button).',
   signin: 'Signing in with a phone number and OTP.',
   other: 'A screen of the app.',
 };
@@ -115,6 +118,7 @@ const TOURS: Record<ScreenKey, TourStep[]> = {
     { target: { sel: 'a', text: 'Paise aa gaye' }, say: 'Paise aa gaye? Yahan se likh lo.' },
   ],
   customers: [
+    { target: '[data-testid=customer-new]', say: 'Naya customer jodna hai, bina bill ke? Yahan se.' },
     { target: '.picker__search', say: 'Naam likh ke customer dhoondho.' },
     { target: '.picker__rows .person', say: 'Har customer ke saath: kitne baaki, ya sab chukta. Tap karke unka page kholo.' },
     { target: '#import-files + button', say: 'Purane bills ki PDF, photo ya Excel do. Customers hum padh lenge.' },
@@ -123,6 +127,12 @@ const TOURS: Record<ScreenKey, TourStep[]> = {
     { target: { sel: 'button', text: 'Inka bill banao' }, say: 'Inka naya bill yahan se.' },
     { target: '.customer-bills', say: 'Inke saare bills, aur kitne baaki.' },
     { target: '.customer-details > summary', say: 'Phone, GST number, pata, bhasha: yahan khol ke dekho ya badlo.' },
+  ],
+  'customer-new': [
+    { target: '#c-name', say: 'Customer ya unki dukaan ka naam. Bas yahi zaroori hai.' },
+    { target: '#c-phone', say: 'WhatsApp wala number, taaki bill aur yaad dilana seedha jaye.' },
+    { target: '#c-gstin', say: 'GST number ho to daalo. State aur PAN apne aap bhar jayenge.' },
+    { target: { sel: 'button', text: 'Customer jodo' }, say: 'Phir yeh dabao.' },
   ],
   ask: [
     { target: '#ask-q', say: 'Apna sawaal yahan likho, jaise "Sharma ko pichli baar kya rate diya?"' },
@@ -134,19 +144,22 @@ const TOURS: Record<ScreenKey, TourStep[]> = {
   ],
   you: [
     { target: '#you-name', say: 'Aapki dukaan ya business ka naam. Yahi bill pe chhapta hai.' },
+    { target: '#you-addressLine1', say: 'Dukaan ka pata, bill pe chhapta hai.' },
     { target: '#you-gstin', say: 'GST number ho to yahan. Nahi hai to khaali chhodo.' },
-    { target: '#you-upiId', say: 'UPI ID daalo, bill pe QR aayega aur paise jaldi aayenge.' },
+    { target: '#you-upiId', say: 'UPI ID daalo, taaki customer seedha pay kar sake.' },
     { target: '#num-prefix', say: 'Bill number kaise shuru ho, yahan badlo.' },
+    { target: '#you-paymentTermsDays', say: 'Customer ko paise dene ke liye kitne din.' },
+    { target: '.save-bar .btn', say: 'Sab badalne ke baad ek hi baar Save karo.' },
   ],
   gst: [
     { target: 'main .card', say: 'Is quarter ka GST ka hisaab, rate ke hisaab se.' },
     { target: { sel: 'button', text: 'CA ko bhejo' }, say: 'CA ko ek file mein sab bhejo: Excel aur saare bills.' },
   ],
   start: [
-    { target: '#you-name', say: 'Namaste! Pehle apni dukaan ka naam likho.' },
-    { target: '#you-gstin', say: 'GST number hai to daalo, nahi to khaali chhodo.' },
-    { target: '#you-upiId', say: 'UPI ID, taaki customer seedha pay kar sake.' },
-    { target: '#you-city', say: 'Aapka shehar.' },
+    { target: '.wizard__progress', say: 'Namaste! Bas kuch sawaal, ek-ek karke. 1 minute lagega.' },
+    { target: '.wizard__q', say: 'Yeh sawaal hai. Jawaab neeche likho.' },
+    { target: '.wizard__card .input, .wizard__choices', say: 'Yahan jawaab do.' },
+    { target: { sel: '.wizard__card button', text: 'Aage' }, say: 'Phir Aage dabao. Galti ho to Peeche ja sakte ho.' },
   ],
   signin: [
     { target: '#phone', say: 'Apna 10 number ka mobile number likho.' },

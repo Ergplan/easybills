@@ -25,6 +25,16 @@ export default async function CustomersPage() {
     <>
     <TopBar title={t('customer.list.title')} back={{ href: '/home' }} />
     <main className="page">
+      <Link href="/customers/new" className="person person--new" data-testid="customer-new">
+        <span className="person__initial" aria-hidden="true">
+          <Icon name="plus" size={20} />
+        </span>
+        <span className="person__text">
+          <span className="person__name">{t('home.bill.newCustomer')}</span>
+          <span className="person__meta">{t('customer.new.sub')}</span>
+        </span>
+        <Icon name="chevron" size={18} className="person__go" />
+      </Link>
       <section className="card">
         <CustomerPicker customers={people} mode="open" />
       </section>

@@ -485,17 +485,25 @@ export function BillForm(props: BillFormProps) {
         </div>
       )}
 
-      <div className="stack stack--tight">
+      <p className="faint" style={{ textAlign: 'center' }}>{t('bill.makeNote')}</p>
+
+      {/* The total and "Bill banao", always in reach: the bar stays at the
+          bottom of the screen while the owner scrolls through the lines. */}
+      <div className="make-bar" data-testid="make-bar">
+        <div className="make-bar__total">
+          <span className="make-bar__label">{t('bill.total')}</span>
+          <span className="make-bar__amount"><Money paise={subtotal + gst} whole /></span>
+        </div>
         <button
           type="button"
-          className="btn btn--primary btn--block btn--large"
+          className="btn btn--primary btn--large make-bar__go"
+          data-guide-tap="owner"
           disabled={busy || props.blockers.length > 0 || Boolean(duplicate) || Boolean(oddities)}
           onClick={() => void make()}
         >
           {busy ? <span className="spinner" aria-hidden="true" /> : null}
           {t('bill.make')}
         </button>
-        <p className="faint" style={{ textAlign: 'center' }}>{t('bill.makeNote')}</p>
       </div>
     </div>
   );

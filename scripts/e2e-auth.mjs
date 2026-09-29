@@ -46,14 +46,36 @@ export async function signInByPhone(page, base, digits = freshPhone()) {
 /** Fill "Apne baare mein batayen" and land on Home. */
 export async function fillProfile(page, base, profile) {
   await page.waitForURL('**/start', { timeout: 20000 });
+  // One question per screen: name, (phone), GST or not, GST number, UPI, place, review.
+  const next = () => page.locator('.wizard__card').getByRole('button', { name: 'Aage', exact: true }).click();
   await page.locator('#you-name').fill(profile.name);
+  await next();
+  const phone = page.locator('#you-phone');
+  const gstQuestion = page.getByRole('button', { name: 'Haan, hai' });
+  await phone.or(gstQuestion).first().waitFor();
+  if (await phone.isVisible()) {
+    await phone.fill(profile.phone ?? '9876543210');
+    await next();
+  }
   if (profile.gstin) {
+    await gstQuestion.click();
     await page.locator('#you-gstin').fill(profile.gstin);
     await page.getByRole('button', { name: 'Nahi, mujhe nahi' }).click();
+    await next();
+  } else {
+    await page.getByRole('button', { name: 'Nahi', exact: true }).click();
   }
-  if (profile.upiId) await page.locator('#you-upiId').fill(profile.upiId);
+  await page.locator('#you-upiId').waitFor();
+  if (profile.upiId) {
+    await page.locator('#you-upiId').fill(profile.upiId);
+    await next();
+  } else {
+    await page.getByRole('button', { name: 'Abhi nahi' }).click();
+  }
+  await page.locator('#you-city').waitFor();
   if (profile.city) await page.locator('#you-city').fill(profile.city);
   if (profile.stateCode) await page.locator('#you-stateCode').selectOption(profile.stateCode);
+  await next();
   await page.getByRole('button', { name: 'Chalo, shuru karte hain' }).click();
   await page.waitForURL('**/home', { timeout: 20000 });
 }

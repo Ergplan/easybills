@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 
 import { financialYearOf, todayIst } from '@/lib/dates';
 import { previewNumber } from '@/lib/domain/bill-guard';
+import { parseAap, type AapField, type AapInput } from '@/lib/domain/aap';
 import { parseProfile, type ProfileField, type ProfileInput } from '@/lib/domain/profile';
 import { numberingInput } from '@/lib/domain/validation';
 import { checkGstin, checkPan } from '@/lib/gst/gstin';
@@ -359,6 +360,50 @@ export async function rolloverFinancialYearAction(businessId: string): Promise<A
       numbering: { prefix: '', nextNumber: 1, padding: 3, includeFinancialYear: true },
     });
     return ok(updated);
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
+ * "Aap", saved in one go: the shop, GST, how customers pay, bill numbering
+ * and payment terms. Checked with the same `parseAap` the screen uses.
+ * Moving the next bill number goes through the counter, so it never goes
+ * backwards past a number already printed.
+ */
+export async function saveAapAction(
+  businessId: string,
+  input: AapInput,
+): Promise<ActionResult<{ preview: string }> | { ok: false; error: string; field: AapField }> {
+  try {
+    const { user, business } = await requireBusiness(businessId);
+    const minNextNumber = business.numbering.nextNumber > 1 ? business.numbering.nextNumber : 1;
+    const checked = parseAap({ ...input, phone: user.phone ?? input.phone }, { minNextNumber });
+    if (!checked.ok) return { ok: false, error: checked.message, field: checked.field };
+    const v = checked.value;
+    const numbering = { ...business.numbering, ...v.numbering };
+    if (v.numbering.nextNumber !== business.numbering.nextNumber) {
+      await setNextNumber(businessId, business.activeFinancialYear, v.numbering.nextNumber);
+    }
+    await updateBusiness(businessId, user.uid, {
+      legalName: v.name,
+      phone: v.phone,
+      gstin: v.gstin,
+      registrationType: v.registrationType,
+      stateCode: v.stateCode,
+      city: v.city,
+      addressLine1: v.addressLine1,
+      pincode: v.pincode,
+      email: v.email,
+      bank: { ...v.bank, upiId: v.upiId },
+      eInvoicingSelfDeclaredNotApplicable: v.eInvoicingNotApplicable,
+      numbering,
+      numberingConfirmed: true,
+      defaultPaymentTermsDays: v.paymentTermsDays,
+    });
+    revalidatePath('/home');
+    revalidatePath('/you');
+    return ok({ preview: previewNumber(numbering, business.activeFinancialYear) });
   } catch (error) {
     return toActionError(error);
   }

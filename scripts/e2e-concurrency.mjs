@@ -58,11 +58,8 @@ async function issueFrom(p) {
 
 try {
   console.log('\n1. An unregistered business, so nothing else blocks issuing');
+  // No GST number at setup: not registered.
   await signUp(page, BASE, { name: 'Patil Hardware' });
-  await page.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
-  await page.getByText('Not registered for GST', { exact: true }).click();
-  await page.getByRole('button', { name: /Save GST status/ }).click();
-  await page.waitForTimeout(2000);
 
   console.log('\n2. The back button after issuing');
   const billUrl = await newDraft(page, 'Ceiling fan', 2400);

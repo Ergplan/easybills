@@ -104,6 +104,40 @@ export async function saveCustomerAction(
   }
 }
 
+/** "Naya customer" from the Customers tab: added without making a bill. */
+export async function addCustomerAction(
+  businessId: string,
+  input: CustomerInput,
+): Promise<ActionResult<{ id: string }> | { ok: false; error: string; field: CustomerField }> {
+  try {
+    const { user } = await requireBusiness(businessId);
+    const checked = parseCustomer(input);
+    if (!checked.ok) return { ok: false, error: checked.message, field: checked.field };
+    const c = checked.customer;
+    const created = await createCustomer(businessId, user.uid, {
+      name: c.name,
+      contactPerson: c.contactPerson,
+      phone: c.phone,
+      email: null,
+      gstin: c.gstin,
+      pan: c.pan,
+      addressLine1: c.addressLine1,
+      addressLine2: null,
+      city: c.city,
+      pincode: c.pincode,
+      stateCode: c.stateCode,
+      notes: null,
+      language: c.language,
+      languageSource: c.language ? 'owner' : null,
+    });
+    revalidatePath('/home');
+    revalidatePath('/customers');
+    return ok({ id: created.id });
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
 /** One tap on a suggestion: this customer is spoken to in this language from now on. */
 export async function setCustomerLanguageAction(
   businessId: string,

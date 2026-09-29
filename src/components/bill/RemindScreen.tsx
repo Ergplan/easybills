@@ -87,8 +87,6 @@ export function RemindScreen(props: {
         </p>
       )}
 
-      <LanguageChoice businessId={props.businessId} state={props.language} />
-
       <section className="card stack stack--tight">
         <span className="field__label">{t('remind.tone')}</span>
         <div className="chips" role="group" aria-label={t('remind.tone')}>
@@ -131,6 +129,10 @@ export function RemindScreen(props: {
           </div>
         </div>
       </section>
+
+      {/* Which language the message is in: set once per customer, so it comes
+          after the choices made every time (the tone, the words). */}
+      <LanguageChoice businessId={props.businessId} state={props.language} />
 
       {note && (
         <div className="notice notice--info" role="status">

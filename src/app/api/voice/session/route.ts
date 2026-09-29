@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server';
 import { t } from '@/lib/copy';
 import { voiceConfig } from '@/lib/env';
 import { realtimeSessionBody } from '@/lib/voice/session';
-import { requireCurrentContext } from '@/server/auth/current';
+import { currentUser } from '@/server/auth/session';
+import { businessesForUser } from '@/server/repos/business';
 import { listCustomers } from '@/server/repos/customers';
 
 export const runtime = 'nodejs';
@@ -22,12 +23,15 @@ export async function POST() {
     return NextResponse.json({ error: t('voice.off') }, { status: 503 });
   }
   try {
-    const { business } = await requireCurrentContext();
-    const customers = (await listCustomers(business.id, { limit: 200 })).map((c) => ({ id: c.id, name: c.name }));
+    const user = await currentUser();
+    if (!user) return NextResponse.json({ error: t('voice.failed') }, { status: 401 });
+    // No business yet is first-time setup: voice walks the questions, with no records to read.
+    const [business] = await businessesForUser(user.uid);
+    const customers = business ? (await listCustomers(business.id, { limit: 200 })).map((c) => ({ id: c.id, name: c.name })) : [];
     const res = await fetch(`${config.baseUrl}/v1/realtime/client_secrets`, {
       method: 'POST',
       headers: { authorization: `Bearer ${config.apiKey}`, 'content-type': 'application/json' },
-      body: JSON.stringify(realtimeSessionBody({ businessName: business.legalName, customers, model: config.model, voice: config.voice })),
+      body: JSON.stringify(realtimeSessionBody({ businessName: business?.legalName ?? null, customers, model: config.model, voice: config.voice })),
     });
     if (!res.ok) {
       console.error('[easybills] voice session refused', res.status, await res.text().catch(() => ''));

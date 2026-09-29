@@ -1508,3 +1508,45 @@ a.task:active { transform: scale(0.99); }
 .voice-offer__text span { color: var(--ink-soft); font-size: var(--text-sm); }
 .voice-offer__row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .voice-offer__note { grid-column: 1 / -1; margin: 0; font-size: var(--text-xs); color: var(--ink-faint); }
+
+/* ---------------------------------------------------------------- make bar ---
+   The bill's total and "Bill banao", stuck to the bottom of the screen (above
+   the tabs) for as long as the bill is on it. */
+.make-bar {
+  position: sticky;
+  bottom: calc(var(--nav-height, 64px) + 10px + env(safe-area-inset-bottom, 0px));
+  z-index: 15;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 10px 10px 16px;
+  border-radius: 18px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-md);
+}
+@media (min-width: 900px) { .make-bar { bottom: 16px; } }
+.make-bar__total { display: flex; flex-direction: column; min-width: 0; }
+.make-bar__label { font-size: var(--text-sm); color: var(--ink-faint); }
+.make-bar__amount { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+.make-bar__go { margin-left: auto; flex: 1; max-width: 260px; }
+/* The voice button moves up while the bar is on screen, so they never overlap. */
+body:has(.make-bar) .voice-dock { bottom: calc(var(--nav-height, 64px) + 96px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 900px) { body:has(.make-bar) .voice-dock { bottom: 104px; } }
+/* Aap's Save bar shares the make bar's look; with nothing to say, Save takes the width. */
+.save-bar__state { font-size: var(--text-sm); color: var(--ink-soft); min-width: 0; }
+.save-bar__state:empty { display: none; }
+.save-bar__state:empty + .make-bar__go { max-width: none; }
+.aap__pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+
+/* ------------------------------------------------------------------ wizard ---
+   First-time setup: one question per screen, big, with dots for how far. */
+.wizard__progress { display: flex; gap: 6px; justify-content: center; padding: 4px 0; }
+.wizard__dot { width: 28px; height: 6px; border-radius: 3px; background: var(--line-strong); transition: background 200ms ease; }
+.wizard__dot--done { background: var(--accent-fill); }
+.wizard__card { gap: 14px; }
+.wizard__q { font-family: var(--font-display); font-size: clamp(1.5rem, 6vw, 1.9rem); font-weight: 700; line-height: 1.2; color: var(--ink); }
+.input--large { min-height: 58px; font-size: 1.2rem; }
+.wizard__choices { display: grid; gap: 10px; }
+.wizard__back { align-self: center; }
+.wizard__review { margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.wizard__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.wizard__row dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }

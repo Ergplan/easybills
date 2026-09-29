@@ -124,16 +124,17 @@ try {
     check(`the rail marks ${label} as where you are`, current.trim() === label, `(marked "${current.trim()}")`);
   }
 
-  console.log('\n4. Settings is behind Aap, not a destination of its own');
+  console.log('\n4. Everything about the business is on Aap, one screen');
   const inRail = await page.locator('.sidenav a[href="/settings"]').count();
-  check('settings is not in the rail', inRail === 0);
+  check('there is no separate settings page in the rail', inRail === 0);
   await page.locator('.sidenav__item', { hasText: 'Aap' }).click();
   await page.waitForURL('**/you', { timeout: 15000 });
-  await page.getByRole('link', { name: /Aur bhi/ }).click();
-  await page.waitForURL('**/settings', { timeout: 15000 });
   await page.waitForTimeout(1200);
-  await shot('02-settings');
-  await layoutRules('settings');
+  check('address, bank and bill number are on Aap', (await page.locator('#you-addressLine1').count()) === 1 && (await page.locator('#num-next').count()) === 1);
+  await page.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
+  check('the old settings address comes to Aap', page.url().endsWith('/you'));
+  await shot('02-aap');
+  await layoutRules('aap');
 
   console.log('\n5. The bill, three fields per line');
   await page.goto(`${BASE}/bills/start`, { waitUntil: 'networkidle' });
@@ -225,7 +226,7 @@ try {
   // no width may the app lose its navigation, gain a second one, or scroll
   // sideways -- least of all at the pixel either side of the breakpoint.
   const WIDTHS = [320, 360, 390, 414, 600, 768, 834, 1023, 1024, 1180, 1280, 1440, 1920, 2560];
-  for (const path of ['/home', '/bills', '/settings']) {
+  for (const path of ['/home', '/bills', '/you']) {
     await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle' });
     for (const w of WIDTHS) {
       await page.setViewportSize({ width: w, height: 900 });

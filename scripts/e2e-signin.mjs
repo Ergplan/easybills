@@ -81,31 +81,56 @@ try {
   await page.waitForURL('**/start', { timeout: 20000 });
   check('a new number lands on "Apne baare mein batayen"', true);
 
-  console.log('\n3. Apne baare mein batayen');
-  await shot('start-01-empty');
-  check('the phone is shown, not asked again', (await page.locator('#you-phone').inputValue()) === `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`);
-  check('the phone cannot be edited', await page.locator('#you-phone').evaluate((el) => el.readOnly));
-
+  console.log('\n3. Apne baare mein batayen: one question at a time');
+  const aage = () => page.locator('.wizard__card').getByRole('button', { name: 'Aage', exact: true }).click();
+  await page.locator('#you-name').waitFor({ timeout: 15000 });
+  await shot('start-01-name');
+  check('the phone is not asked again: sign-in gave it', (await page.locator('#you-phone').count()) === 0);
+  const dots = await page.locator('.wizard__dot').count();
+  check('progress dots show how many questions', dots >= 5, `(saw ${dots})`);
+  await aage();
+  await page.locator('.field__error').waitFor({ timeout: 5000 });
+  check('an empty name is caught on its own screen', await page.locator('#you-name').isVisible());
   await page.locator('#you-name').fill('Sharma Electricals');
-  await page.locator('#you-gstin').fill('NOTAGST');
-  await page.getByRole('button', { name: 'Chalo, shuru karte hain' }).click();
-  await page.getByText('GST number theek nahi lag raha').waitFor({ timeout: 5000 });
-  await shot('start-02-bad-gstin');
-  check('a bad GST number is caught on the phone, before saving', page.url().includes('/start'));
+  await aage();
 
+  await page.getByRole('button', { name: 'Haan, hai' }).waitFor({ timeout: 5000 });
+  await shot('start-02-has-gst');
+  check('asks "GST number hai?" as a yes/no', await page.getByRole('button', { name: 'Nahi', exact: true }).isVisible());
+  await page.getByRole('button', { name: 'Haan, hai' }).click();
+  await page.locator('#you-gstin').fill('NOTAGST');
+  await aage();
+  await page.getByText('GST number theek nahi lag raha').waitFor({ timeout: 5000 });
+  await shot('start-03-bad-gstin');
+  check('a bad GST number is caught before going on', await page.locator('#you-gstin').isVisible());
   await page.locator('#you-gstin').fill('27AAPFU0939F1ZV');
   check('a GST number brings the e-invoice question', await page.getByText(/sarkari e-invoice \(IRN\)/).isVisible());
   await page.getByRole('button', { name: 'Nahi, mujhe nahi' }).click();
+  await aage();
+
+  await page.locator('#you-upiId').fill('sharma@upi');
+  await aage();
+
+  await page.locator('#you-city').waitFor({ timeout: 5000 });
+  check('the state is already filled from the GST number', (await page.locator('#you-stateCode').inputValue()) === '27');
+  await page.locator('#you-city').fill('Pune');
   await page.locator('#you-stateCode').selectOption('29');
-  await page.getByRole('button', { name: 'Chalo, shuru karte hain' }).click();
+  await aage();
   await page.locator('.field__error').waitFor({ timeout: 5000 });
   const mismatch = await page.locator('.field__error').textContent();
   check('a state that disagrees with the GST number is refused', /Maharashtra.*Karnataka chuna/.test(mismatch ?? ''), mismatch ?? '');
+  await page.locator('#you-stateCode').selectOption('27');
+  await aage();
 
-  await page.locator('#you-stateCode').selectOption('');
-  await page.locator('#you-upiId').fill('sharma@upi');
-  await page.locator('#you-city').fill('Pune');
-  await shot('start-03-filled');
+  await page.getByRole('button', { name: 'Chalo, shuru karte hain' }).waitFor({ timeout: 5000 });
+  await shot('start-04-review');
+  const review = await page.locator('.wizard__review').innerText();
+  check('the last screen shows every answer', ['Sharma Electricals', '27AAPFU0939F1ZV', 'sharma@upi', 'Pune'].every((v) => review.includes(v)), review);
+  await page.locator('.wizard__row', { hasText: 'sharma@upi' }).getByRole('button', { name: 'Badlo' }).click();
+  await page.locator('#you-upiId').fill('sharma.electricals@upi');
+  await aage();
+  await page.getByRole('button', { name: 'Chalo, shuru karte hain' }).waitFor({ timeout: 5000 });
+  check('Badlo changes one answer and comes straight back', (await page.locator('.wizard__review').innerText()).includes('sharma.electricals@upi'));
   await page.getByRole('button', { name: 'Chalo, shuru karte hain' }).click();
   await page.waitForURL('**/home', { timeout: 25000 });
   check('lands on Home', true);
@@ -118,7 +143,7 @@ try {
   check('registered under GST, because a GSTIN was given', mine?.registrationType === 'regular');
   check('state came from the GST number', mine?.stateCode === '27');
   check('phone stored in +91 form', mine?.phone === who.phone);
-  check('UPI stored with the bank details', mine?.bank?.upiId === 'sharma@upi');
+  check('UPI stored with the bank details', mine?.bank?.upiId === 'sharma.electricals@upi');
   check('city kept', mine?.city === 'Pune');
 
   console.log('\n5. Sign out, sign in again');

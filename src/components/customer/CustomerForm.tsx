@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { saveCustomerAction } from '@/app/actions/customers';
+import { addCustomerAction, saveCustomerAction } from '@/app/actions/customers';
 import { CUSTOMER_LANGUAGE_NAMES, CUSTOMER_LANGUAGES_AVAILABLE, t, type CustomerLanguage } from '@/lib/copy';
 import { parseCustomer, type CustomerField, type CustomerInput } from '@/lib/domain/customer-form';
 import type { LanguageGuess } from '@/lib/domain/language-guess';
@@ -22,7 +22,8 @@ export function CustomerForm({
   suggestion,
 }: {
   businessId: string;
-  customerId: string;
+  /** Null: a new customer, added without making a bill; the page opens after saving. */
+  customerId: string | null;
   initial: CustomerInput;
   suggestion: LanguageGuess | null;
 }) {
@@ -56,6 +57,17 @@ export function CustomerForm({
         }
         setBusy(true);
         setError(null);
+        if (customerId === null) {
+          const added = await addCustomerAction(businessId, form);
+          if (added.ok) {
+            router.push(`/customers/${added.data.id}`);
+            return;
+          }
+          setBusy(false);
+          if ('field' in added) setProblem({ field: added.field, message: added.error });
+          else setError(added.error);
+          return;
+        }
         const r = await saveCustomerAction(businessId, customerId, form);
         setBusy(false);
         if (r.ok) {
@@ -178,7 +190,7 @@ export function CustomerForm({
 
       <button type="submit" className="btn btn--primary btn--block btn--large" disabled={busy || !form.name.trim()}>
         {busy ? <span className="spinner" aria-hidden="true" /> : null}
-        {t('customer.save')}
+        {customerId === null ? t('customer.add') : t('customer.save')}
       </button>
     </form>
   );
