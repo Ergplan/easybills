@@ -4,6 +4,7 @@ import { t } from '@/lib/copy';
 import { currentUser } from '@/server/auth/session';
 import { businessesForUser } from '@/server/repos/business';
 
+import { GuideButton } from '@/components/guide/GuideButton';
 import { ProfileForm } from '@/components/ProfileForm';
 
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,10 @@ export default async function StartPage() {
   return (
     <main className="page" style={{ maxWidth: 480, paddingTop: 32 }}>
       <div className="stack" style={{ gap: 4 }}>
-        <h1>{t('you.title')}</h1>
+        <div className="row row--between">
+          <h1>{t('you.title')}</h1>
+          <GuideButton />
+        </div>
         <p className="muted">{t('you.sub')}</p>
       </div>
       <ProfileForm mode="create" phone={user.phone} />

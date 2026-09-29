@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { CustomerPicker } from '@/components/customer/CustomerPicker';
+import { GuideButton } from '@/components/guide/GuideButton';
 import { Icon } from '@/components/Icon';
 import { TaskCard } from '@/components/home/TaskCard';
 import { VoiceButton } from '@/components/voice/VoiceButton';
@@ -11,7 +12,6 @@ import { gstTabVisible } from '@/lib/domain/gst-tab';
 import { initialOf } from '@/lib/domain/home';
 import { peopleRows } from '@/lib/domain/people';
 import { profileSetupStatus } from '@/lib/domain/setup-status';
-import { voiceConfig } from '@/lib/env';
 import { requireCurrentContext } from '@/server/auth/current';
 import { loadHome } from '@/server/services/home';
 
@@ -51,9 +51,12 @@ export default async function HomePage() {
       <header className="hello">
         <div className="hello__top">
           <span className="hello__brand">EkBill</span>
-          <Link href="/you" className="avatar" aria-label={t('tab.you')}>
-            {initialOf(business.legalName)}
-          </Link>
+          <span className="row row--tight">
+            <GuideButton />
+            <Link href="/you" className="avatar" aria-label={t('tab.you')}>
+              {initialOf(business.legalName)}
+            </Link>
+          </span>
         </div>
         <h1 className="hello__name">{nameFits ? t('home.greeting', { name: greetName }) : t('home.greetingJi')}</h1>
         {!nameFits && <p className="hello__who">{business.legalName}</p>}
@@ -92,12 +95,7 @@ export default async function HomePage() {
               <span className="task__text">
                 <span className="task__title">{t('task.voice.title')}</span>
                 <span className="task__sub">{t('task.voice.sub')}</span>
-                <VoiceButton
-                  businessId={business.id}
-                  enabled={voiceConfig().enabled}
-                  customers={home.allCustomers.map((c) => ({ id: c.id, name: c.name }))}
-                  due={home.due.map((d) => ({ invoiceId: d.id, customerId: d.customerId, customerName: d.customerName, amountPaise: d.balancePaise, days: d.days }))}
-                />
+                <VoiceButton />
               </span>
             </div>
             <TaskCard href="/ask" icon="ask" title={t('task.ask.title')} sub={t('task.ask.sub')} testId="task-ask" />

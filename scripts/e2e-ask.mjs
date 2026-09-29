@@ -63,7 +63,7 @@ try {
   check('with the rate in it', /AMC visit: 1 x ₹3,500/.test(result));
   await page.getByRole('link', { name: /Bill INV-001 · Kapoor Dairy/ }).click();
   await page.waitForURL(/\/bills\/[0-9a-f-]{36}$/, { timeout: 15000 });
-  check('the record opens the bill', /Kapoor Dairy/.test(await page.locator('main').innerText()));
+  check('the record opens the bill', /Kapoor Dairy/.test(await page.locator('body').innerText()));
 
   console.log('\n4. Something that is not there');
   await page.goto(`${BASE}/ask?q=${encodeURIComponent('Zebra crossing ka bill')}`, { waitUntil: 'networkidle' });

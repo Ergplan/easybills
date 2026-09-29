@@ -67,7 +67,7 @@ try {
   console.log('\n2. The back button after issuing');
   const billUrl = await newDraft(page, 'Ceiling fan', 2400);
   await issueFrom(page);
-  const issuedText = await page.locator('main').innerText();
+  const issuedText = await page.locator('body').innerText();
   check('the bill is issued', /INV-\d+/.test(issuedText), `(text: ${issuedText.slice(0, 120)})`);
 
   await page.goBack();

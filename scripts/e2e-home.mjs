@@ -76,7 +76,7 @@ try {
 
   console.log('\n3. The tabs');
   const tabs = await page.locator('.tabbar__item').allInnerTexts();
-  check('the demo appliance shop has no GST number, so: Ghar, Aap', tabs.map((t) => t.trim()).join(' / ') === 'Ghar / Aap', `(saw ${tabs.join(' / ')})`);
+  check('the demo appliance shop has no GST number, so: Ghar, Bills, Customers, Aap', tabs.map((t) => t.trim()).join(' / ') === 'Ghar / Bills / Customers / Aap', `(saw ${tabs.join(' / ')})`);
 
   console.log('\n4. Naya bill banana hai -> Kiska? -> the bill');
   await page.getByTestId('task-bill').click();
@@ -110,14 +110,14 @@ try {
   await page.getByText('Save ho gaya').waitFor({ timeout: 15000 });
   await page.waitForTimeout(800);
   const tabsAfter = await page.locator('.tabbar__item').allInnerTexts();
-  check('with a GST number: Ghar, GST, Aap', tabsAfter.map((t) => t.trim()).join(' / ') === 'Ghar / GST / Aap', `(saw ${tabsAfter.join(' / ')})`);
+  check('with a GST number, GST joins: Ghar, Bills, Customers, GST, Aap', tabsAfter.map((t) => t.trim()).join(' / ') === 'Ghar / Bills / Customers / GST / Aap', `(saw ${tabsAfter.join(' / ')})`);
   check('the state followed the GST number', (await page.locator('#you-stateCode').inputValue()) === '27');
 
   console.log('\n5b. GST ka hisaab');
   await page.goto(`${BASE}/gst`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);
   await shot('gst-01-360');
-  const gstText = await page.locator('main').innerText();
+  const gstText = await page.locator('body').innerText();
   check('the quarter, with bills, sales and GST', /GST ka hisaab/.test(gstText) && /Bills/.test(gstText) && /Bikri/.test(gstText));
   check('no returns, no filing, no review steps', !/GSTR|Review|Save and continue|GSTR-3B/.test(gstText));
   const packBtn = page.getByRole('button', { name: 'CA ko bhejo' });
@@ -135,14 +135,14 @@ try {
   await page.getByText('Save ho gaya').waitFor({ timeout: 15000 });
   await page.waitForTimeout(800);
   const tabsBack = await page.locator('.tabbar__item').allInnerTexts();
-  check('take it away and the tab goes', tabsBack.map((t) => t.trim()).join(' / ') === 'Ghar / Aap', `(saw ${tabsBack.join(' / ')})`);
+  check('take it away and the tab goes', tabsBack.map((t) => t.trim()).join(' / ') === 'Ghar / Bills / Customers / Aap', `(saw ${tabsBack.join(' / ')})`);
 
   console.log('\n6. Desktop');
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);
   await shot('home-03-1280');
-  check('the rail shows the same tabs', (await page.locator('.sidenav__item').allInnerTexts()).map((t) => t.trim()).join(' / ') === 'Ghar / Aap');
+  check('the rail shows the same tabs', (await page.locator('.sidenav__item').allInnerTexts()).map((t) => t.trim()).join(' / ') === 'Ghar / Bills / Customers / Aap');
   check('the jobs and the customer directory sit side by side', (await page.locator('.reception__body').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)) === 2);
 
   check('no page errors', pageErrors.length === 0, pageErrors.join(' | '));

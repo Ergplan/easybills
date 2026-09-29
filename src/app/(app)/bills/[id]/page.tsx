@@ -10,6 +10,8 @@ import { t } from '@/lib/copy';
 import { formatDateShort, todayIst } from '@/lib/dates';
 import { linesToDraft, summariseLines } from '@/lib/domain/bill-form';
 import Link from 'next/link';
+
+import { TopBar } from '@/components/TopBar';
 import { requireCurrentContext } from '@/server/auth/current';
 import { getInvoice, lastIssuedForCustomer, listInvoices } from '@/server/repos/invoices';
 import { listAdjustmentsForInvoice } from '@/server/repos/adjustments';
@@ -47,6 +49,8 @@ export default async function BillPage({
         ? guessLanguage({ name: customer.name, contactPerson: customer.contactPerson, city: customer.city ?? business.city, stateCode: customer.stateCode ?? business.stateCode })
         : null;
     return (
+      <>
+      <TopBar title={t('bill.title', { customer: invoice.customer.name })} sub={invoice.number} back={{ href: '/home' }} />
       <main className="page">
         <BillDone
           businessId={business.id}
@@ -62,22 +66,16 @@ export default async function BillPage({
           language={customer ? { customerId: customer.id, current, suggestion: guess && guess.language !== current ? guess : null } : null}
         />
       </main>
+      </>
     );
   }
 
   if (invoice.status === 'cancelled') {
     const redone = invoice.redoneAsInvoiceId ? await getInvoice(business.id, invoice.redoneAsInvoiceId) : null;
     return (
+      <>
+      <TopBar title={t('bill.title', { customer: invoice.customer.name })} sub={invoice.number} back={{ href: '/bills' }} />
       <main className="page">
-        <div className="row">
-          <Link href="/bills" className="btn btn--ghost" aria-label={t('common.back')} style={{ paddingInline: 8 }}>
-            <Icon name="back" size={20} />
-          </Link>
-          <div className="grow">
-            <h1 style={{ fontSize: '1.3rem' }}>{t('bill.title', { customer: invoice.customer.name })}</h1>
-            <p className="faint">{invoice.number}</p>
-          </div>
-        </div>
         <section className="card stack stack--tight">
           <span className="pill pill--draft" style={{ alignSelf: 'flex-start' }}>{t('fix.cancelled')}</span>
           <p className="muted">{t('fix.cancelledOn', { date: formatDateShort((invoice.cancelledAt ?? '').slice(0, 10) as never), reason: invoice.cancelledReason ?? '' })}</p>
@@ -89,30 +87,25 @@ export default async function BillPage({
           <p className="faint"><Money paise={invoice.totals.grandTotalPaise} whole /></p>
         </section>
       </main>
+      </>
     );
   }
 
   if (invoice.status === 'issued') {
     const [payments, adjustments] = await Promise.all([listPaymentsForInvoice(business.id, invoice.id), listAdjustmentsForInvoice(business.id, invoice.id)]);
     return (
+      <>
+      <TopBar
+        title={t('bill.title', { customer: invoice.customer.name })}
+        sub={
+          <>
+            <span>{invoice.number}</span>
+            {invoice.customer.customerId && <Link href={`/customers/${invoice.customer.customerId}`}>{t('customer.details')}</Link>}
+          </>
+        }
+        back={{ href: '/bills' }}
+      />
       <main className="page">
-        <div className="row">
-          <Link href="/home" className="btn btn--ghost" aria-label={t('common.back')} style={{ paddingInline: 8 }}>
-            <Icon name="back" size={20} />
-          </Link>
-          <div className="grow">
-            <h1 style={{ fontSize: '1.3rem' }}>{t('bill.title', { customer: invoice.customer.name })}</h1>
-            <p className="faint">
-              {invoice.number}
-              {invoice.customer.customerId && (
-                <>
-                  {' · '}
-                  <Link href={`/customers/${invoice.customer.customerId}`} className="btn btn--ghost btn--small" style={{ paddingInline: 6 }}>{t('customer.details')}</Link>
-                </>
-              )}
-            </p>
-          </div>
-        </div>
         <BillView
           businessId={business.id}
           invoice={invoice}
@@ -121,6 +114,7 @@ export default async function BillPage({
           today={todayIst()}
         />
       </main>
+      </>
     );
   }
 
@@ -156,20 +150,13 @@ export default async function BillPage({
   const title = invoice.customer.name ? t('bill.title', { customer: invoice.customer.name }) : t('bill.titleNew');
 
   return (
+    <>
+    <TopBar
+      title={title}
+      sub={invoice.customer.customerId ? <Link href={`/customers/${invoice.customer.customerId}`}>{t('customer.details')}</Link> : undefined}
+      back={{ href: '/bills/start' }}
+    />
     <main className="page">
-      <div className="row">
-        <Link href="/home" className="btn btn--ghost" aria-label={t('common.back')} style={{ paddingInline: 8 }}>
-          <Icon name="back" size={20} />
-        </Link>
-        <div className="grow">
-          <h1 style={{ fontSize: '1.3rem' }}>{title}</h1>
-          {invoice.customer.customerId && (
-            <p className="faint">
-              <Link href={`/customers/${invoice.customer.customerId}`} className="btn btn--ghost btn--small" style={{ paddingInline: 6 }}>{t('customer.details')}</Link>
-            </p>
-          )}
-        </div>
-      </div>
       <BillForm
         businessId={business.id}
         invoiceId={invoice.id}
@@ -191,5 +178,6 @@ export default async function BillPage({
         project={project ? { id: project.id, name: project.name, stage: invoice.projectStage?.label ?? '' } : null}
       />
     </main>
+    </>
   );
 }

@@ -50,7 +50,7 @@ try {
   check('Home greets and asks how to help', await page.getByText('Haan ji, kaise help karein aapki?').isVisible()
     && await page.getByText('Naya bill banana hai').isVisible() && await page.getByText('Bheje hue bills dekhne hain').isVisible()
     && await page.getByText('Kiske paise aane hain').isVisible());
-  check('no GST number, so two tabs: Ghar and Aap', (await page.locator('.tabbar__item').count()) === 2);
+  check('no GST number, so four tabs: Ghar, Bills, Customers, Aap', (await page.locator('.tabbar__item').count()) === 4);
   check('Home shows no chart', (await page.locator('canvas, svg.chart').count()) === 0);
 
   // The 44px floor applies on every screen, not only the editor.
@@ -132,7 +132,7 @@ try {
   await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 20000 });
   await page.waitForTimeout(800);
   await shot('05-issued');
-  const issuedText = await page.locator('main').innerText();
+  const issuedText = await page.locator('body').innerText();
   check('the issued bill shows its number', /INV-\d+/.test(issuedText));
   check('and says Bheja, with the total', /Bheja/.test(issuedText) && /₹2,050/.test(issuedText));
 
@@ -171,7 +171,7 @@ try {
   await page.waitForURL(/\/remind$/, { timeout: 15000 });
   await page.waitForTimeout(600);
   await shot('08-remind');
-  const remindText = await page.locator('main').innerText();
+  const remindText = await page.locator('body').innerText();
   check('the reminder is addressed to Ramesh ji', /Ramesh Patil ko yaad dilayein/.test(remindText));
   const draft = await page.locator('#remind-text').inputValue();
   check('gentle by default, with the amount still due and the UPI line left out (no UPI id)', /^Namaste Ramesh ji 🙏/.test(draft) && /₹1,050/.test(draft) && !/UPI/.test(draft));

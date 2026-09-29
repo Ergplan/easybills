@@ -1,4 +1,5 @@
-import { openAccess } from '@/lib/env';
+import { openAccess, voiceConfig } from '@/lib/env';
+import { VoiceProvider } from '@/components/voice/VoiceProvider';
 import { gstTabVisible } from '@/lib/domain/gst-tab';
 import { requireCurrentContext } from '@/server/auth/current';
 
@@ -36,7 +37,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             Demo business — these are sample records, not your real bills
           </div>
         )}
-        {children}
+        <VoiceProvider businessId={business.id} enabled={voiceConfig().enabled}>
+          {children}
+        </VoiceProvider>
       </div>
       <TabBar showGst={showGst} />
     </div>

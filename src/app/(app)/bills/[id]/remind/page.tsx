@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
+import { TopBar } from '@/components/TopBar';
 
 import { RemindScreen } from '@/components/bill/RemindScreen';
 import { Icon } from '@/components/Icon';
@@ -59,22 +60,13 @@ export default async function RemindPage({ params }: { params: Promise<{ id: str
   };
 
   return (
+    <>
+    <TopBar
+      title={t('remind.title', { name: invoice.customer.name })}
+      sub={t('remind.sub', { number: bill.number, amount: moneyForMessage(invoice.balancePaise), days: Math.max(0, daysBetween(invoice.issueDate, today)) })}
+      back={{ href: `/bills/${id}` }}
+    />
     <main className="page">
-      <div className="row">
-        <Link href={`/bills/${id}`} className="btn btn--ghost" aria-label={t('common.back')} style={{ paddingInline: 8 }}>
-          <Icon name="back" size={20} />
-        </Link>
-        <div className="grow">
-          <h1 style={{ fontSize: '1.3rem' }}>{t('remind.title', { name: invoice.customer.name })}</h1>
-          <p className="faint">
-            {t('remind.sub', {
-              number: bill.number,
-              amount: moneyForMessage(invoice.balancePaise),
-              days: Math.max(0, daysBetween(invoice.issueDate, today)),
-            })}
-          </p>
-        </div>
-      </div>
       <RemindScreen
         businessId={business.id}
         invoiceId={invoice.id}
@@ -87,5 +79,6 @@ export default async function RemindPage({ params }: { params: Promise<{ id: str
         language={language}
       />
     </main>
+    </>
   );
 }

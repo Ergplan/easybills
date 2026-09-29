@@ -49,6 +49,8 @@ export const DICTIONARY = {
   // -------------------------------------------------------------- tabs ----
   'tab.home': { en: 'Home', hi: 'Ghar' },
   'tab.gst': { en: 'GST', hi: 'GST' },
+  'tab.bills': { en: 'Bills', hi: 'Bills' },
+  'tab.customers': { en: 'Customers', hi: 'Customers' },
   'tab.you': { en: 'You', hi: 'Aap' },
 
   // -------------------------------------------------------------- home ----
@@ -420,6 +422,12 @@ export const DICTIONARY = {
   'help.progressLine': { en: '{billed} of {total} billed', hi: '{total} mein se {billed} ka bill bana' },
   'help.you': { en: 'You', hi: 'Aap' },
   'voice.button': { en: 'Say it', hi: 'Bolke karo' },
+  'voice.offer.title': { en: 'Shall I help by voice?', hi: 'Bolke madad karun?' },
+  'voice.offer.sub': { en: 'Just speak; I will show you where to tap and fill things in for you.', hi: 'Bas boliye; kahan dabana hai main dikhaunga, aur bhar bhi dunga.' },
+  'voice.offer.yes': { en: 'Yes, by voice', hi: 'Haan, bolke' },
+  'voice.offer.later': { en: 'Not now', hi: 'Abhi nahi' },
+  'voice.offer.never': { en: 'Never ask', hi: 'Mat poochna' },
+  'voice.unmute': { en: 'Tap to hear', hi: 'Sunne ke liye dabao' },
   'voice.listening': { en: 'Listening', hi: 'Sun rahe hain…' },
   'voice.connecting': { en: 'One moment', hi: 'Ek second…' },
   'voice.stop': { en: 'Stop', hi: 'Bas' },

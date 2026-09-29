@@ -64,9 +64,9 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/**': ['./node_modules/playwright-core/**/*', './node_modules/@sparticuz/chromium/**/*'],
   },
-  // The dev indicator defaults to bottom-left, where it sits directly on top of
-  // the Home tab at mobile widths and swallows taps. Moved out of the way.
-  devIndicators: { position: 'top-right' },
+  // The dev indicator sat on the tab bar at bottom-left and on the tour's "?"
+  // button at top-right. Development only either way; off.
+  devIndicators: false,
   experimental: {
     // Invoice payloads with many lines can exceed the default server action body cap.
     serverActions: { bodySizeLimit: '4mb' },

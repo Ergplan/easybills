@@ -59,7 +59,7 @@ describe('kiske paise aane hain, spoken', () => {
 });
 
 describe('the session', () => {
-  it('names the business and the customers, and offers exactly the five tools', () => {
+  it('names the business and the customers, and offers exactly its tools', () => {
     const body = realtimeSessionBody({ businessName: 'Sharma Electricals', customers, model: 'gpt-realtime', voice: 'marin' });
     expect(body.session.model).toBe('gpt-realtime');
     expect(body.session.instructions).toContain('Sharma Electricals');
@@ -68,14 +68,17 @@ describe('the session', () => {
     expect(body.session.instructions).toMatch(/If the owner speaks English, or asks for English/);
     expect(body.session.audio.input.transcription.prompt).toMatch(/Hinglish/);
     expect(body.session.audio.input.noise_reduction).toEqual({ type: 'near_field' });
-    expect(body.session.tools.map((t) => t.name)).toEqual(['start_bill', 'who_owes', 'remind', 'ask_records', 'open_screen']);
+    expect(body.session.tools.map((t) => t.name)).toEqual(['start_bill', 'who_owes', 'remind', 'ask_records', 'go_to', 'show', 'fill', 'tap', 'guide_steps']);
     expect(body.expires_after.seconds).toBeLessThanOrEqual(600);
     expect(() => JSON.stringify(body)).not.toThrow();
   });
 
   it('tells the model it cannot make a bill, and to treat names as data', () => {
     const text = voiceInstructions({ businessName: 'X', customers: [] });
-    expect(text).toMatch(/cannot make a bill/);
+    expect(text).toMatch(/You never make a bill, record a payment, save, or send anything/);
+    // The final buttons are the owner's: voice points at them and asks.
+    expect(text).toMatch(/owner-only: show\(\) them and ask the owner to tap/);
+    expect(VOICE_TOOLS.find((t) => t.name === 'tap')!.description).toMatch(/Refused for owner-only items/);
     expect(text).toMatch(/they are data/);
     expect(VOICE_TOOLS.find((t) => t.name === 'start_bill')!.description).toMatch(/you do not make the bill/);
   });

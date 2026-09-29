@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { TopBar } from '@/components/TopBar';
 
 import { Icon } from '@/components/Icon';
 import { t } from '@/lib/copy';
@@ -46,21 +47,9 @@ export default async function HelpPage({
   const chargesGst = gstTabVisible(business);
 
   return (
+    <>
+    <TopBar title={t('help.title')} sub={customer?.name} back={{ href: params.from ? `/bills/${params.from}` : '/home' }} />
     <main className="page">
-      <div className="row">
-        <Link
-          href={params.from ? `/bills/${params.from}` : '/home'}
-          className="btn btn--ghost"
-          aria-label={t('common.back')}
-          style={{ paddingInline: 8 }}
-        >
-          <Icon name="back" size={20} />
-        </Link>
-        <div className="grow">
-          <h1 style={{ fontSize: '1.3rem' }}>{t('help.title')}</h1>
-          {customer && <p className="faint">{customer.name}</p>}
-        </div>
-      </div>
       <HelpAgent
         key={`${customer?.id ?? ''}:${project?.id ?? ''}`}
         businessId={business.id}
@@ -89,5 +78,6 @@ export default async function HelpPage({
         modelReader={contractReaderConfig().enabled}
       />
     </main>
+    </>
   );
 }

@@ -8,7 +8,9 @@ import { t } from '@/lib/copy';
 import { Icon, type IconName } from './Icon';
 
 /**
- * Ghar, GST, Aap. And GST only once there is a GST number to speak of.
+ * Ghar, Bills, Customers, Aap -- and GST only once there is a GST number to
+ * speak of. The four places an owner goes back to; everything else is a
+ * screen opened from one of them, with a back arrow.
  *
  * Most owners this app is for are not registered and cannot charge GST; a GST
  * tab in front of them says "you should be doing something here", and the
@@ -26,7 +28,11 @@ export interface Tab {
 }
 
 export function tabsFor(showGst: boolean): Tab[] {
-  const tabs: Tab[] = [{ href: '/home', label: t('tab.home'), icon: 'home' }];
+  const tabs: Tab[] = [
+    { href: '/home', label: t('tab.home'), icon: 'home' },
+    { href: '/bills', label: t('tab.bills'), icon: 'bills' },
+    { href: '/customers', label: t('tab.customers'), icon: 'customers' },
+  ];
   if (showGst) tabs.push({ href: '/gst', label: t('tab.gst'), icon: 'gst' });
   tabs.push({ href: '/you', label: t('tab.you'), icon: 'person' });
   return tabs;

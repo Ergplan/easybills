@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Baloo_2, Mukta } from 'next/font/google';
+import { GuideProvider } from '@/components/guide/GuideProvider';
 
 import { FirebaseConfig } from '@/components/FirebaseConfig';
 import { publicFirebaseConfig } from '@/lib/env';
@@ -55,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en-IN" className={`${mukta.variable} ${baloo.variable}`}>
       <body>
         <FirebaseConfig config={firebase} />
-        {children}
+        <GuideProvider>{children}</GuideProvider>
       </body>
     </html>
   );

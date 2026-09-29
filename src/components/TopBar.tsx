@@ -1,52 +1,46 @@
-import Link from 'next/link';
+import { BackButton } from './BackButton';
+import { GuideButton } from './guide/GuideButton';
 
-import { Icon } from './Icon';
-
+/**
+ * The one header every screen but Ghar wears: back to where you came from,
+ * what this screen is (and a line under it when that helps), and "?" for the
+ * screen's guided tour. Nothing else, so it reads the same everywhere.
+ */
 export function TopBar({
   title,
   wideTitle,
+  sub,
   back,
   action,
-  showProfile = true,
 }: {
   title: string;
-  /**
-   * What the title says once the side rail is showing the business name.
-   *
-   * On a phone the top bar is the only place identity can live, so Home puts
-   * the business name there. On a desktop the rail already says it, and
-   * repeating it twice across the top of the same screen tells the owner
-   * nothing they did not know a moment ago. Both are rendered; CSS shows one.
-   */
+  /** What the title says once the side rail is showing the business name. */
   wideTitle?: string;
+  /** One quiet line under the title: a bill number, a customer. */
+  sub?: React.ReactNode;
   back?: { href: string; label?: string };
   action?: React.ReactNode;
+  /** @deprecated The settings gear is gone; Aap holds the owner's details. */
   showProfile?: boolean;
 }) {
   return (
     <header className="topbar">
-      {back && (
-        <Link href={back.href} className="btn btn--ghost" aria-label={back.label ?? 'Go back'} style={{ paddingInline: 8 }}>
-          <Icon name="back" size={20} />
-        </Link>
-      )}
-      <h1 className="topbar__title truncate">
-        {wideTitle && wideTitle !== title ? (
-          <>
-            <span className="only-compact">{title}</span>
-            <span className="only-wide">{wideTitle}</span>
-          </>
-        ) : (
-          title
-        )}
-      </h1>
+      {back && <BackButton fallback={back.href} label={back.label} />}
+      <div className="topbar__head">
+        <h1 className="topbar__title truncate">
+          {wideTitle && wideTitle !== title ? (
+            <>
+              <span className="only-compact">{title}</span>
+              <span className="only-wide">{wideTitle}</span>
+            </>
+          ) : (
+            title
+          )}
+        </h1>
+        {sub ? <div className="topbar__sub">{sub}</div> : null}
+      </div>
       {action}
-      {showProfile && (
-        <Link href="/settings" className="btn btn--ghost" aria-label="Business settings" style={{ paddingInline: 10 }}>
-          <Icon name="settings" size={20} />
-          <span className="only-wide">Settings</span>
-        </Link>
-      )}
+      <GuideButton />
     </header>
   );
 }

@@ -258,7 +258,21 @@ a { color: var(--accent); }
   border-bottom: 1px solid var(--line);
 }
 
-.topbar__title { flex: 1; font-size: 1.05rem; font-weight: 650; }
+.topbar__head { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.topbar__title { font-size: 1.1rem; font-weight: 700; font-family: var(--font-display); }
+.topbar__sub { font-size: var(--text-sm); color: var(--ink-faint); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.topbar__sub a {
+  color: var(--accent); font-weight: 600; text-decoration: none;
+  /* A full-size target without a taller header. */
+  display: inline-flex; align-items: center; min-height: 44px; margin-block: -12px;
+}
+.topbar__back { padding-inline: 8px; margin-left: -8px; }
+.guide-btn { padding-inline: 8px; gap: 6px; }
+.guide-btn__q {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid var(--accent-line); color: var(--accent);
+  font-family: var(--font-display); font-weight: 800; font-size: 1rem;
+}
 
 /* Bottom navigation: exactly three destinations, always. */
 .tabbar {
@@ -1384,3 +1398,109 @@ a.task:active { transform: scale(0.99); }
 .due-row__who { display: flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; }
 .due-row__amount { font-weight: 700; white-space: nowrap; }
 .due-row__actions { display: flex; gap: 8px; padding-left: 52px; }
+
+/* ------------------------------------------------------------------ guide ---
+   The ring that runs round what is being talked about, and its bubble. It
+   never blocks the page: the ring ignores the pointer, the bubble is small. */
+@property --guide-turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.guide-ring {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  border-radius: 16px;
+  padding: 3px;
+  background: conic-gradient(from var(--guide-turn), #e8a317, #e0701a, #c2410c, transparent 55%, #e8a317);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: guide-turn 1.6s linear infinite;
+  transition: top 280ms ease, left 280ms ease, width 280ms ease, height 280ms ease;
+  box-shadow: 0 0 0 6px rgb(232 163 23 / 14%);
+}
+@keyframes guide-turn { to { --guide-turn: 360deg; } }
+@media (prefers-reduced-motion: reduce) {
+  .guide-ring { animation: none; background: #e8a317; transition: none; }
+}
+.guide-bubble {
+  position: fixed;
+  z-index: 61;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 24px));
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: var(--shadow-md);
+  display: flex; flex-direction: column; gap: 8px;
+  transition: top 280ms ease, bottom 280ms ease;
+}
+@media (min-width: 900px) { .guide-bubble { --bubble-bottom: 28px; } }
+.guide-bubble__say { margin: 0; font-size: 1.02rem; line-height: 1.4; font-weight: 500; }
+.guide-bubble__row { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.guide-bubble__count { margin-right: auto; font-size: var(--text-sm); opacity: 0.7; }
+.guide-bubble .btn--ghost { color: var(--paper); }
+.guide-bubble .btn--ghost:hover { background: rgb(255 255 255 / 12%); }
+
+/* ------------------------------------------------------------------ voice ---
+   Always within reach, above the tabs: a mic, or while talking, moving bars
+   and "Bas". The first-visit offer is a card that slides up from the bottom. */
+.voice-dock {
+  position: fixed;
+  z-index: 55;
+  right: 14px;
+  bottom: calc(var(--nav-height, 64px) + 14px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; gap: 8px;
+}
+@media (min-width: 900px) { .voice-dock { bottom: 24px; right: 24px; } }
+.voice-dock__note {
+  max-width: 220px; padding: 6px 10px; border-radius: 10px;
+  background: var(--paper-raised); border: 1px solid var(--line); font-size: var(--text-sm); color: var(--ink-soft);
+  box-shadow: var(--shadow-sm);
+}
+.voice-dock__btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 56px; padding: 0 18px 0 16px;
+  border: 0; border-radius: 999px;
+  background: var(--accent-fill); color: var(--accent-fill-ink);
+  font: inherit; font-weight: 700; font-size: 1rem;
+  box-shadow: 0 6px 20px rgb(232 163 23 / 35%), var(--shadow-md);
+  cursor: pointer;
+}
+.voice-dock__btn:disabled { opacity: 0.7; cursor: wait; }
+.voice-dock--live .voice-dock__btn { background: var(--ink); color: var(--paper); }
+.voice-dock__bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 20px; }
+.voice-dock__bars i {
+  display: block; width: 4px; border-radius: 2px; background: #e8a317;
+  animation: voice-bar 900ms ease-in-out infinite;
+}
+.voice-dock__bars i:nth-child(2) { animation-delay: 150ms; }
+.voice-dock__bars i:nth-child(3) { animation-delay: 300ms; }
+@keyframes voice-bar { 0%, 100% { height: 6px; } 50% { height: 20px; } }
+@media (prefers-reduced-motion: reduce) { .voice-dock__bars i { animation: none; height: 14px; } }
+
+.voice-offer {
+  position: fixed;
+  z-index: 62;
+  left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--nav-height, 64px) + 12px + env(safe-area-inset-bottom, 0px));
+  width: min(440px, calc(100vw - 24px));
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--paper-raised);
+  border: 1px solid var(--accent-line);
+  box-shadow: var(--shadow-md);
+  display: grid; grid-template-columns: auto 1fr; gap: 12px 14px; align-items: center;
+  animation: offer-up 320ms ease-out;
+}
+@media (min-width: 900px) { .voice-offer { bottom: 28px; } }
+@keyframes offer-up { from { transform: translate(-50%, 24px); opacity: 0; } }
+.voice-offer__icon {
+  width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center;
+  background: var(--accent-fill); color: var(--accent-fill-ink);
+}
+.voice-offer__text { display: flex; flex-direction: column; gap: 2px; }
+.voice-offer__text strong { font-family: var(--font-display); font-size: 1.2rem; }
+.voice-offer__text span { color: var(--ink-soft); font-size: var(--text-sm); }
+.voice-offer__row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.voice-offer__note { grid-column: 1 / -1; margin: 0; font-size: var(--text-xs); color: var(--ink-faint); }

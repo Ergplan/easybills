@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { TopBar } from '@/components/TopBar';
 
 import { t } from '@/lib/copy';
 import { addMonthsToPeriod, formatDateShort, isMonthPeriod, monthPeriodOf, todayIst, type MonthPeriod } from '@/lib/dates';
@@ -33,11 +34,9 @@ export default async function GstPage({ searchParams }: { searchParams: Promise<
   const b2bBills = s.b2b.reduce((n, r) => n + r.bills, 0);
 
   return (
+    <>
+    <TopBar title={t('gst.title')} sub={t('gst.period', { from: formatDateShort(from).replace(/ \d{4}$/, ''), to: formatDateShort(to) })} back={{ href: '/home' }} />
     <main className="page">
-      <div className="stack" style={{ gap: 4, paddingTop: 8 }}>
-        <h1>{t('gst.title')}</h1>
-        <p className="muted">{t('gst.period', { from: formatDateShort(from).replace(/ \d{4}$/, ''), to: formatDateShort(to) })}</p>
-      </div>
 
       <div className="row row--between">
         <Link href={`/gst?q=${prev}`} className="btn btn--ghost">‹ {t('gst.prev')}</Link>
@@ -106,5 +105,6 @@ export default async function GstPage({ searchParams }: { searchParams: Promise<
       {s.bills > 0 && <GstSend businessId={business.id} month={month} label={s.label} />}
       <p className="faint" style={{ textAlign: 'center' }}>{t('gst.notFiled')}</p>
     </main>
+    </>
   );
 }

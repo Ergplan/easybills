@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { TopBar } from '@/components/TopBar';
 
 import { ImportBills } from '@/components/customer/ImportBills';
 import { Icon } from '@/components/Icon';
@@ -18,13 +19,9 @@ export default async function CustomersPage() {
   const rows = await Promise.all(customers.map(async (c) => ({ c, balance: await customerBalance(business.id, c.id) })));
 
   return (
+    <>
+    <TopBar title={t('customer.list.title')} back={{ href: '/home' }} />
     <main className="page">
-      <div className="row">
-        <Link href="/you" className="btn btn--ghost" aria-label={t('common.back')} style={{ paddingInline: 8 }}>
-          <Icon name="back" size={20} />
-        </Link>
-        <h1 className="grow" style={{ fontSize: '1.3rem' }}>{t('customer.list.title')}</h1>
-      </div>
       <ImportBills businessId={business.id} fy={business.activeFinancialYear} />
       <section className="card stack stack--tight">
         {rows.length === 0 ? (
@@ -53,5 +50,6 @@ export default async function CustomersPage() {
         )}
       </section>
     </main>
+    </>
   );
 }

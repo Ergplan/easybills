@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { TopBar } from '@/components/TopBar';
+
 import { Money } from '@/components/Money';
 import { Icon } from '@/components/Icon';
 import { t } from '@/lib/copy';
@@ -25,13 +27,9 @@ export default async function BillsPage() {
   const view = summariseHome({ issued, customers: [], today, recent: 500 });
 
   return (
+    <>
+    <TopBar title={t('home.sent.title')} back={{ href: '/home' }} />
     <main className="page">
-      <div className="row">
-        <Link href="/home" className="btn btn--ghost" aria-label={t('common.back')} style={{ paddingInline: 8 }}>
-          <Icon name="back" size={20} />
-        </Link>
-        <h1 className="grow" style={{ fontSize: '1.3rem' }}>{t('home.sent.title')}</h1>
-      </div>
 
       {drafts.filter((d) => d.lines.some((l) => l.description)).length > 0 && (
         <section className="card stack stack--tight">
@@ -87,6 +85,7 @@ export default async function BillsPage() {
         </section>
       )}
     </main>
+    </>
   );
 }
 

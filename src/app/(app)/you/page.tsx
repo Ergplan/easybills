@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { TopBar } from '@/components/TopBar';
 
 import { NumberingForm } from '@/components/NumberingForm';
 import { ProfileForm } from '@/components/ProfileForm';
@@ -19,11 +20,9 @@ export default async function YouPage() {
   const { business, user } = await requireCurrentContext();
 
   return (
+    <>
+    <TopBar title={t('you.title')} sub={t('you.sub')} back={{ href: '/home' }} />
     <main className="page">
-      <div className="stack" style={{ gap: 4, paddingTop: 8 }}>
-        <h1>{t('you.title')}</h1>
-        <p className="muted">{t('you.sub')}</p>
-      </div>
       <ProfileForm
         mode="edit"
         businessId={business.id}
@@ -45,5 +44,6 @@ export default async function YouPage() {
         {!openAccess() && <SignOut />}
       </div>
     </main>
+    </>
   );
 }

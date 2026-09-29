@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { TopBar } from '@/components/TopBar';
 
 import { CustomerForm } from '@/components/customer/CustomerForm';
 import { StartBillButton } from '@/components/customer/StartBillButton';
@@ -47,16 +48,9 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         });
 
   return (
+    <>
+    <TopBar title={customer.name} sub={t('customer.sub')} back={{ href: '/customers' }} />
     <main className="page">
-      <div className="row">
-        <Link href="/customers" className="btn btn--ghost" aria-label={t('common.back')} style={{ paddingInline: 8 }}>
-          <Icon name="back" size={20} />
-        </Link>
-        <div className="grow">
-          <h1 style={{ fontSize: '1.3rem' }}>{t('customer.title')}</h1>
-          <p className="faint">{t('customer.sub')}</p>
-        </div>
-      </div>
 
       <StartBillButton customerId={customer.id} label={t('customer.billFor')} />
 
@@ -129,5 +123,6 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         )}
       </section>
     </main>
+    </>
   );
 }

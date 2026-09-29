@@ -81,7 +81,7 @@ async function layoutRules(name) {
   }));
   check(`${name}: navigation is the side rail`, nav.rails === 1 && nav.bars === 0, JSON.stringify(nav));
   // Ghar and Aap, plus GST once there is a GST number to speak of.
-  check(`${name}: two or three destinations`, nav.destinations === 2 || nav.destinations === 3, `(saw ${nav.destinations})`);
+  check(`${name}: four or five destinations (Ghar, Bills, Customers, Aap, and GST when registered)`, nav.destinations === 4 || nav.destinations === 5, `(saw ${nav.destinations})`);
 
   // Content must not stretch to the full monitor: long lines are unreadable.
   const measure = await page.evaluate(() => document.querySelector('main.page')?.getBoundingClientRect().width ?? 0);
@@ -182,7 +182,7 @@ try {
   await page.waitForTimeout(1500);
   await shot('08-gst');
   await layoutRules('gst');
-  const gstText = await page.locator('main').innerText();
+  const gstText = await page.locator('body').innerText();
   check('the GST screen is the quarter, in Hinglish', /GST ka hisaab/.test(gstText) && /Is quarter/.test(gstText));
   check('and offers CA ko bhejo', await page.getByRole('button', { name: 'CA ko bhejo' }).isVisible());
   check('it says the CA files, not the app', /file karna CA ka kaam hai/.test(gstText));
@@ -241,8 +241,8 @@ try {
         };
       });
       check(
-        `${path} at ${w}px: one navigation, three destinations, no sideways scroll`,
-        at.overflow <= 0 && at.navs === 1 && at.destinations === 3,
+        `${path} at ${w}px: one navigation, four or five destinations, no sideways scroll`,
+        at.overflow <= 0 && at.navs === 1 && (at.destinations === 4 || at.destinations === 5),
         JSON.stringify(at),
       );
     }
