@@ -36,3 +36,8 @@ test-results/
 
 # End-to-end screenshots
 e2e-output/
+
+# Terraform
+infra/gcp/.terraform/
+infra/gcp/*.tfplan
+infra/gcp/*.tfstate*

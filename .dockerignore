@@ -1,0 +1,12 @@
+node_modules
+.next
+e2e-output
+coverage
+*.log
+.env
+.env.*
+!.env.example
+infra/gcp/.terraform
+infra/gcp/*.tfplan
+infra/gcp/*.tfstate*
+.git

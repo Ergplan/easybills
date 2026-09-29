@@ -1,0 +1,30 @@
+{
+	email {$EKBILL_ACME_EMAIL}
+}
+
+# One site. HTTPS certificates are obtained and renewed automatically for EKBILL_DOMAIN
+# (a real name like ekbill.aayuda.energy, or <ip-with-dashes>.sslip.io until there is one).
+{$EKBILL_DOMAIN} {
+	encode zstd gzip
+
+	# The shared password in front of the app while sign-in is switched off (AUTH_BYPASS).
+	# Health stays open so uptime checks and the operator can see state without it.
+	@gated not path /api/health
+	basic_auth @gated {
+		{$EKBILL_GATE_USER} {$EKBILL_GATE_HASH}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	reverse_proxy app:3000 {
+		# A photo through OCR can take a minute or two.
+		transport http {
+			read_timeout 5m
+		}
+	}
+}

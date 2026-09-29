@@ -1,0 +1,96 @@
+# EkBill on the tariff-order VM.  Compose project name: ekbill (always pass -p ekbill).
+#
+#   deploy/vm/up.sh        -- fetches secrets from Secret Manager into this shell, then `up -d --build`
+#
+# Nothing here binds a port the tariff product uses (3000, 5432, 5433, 8000).  Postgres and the app
+# listen on 127.0.0.1 only (for an SSH tunnel and psql); Docling is reachable only inside this
+# stack; Caddy is the one public face, on 80/443, with automatic HTTPS and a shared password in
+# front while sign-in is switched off.
+
+name: ekbill
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ekbill
+      POSTGRES_DB: ekbill
+      POSTGRES_PASSWORD: ${EKBILL_DB_PASSWORD:?run deploy/vm/up.sh, which reads it from Secret Manager}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5441:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ekbill -d ekbill"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    shm_size: 256mb
+
+  docling:
+    image: ${DOCLING_IMAGE:-quay.io/docling-project/docling-serve-cpu:v1.35.0}
+    restart: unless-stopped
+    environment:
+      DOCLING_SERVE_ENABLE_UI: "false"
+      # A phone photo on this CPU can take a minute; wait for it rather than time out.
+      DOCLING_SERVE_MAX_SYNC_WAIT: "300"
+      DOCLING_SERVE_ENG_LOC_NUM_WORKERS: "1"
+      OMP_NUM_THREADS: "2"
+    # Keep it from starving the tariff product's image builds on the same 4 vCPUs.
+    cpus: 2
+    mem_limit: 6g
+    expose:
+      - "5001"
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: ekbill-app:local
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://ekbill:${EKBILL_DB_PASSWORD}@db:5432/ekbill
+      DOCLING_URL: http://docling:5001
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_REALTIME_MODEL: ${OPENAI_REALTIME_MODEL:-gpt-realtime}
+      OPENAI_TEXT_MODEL: ${OPENAI_TEXT_MODEL:-gpt-4.1-mini}
+      # Sign-in is the last thing wired in. Until then everyone is the same test owner, and
+      # Caddy's password is what keeps strangers out. Must be false before real books go in.
+      AUTH_BYPASS: ${AUTH_BYPASS:-true}
+      # Public Firebase Web config (phone sign-in, parked). Identifies the project; grants nothing.
+      FIREBASE_PROJECT_ID: ekbill-1918b
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ekbill-1918b
+      NEXT_PUBLIC_FIREBASE_API_KEY: AIzaSyDc_SvB3fL8XsZa1JBqMaycAAHgWczGnFA
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ekbill-1918b.firebaseapp.com
+      NEXT_PUBLIC_FIREBASE_APP_ID: 1:296821837341:web:13c5dfe21ded4672f100f4
+    ports:
+      - "127.0.0.1:8080:3000"
+    shm_size: 512mb
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      EKBILL_DOMAIN: ${EKBILL_DOMAIN:?run deploy/vm/up.sh, which works it out}
+      EKBILL_ACME_EMAIL: ${EKBILL_ACME_EMAIL:-venture@aayuda.energy}
+      EKBILL_GATE_USER: ${EKBILL_GATE_USER:-ekbill}
+      EKBILL_GATE_HASH: ${EKBILL_GATE_HASH:?run deploy/vm/up.sh, which hashes the gate password}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

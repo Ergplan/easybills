@@ -66,7 +66,7 @@ AI_MAX_REQUESTS_PER_HOUR=60
 AI_MAX_REQUESTS_PER_DAY=300
 ```
 
-Counted per business in Firestore, so the limit holds across server instances
+Counted per business in Postgres, so the limit holds across server instances
 and restarts. Both caps apply: a runaway loop and a slow grind cost the same
 money by different routes.
 

@@ -1,196 +1,64 @@
-# Setup
+# Local setup
 
-## What you need
+## You need
 
-- Node.js 22 or newer
-- Java 11+ (the Firestore emulator runs on the JVM; only needed for local development)
-- A Firebase project (only when you move beyond the emulators)
+- Node 22 (20 works)
+- PostgreSQL 16 with pgvector: `sudo apt install postgresql-16 postgresql-16-pgvector` (the
+  script below runs its own throwaway cluster; it does not touch a system Postgres)
+- Java 11+, only for the Firebase Auth emulator (phone sign-in)
+- Chromium for PDFs: set `PLAYWRIGHT_CHROMIUM_PATH`, or `npx playwright install chromium`
 
-## Local development
+## Run it
 
 ```bash
 npm install
-cp .env.example .env.local
+cp .env.example .env.local     # the defaults work locally
+npm run db:start               # Postgres on 127.0.0.1:5440, databases ekbill_dev and ekbill_test
+npm run db:migrate             # applies db/migrations to ekbill_dev
+npm run emulators              # terminal 1: the Firebase Auth emulator on 9099
+npm run dev                    # terminal 2: http://localhost:3000
 ```
 
-The defaults in `.env.example` point at the local emulator suite, so the only
-value you must change before running anything is the job runner secret:
+Sign in with any ten-digit number. The emulator sends no SMS: it prints the OTP in its terminal
+and lists it at
+http://127.0.0.1:9099/emulator/v1/projects/easybills-dev/verificationCodes.
 
-```bash
-# in .env.local
-JOB_RUNNER_SECRET=$(openssl rand -hex 32)
-```
+To skip sign-in entirely, set `AUTH_BYPASS=true` in `.env.local`. You land on a demo business as
+a test owner.
 
-Then, in three terminals:
+Optional, to try everything:
 
-```bash
-npm run emulators   # Firebase Auth (9099) + Firestore (8080), UI on 4000
-npm run dev         # http://localhost:3000
-npm run worker      # optional: prepares monthly drafts every minute
-```
-
-The first emulator run downloads the Firestore emulator (about 130 MB) into
-`~/.cache/firebase`.
-
-Open http://localhost:3000 and type any ten-digit mobile number. The Auth
-emulator sends no SMS: it prints the OTP in the emulator terminal, and lists it
-at http://127.0.0.1:9099/emulator/v1/projects/easybills-dev/verificationCodes.
-Type that in, tell the app your name, and you can start a bill immediately.
-
-### Sample data
-
-Sign up in the app first, copy your uid from the Auth emulator UI at
-http://127.0.0.1:4000/auth, then:
-
-```bash
-npm run db:seed -- --uid <your-uid> --profile repair
-```
-
-`--profile` is one of `repair`, `consultant` or `home-food`. The `repair`
-profile reproduces the brief's worked example: two visits at 800 plus parts of
-450, subtotalling 2,050 before tax, part paid.
-
-The CLI entry points (`db:seed`, `worker`, `gst:audit-rules`) run through
-`tsconfig.scripts.json`, which loads `.env.local` and resolves the `server-only`
-build guard to a no-op — that guard exists for the Next bundler, and plain Node
-would otherwise refuse to import server modules at all. Each creates a
-business flagged as a demo — the app labels it on every screen so sample records
-can never be mistaken for real ones. Identities are obviously fictitious, and
-their GSTINs are structurally valid but generated, not real registrations.
-
-### PDFs
-
-PDF rendering drives a real Chromium through `playwright-core`. If your machine
-has no Playwright browsers:
-
-```bash
-npx playwright install chromium
-```
-
-Or point at a Chromium you already have:
-
-```bash
-PLAYWRIGHT_CHROMIUM_PATH=/path/to/chrome
-```
+| For | Set |
+| --- | --- |
+| Photos and scans of old bills | `DOCLING_URL=http://127.0.0.1:5001` and run `docker run -p 5001:5001 quay.io/docling-project/docling-serve-cpu:v1.35.0` |
+| Voice, Poocho answers, reading contracts with a model | `OPENAI_API_KEY` (locally only; on the VM it comes from Secret Manager) |
 
 ## Tests
 
 ```bash
-npm test          # 255 tests; integration tests need the emulators running
+npm test               # unit + integration; integration tests use ekbill_test, reset and migrated per run
 npm run typecheck
-npm run e2e       # browser smoke test; needs `npm run dev` and the emulators
-npm run e2e:signin  # phone, OTP and the profile screen, end to end
+npm run e2e            # the bill-to-payment journey at 360px (needs dev + the Auth emulator)
+npm run e2e:signin     # phone, OTP and the profile
+npm run e2e:home       # Home, the tabs, Aap and GST
+npm run e2e:help       # the contract helper
+npm run e2e:ask        # Poocho
 ```
 
-The integration tests refuse to run unless `FIRESTORE_EMULATOR_HOST` is set, so
-a misconfigured CI job cannot write test data into a real project.
+The test setup refuses any `DATABASE_URL` whose database name does not contain `test`.
 
-## Running against a real Firebase project
-
-1. Create a Firebase project and enable **Authentication** (Email/Password, and
-   Google if you want it) and **Cloud Firestore**.
-
-2. Deploy the security rules. They deny all direct client access, which is the
-   backstop for tenant isolation — the app reaches Firestore only through the
-   Admin SDK, behind server-side membership checks.
-
-   ```bash
-   npx firebase deploy --only firestore:rules --project <your-project>
-   ```
-
-3. Put the Web config into `.env.local`. These values are public by design: they
-   identify the project, they do not grant access.
-
-   ```
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project
-   NEXT_PUBLIC_FIREBASE_API_KEY=...
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-   NEXT_PUBLIC_FIREBASE_APP_ID=...
-   FIREBASE_PROJECT_ID=your-project
-   ```
-
-4. Give the server credentials. Prefer Application Default Credentials
-   (`GOOGLE_APPLICATION_CREDENTIALS`, or the metadata server on Google infra).
-   A service-account JSON in `FIREBASE_SERVICE_ACCOUNT_JSON` also works.
-
-5. **Remove the emulator variables.** While `FIRESTORE_EMULATOR_HOST` is set the
-   app talks to the emulator and ignores real credentials entirely.
-
-   ```
-   # delete these three lines for anything other than local development
-   FIRESTORE_EMULATOR_HOST=...
-   FIREBASE_AUTH_EMULATOR_HOST=...
-   NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST=...
-   ```
-
-### Firestore indexes
-
-The app uses a handful of composite queries. Firestore will tell you, with a
-direct link, the first time one is missing. Alternatively run the app through
-its main screens against an empty project and add the indexes it asks for. The
-queries that need them are invoices by `status` + `issueDate`, invoices by
-`customer.customerId` + `status`, and statement snapshots by `gstin` + `period`
-+ `importVersion`.
-
-## Deployment
-
-Any host that runs a Node server works. The app needs the Node runtime (not
-edge) because it uses the Firebase Admin SDK and drives Chromium for PDFs.
-
-```bash
-npm run build
-npm start
-```
-
-Checklist before you serve real traffic:
-
-- [ ] `JOB_RUNNER_SECRET` is a long random value, not the example
-- [ ] Emulator variables are unset
-- [ ] Firestore rules are deployed (they should deny everything)
-- [ ] Application Default Credentials or a service account is configured
-- [ ] HTTPS is terminated in front of the app (session cookies are marked
-      `secure` in production)
-- [ ] Chromium is available to the server process, or `PLAYWRIGHT_CHROMIUM_PATH`
-      points at one
-- [ ] A scheduler calls the job endpoint (below)
-- [ ] You have read [docs/acceptance-report.md](acceptance-report.md) and accept
-      what is not yet verified
-
-### Monthly drafts in production
-
-Monthly drafts must not depend on anyone having the app open. Point a scheduler
-at the job endpoint, hourly or daily:
+## Layout
 
 ```
-POST https://your-app/api/jobs/run
-Authorization: Bearer <JOB_RUNNER_SECRET>
-```
-
-Google Cloud Scheduler:
-
-```bash
-gcloud scheduler jobs create http easybills-jobs \
-  --schedule="0 * * * *" \
-  --time-zone="Asia/Kolkata" \
-  --uri="https://your-app/api/jobs/run" \
-  --http-method=POST \
-  --headers="Authorization=Bearer ${JOB_RUNNER_SECRET}"
-```
-
-The endpoint is safe to call more often than needed and safe to miss: occurrence
-ids are deterministic, so a double call produces one draft and a missed call is
-caught up on the next run. A long-running `npm run worker` is an alternative for
-hosts without a scheduler.
-
-## Where things are
-
-```
-src/lib/          pure logic — no database, no framework, heavily tested
-src/server/       server-only: repositories, services, adapters
-src/app/          routes, server actions, API handlers
-tests/unit/       pure logic tests
-tests/integration/ tests against the Firestore emulator
-tests/fixtures/   sample CSVs used by the GST tests
-scripts/          seed, rule-pack audit, browser smoke test
-docs/             everything in the table at the end of the README
+db/migrations/          the schema, applied in order by db/migrate.mjs
+src/server/db/          the pool, transactions with retry, record helpers
+src/server/repos/       one file per record type; every function takes the business id
+src/server/search/      Poocho: indexing, search, answers
+src/server/import/      reading old bills: PDF text layer, Docling, spreadsheets
+src/lib/                pure logic: money, dates, GST, contracts, copy; no database
+deploy/                 Dockerfile companions: compose stack, Caddyfile, VM scripts
+infra/gcp/              Terraform for the VM's secrets, backups, IP and firewall
+tests/unit/             pure logic
+tests/integration/      against Postgres
+scripts/e2e-*.mjs       browser journeys
 ```

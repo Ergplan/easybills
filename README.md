@@ -66,7 +66,7 @@ see `docs/deployment.md`.)
 **The engine underneath** is unchanged from the earlier build and tested:
 integer money in paise, Indian grouping, the GST tax engine and issuance
 checks, per-financial-year numbering, immutable issued snapshots, PDF
-rendering, Firestore repos with tenancy rules, idempotent payments.
+rendering, Postgres repos with every record scoped to its business, idempotent payments.
 
 ---
 
@@ -76,18 +76,21 @@ rendering, Firestore repos with tenancy rules, idempotent payments.
 npm install
 
 cp .env.example .env.local        # fill in as needed; defaults work for local dev
-npm run emulators                 # terminal 1: Firebase Auth + Firestore emulators
+npm run db:start                  # a throwaway Postgres 16 + pgvector on :5440 (no Docker)
+npm run db:migrate                # the schema
+npm run emulators                 # terminal 1: the Firebase Auth emulator (phone sign-in)
 npm run dev                       # terminal 2: the app on http://localhost:3000
-npm run worker                    # terminal 3 (optional): monthly-draft worker
 ```
 
 Open http://localhost:3000, type any ten-digit number (the Auth emulator
-prints the OTP), say who you are, and tap a name. Full instructions, including how to run against a real Firebase project,
-are in **[docs/setup.md](docs/setup.md)**.
+prints the OTP), say who you are, and tap a name. Full instructions are in
+**[docs/setup.md](docs/setup.md)**.
 
 ```bash
-npm test                          # unit + integration tests against the emulator
-npm run e2e                       # browser journey at 360px, needs dev + emulators running
+npm test                          # unit + integration tests against the local Postgres (ekbill_test)
+npm run e2e                       # browser journey at 360px, needs dev + the Auth emulator running
+npm run e2e:help                  # the contract helper
+npm run e2e:ask                   # Poocho
 npm run e2e:signin                # phone, OTP and the profile
 npm run e2e:home                  # Home, the tabs, Aap and GST
 npm run typecheck
@@ -102,13 +105,14 @@ npm run gst:audit-rules           # which tax rules have been verified, and whic
 | Concern | Choice |
 |---|---|
 | App | Next.js (App Router) + React + TypeScript |
-| Data | **Firestore** for the MVP; a PostgreSQL path is documented in [docs/postgres-migration.md](docs/postgres-migration.md) |
-| Auth | **Firebase Auth** (managed). The browser gets an ID token; the server verifies it and sets an httpOnly session cookie |
-| Access | All Firestore access is server-side via the Admin SDK. `firestore.rules` denies **all** direct client access |
-| PDFs | Server-side Chromium via `playwright-core`, rendered on demand, never stored in a public bucket |
-| Background work | A durable job queue in Firestore, drained by an HTTP endpoint or a worker process |
-| AI | Server-side adapters (Anthropic / OpenAI / Google / deterministic mock). No API key reaches the browser |
-| GST filing | A provider adapter with a sandbox implementation. Production is off unless explicitly configured |
+| Data | **PostgreSQL 16** (+ pgvector). Records in `jsonb` with generated columns for everything filtered or constrained; see [docs/database.md](docs/database.md) |
+| Auth | **Firebase Auth**, phone OTP only (parked behind `AUTH_BYPASS` until last). The server verifies the token and sets an httpOnly session cookie |
+| Access | The browser never reaches the database. Every query goes through a server action or route that checked membership |
+| PDFs | Server-side Chromium via `playwright-core`, rendered on demand, never stored |
+| Old bills | Typed PDFs from their text layer; photos and scans through a **Docling** container (layout + OCR) |
+| Poocho | Search over the owner's own bills, contracts and uploaded bills: Postgres full-text, plus pgvector embeddings and a cited answer when an OpenAI key is set |
+| Voice | OpenAI Realtime over WebRTC with a short-lived client secret minted server-side |
+| Hosting | Docker Compose on the tariff-order VM behind Caddy (HTTPS); Terraform for secrets, backups, IP and firewall. See [docs/deployment.md](docs/deployment.md) |
 
 ### Modules
 
@@ -189,20 +193,20 @@ this for real billing. In short:
 
 ## Deploying
 
-Firebase App Hosting builds this repository from GitHub and serves it on Cloud
-Run. The app root is the **repository root**; `apphosting.yaml` holds the
-configuration. Two things are not automatic — one secret and the Firestore
-rules and indexes — and both are in
-[docs/deployment.md](docs/deployment.md), along with the background worker
-schedule and what still is not ready for real money.
+Docker Compose on the `tariff-order` VM: the app, Postgres + pgvector, Docling and Caddy with
+automatic HTTPS. Terraform (its own state prefix) makes the secrets, the backup bucket, the static
+IP and the firewall rule. One command on the VM, `deploy/vm/setup.sh`, does the rest. Everything
+is in [docs/deployment.md](docs/deployment.md), and there is a prompt for Claude Code on the VM
+in [docs/prompts/ekbill-on-vm.md](docs/prompts/ekbill-on-vm.md).
 
 ## Documentation
 
 | Document | What it covers |
 |---|---|
-| [docs/setup.md](docs/setup.md) | Local setup, Firebase project setup, deployment |
+| [docs/setup.md](docs/setup.md) | Local setup |
+| [docs/database.md](docs/database.md) | The Postgres schema and the rules it enforces |
 | [docs/environment.md](docs/environment.md) | Every environment variable, and what happens without it |
-| [docs/deployment.md](docs/deployment.md) | Getting this onto a real URL, and what is still not ready |
+| [docs/deployment.md](docs/deployment.md) | The VM, HTTPS, backups, and what must happen before real books go in |
 | [docs/owner-guide.md](docs/owner-guide.md) | Create a bill, repeat it monthly, record payment |
 | [docs/gst-owner-guide.md](docs/gst-owner-guide.md) | Prepared vs Uploaded vs Filed, and the four steps |
 | [docs/compliance/README.md](docs/compliance/README.md) | Supported and unsupported transactions, rule provenance |
@@ -211,7 +215,6 @@ schedule and what still is not ready for real money.
 | [docs/filing-recovery-runbook.md](docs/filing-recovery-runbook.md) | What to do when a filing goes wrong |
 | [docs/backup-restore.md](docs/backup-restore.md) | Backup, restore, and verifying a restore |
 | [docs/usability-protocol.md](docs/usability-protocol.md) | The five tasks, how to run and measure them |
-| [docs/postgres-migration.md](docs/postgres-migration.md) | Moving from Firestore to PostgreSQL |
 
 ---
 
