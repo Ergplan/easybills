@@ -191,9 +191,11 @@ try {
 
   console.log('\n10c. Customer ke baare mein batayen');
   await page.goto(`${BASE}/customers`, { waitUntil: 'networkidle' });
-  await page.locator('.row-line', { hasText: 'Ramesh Patil' }).click();
+  await page.locator('.picker .person', { hasText: 'Ramesh Patil' }).click();
   await page.waitForURL(/\/customers\/[0-9a-f-]{36}/, { timeout: 15000 });
   await page.waitForTimeout(600);
+  check("their bills come first, the details are folded", (await page.locator('.customer-bills').isVisible()) && !(await page.locator('#c-gstin').isVisible()));
+  await page.locator('.customer-details > summary').click();
   await shot('09-customer');
   check('the language is remembered on the customer', (await page.locator('#c-language').inputValue()) === 'mr');
   await page.locator('#c-gstin').fill('29AABCG1234H1ZV');
@@ -230,7 +232,12 @@ try {
   await addBtn.click();
   await page.getByText('2 add ho gaye').waitFor({ timeout: 20000 });
   await page.waitForTimeout(800);
-  check('Mehta Traders is now a customer with its GSTIN', (await page.locator('.row-line', { hasText: 'Mehta Traders' }).innerText()).includes('GST'));
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.locator('.picker .person', { hasText: 'Mehta Traders' }).click();
+  await page.waitForURL(/\/customers\/[0-9a-f-]{36}/, { timeout: 15000 });
+  await page.locator('.customer-details > summary').click();
+  check('Mehta Traders is now a customer with its GSTIN', /^\d{2}[A-Z]{5}\d{4}[A-Z]\d[A-Z0-9]{2}$/.test(await page.locator('#c-gstin').inputValue()));
+  await page.goto(`${BASE}/customers`, { waitUntil: 'networkidle' });
   await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
   check('and in the directory on Home', await page.locator('.people .person', { hasText: 'Priya Boutique' }).isVisible());
 

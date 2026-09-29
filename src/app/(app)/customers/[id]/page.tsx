@@ -54,48 +54,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
       <StartBillButton customerId={customer.id} label={t('customer.billFor')} />
 
-      <CustomerForm
-        businessId={business.id}
-        customerId={customer.id}
-        initial={{
-          name: customer.name,
-          contactPerson: customer.contactPerson ?? '',
-          phone: customer.phone ?? '',
-          gstin: customer.gstin ?? '',
-          pan: customer.pan ?? '',
-          addressLine1: customer.addressLine1 ?? '',
-          city: customer.city ?? '',
-          pincode: customer.pincode ?? '',
-          stateCode: customer.stateCode ?? '',
-          language: customer.language ?? '',
-        }}
-        suggestion={suggestion && suggestion.language !== (customer.language ?? 'hi') ? suggestion : null}
-      />
-      {customer.gstin && <p className="faint">{t('customer.gstNote')}</p>}
 
-      {contracts.length > 0 && (
-        <section className="card stack stack--tight">
-          <h2 className="card__title" style={{ fontSize: '1.1rem' }}>{t('help.projects')}</h2>
-          <div className="rows">
-            {contracts.map((c) => (
-              <Link key={c.id} href={`/bills/help?customer=${customer.id}&project=${c.id}`} className="row-line">
-                <div className="row-line__link">
-                  <div className="row-line__name">{c.name}</div>
-                  <div className="row-line__meta">
-                    {t('help.progressLine', { billed: moneyForMessage(c.billedPaise), total: moneyForMessage(c.totalPaise) })}
-                  </div>
-                  <div className="help__bar" aria-hidden="true">
-                    <span style={{ width: `${Math.min(100, Math.round((c.billedPaise * 100) / Math.max(1, c.totalPaise)))}%` }} />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-          <Link href={`/bills/help?customer=${customer.id}`} className="btn btn--ghost btn--small help-link">{t('help.newProject')}</Link>
-        </section>
-      )}
-
-      <section className="card stack stack--tight">
+      <section className="card stack stack--tight customer-bills">
         <div className="row row--between">
           <h2 className="card__title" style={{ fontSize: '1.1rem' }}>{t('customer.bills')}</h2>
           <span className={`pill ${owed > 0 ? 'pill--unpaid' : 'pill--paid'}`}>
@@ -122,6 +82,54 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           </div>
         )}
       </section>
+
+      {contracts.length > 0 && (
+        <section className="card stack stack--tight">
+          <h2 className="card__title" style={{ fontSize: '1.1rem' }}>{t('help.projects')}</h2>
+          <div className="rows">
+            {contracts.map((c) => (
+              <Link key={c.id} href={`/bills/help?customer=${customer.id}&project=${c.id}`} className="row-line">
+                <div className="row-line__link">
+                  <div className="row-line__name">{c.name}</div>
+                  <div className="row-line__meta">
+                    {t('help.progressLine', { billed: moneyForMessage(c.billedPaise), total: moneyForMessage(c.totalPaise) })}
+                  </div>
+                  <div className="help__bar" aria-hidden="true">
+                    <span style={{ width: `${Math.min(100, Math.round((c.billedPaise * 100) / Math.max(1, c.totalPaise)))}%` }} />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <Link href={`/bills/help?customer=${customer.id}`} className="btn btn--ghost btn--small help-link">{t('help.newProject')}</Link>
+        </section>
+      )}
+
+      {/* The details are needed once, when the customer is added, and rarely
+          after: folded away, so their bills come first. */}
+      <details className="card disclosure customer-details">
+        <summary>{t('customer.detailsFold')}</summary>
+        <div className="disclosure__body stack">
+        <CustomerForm
+          businessId={business.id}
+          customerId={customer.id}
+          initial={{
+            name: customer.name,
+            contactPerson: customer.contactPerson ?? '',
+            phone: customer.phone ?? '',
+            gstin: customer.gstin ?? '',
+            pan: customer.pan ?? '',
+            addressLine1: customer.addressLine1 ?? '',
+            city: customer.city ?? '',
+            pincode: customer.pincode ?? '',
+            stateCode: customer.stateCode ?? '',
+            language: customer.language ?? '',
+          }}
+          suggestion={suggestion && suggestion.language !== (customer.language ?? 'hi') ? suggestion : null}
+        />
+        {customer.gstin && <p className="faint">{t('customer.gstNote')}</p>}
+        </div>
+      </details>
     </main>
     </>
   );

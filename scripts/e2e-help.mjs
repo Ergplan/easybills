@@ -93,7 +93,7 @@ try {
 
   console.log('\n5. The next instalment knows the first');
   await page.goto(`${BASE}/customers`, { waitUntil: 'networkidle' });
-  await page.locator('.row-line', { hasText: 'Green Park Society' }).click();
+  await page.locator('.picker .person', { hasText: 'Green Park Society' }).click();
   await page.waitForURL(/\/customers\/[0-9a-f-]{36}/, { timeout: 15000 });
   const customerText = await main();
   check('the customer page shows the contract, 1,50,000 of 5,00,000 billed', /Lift renovation/.test(customerText) && /₹5,00,000 mein se ₹1,50,000 ka bill bana/.test(customerText));

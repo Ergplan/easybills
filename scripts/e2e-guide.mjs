@@ -128,7 +128,7 @@ try {
     await walkTour(name);
   }
   await page.goto(`${BASE}/customers`, { waitUntil: 'networkidle' });
-  await page.locator('main .row-line').first().click();
+  await page.locator('.picker .person').first().click();
   await page.waitForURL(/\/customers\/[0-9a-f-]{36}$/);
   await page.waitForTimeout(700);
   await walkTour('customer');

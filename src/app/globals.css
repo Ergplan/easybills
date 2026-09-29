@@ -259,7 +259,11 @@ a { color: var(--accent); }
 }
 
 .topbar__head { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.topbar__title { font-size: 1.1rem; font-weight: 700; font-family: var(--font-display); }
+.topbar__title {
+  font-size: 1.1rem; font-weight: 700; font-family: var(--font-display); line-height: 1.2;
+  /* Two lines before it gives up: "Ravi Kumar ko yaad dilayein" should be read, not guessed. */
+  white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .topbar__sub { font-size: var(--text-sm); color: var(--ink-faint); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .topbar__sub a {
   color: var(--accent); font-weight: 600; text-decoration: none;

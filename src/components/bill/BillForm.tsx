@@ -23,6 +23,8 @@ import { PREFILL_KEY } from '@/lib/voice/intents';
 import { rateOddities, type DuplicateHit, type RateOddity } from '@/lib/domain/bill-guard';
 import Link from 'next/link';
 
+import { Icon } from '@/components/Icon';
+
 export interface LastTime {
   /** "Aug" -- the month of the last bill, for the offer. */
   month: string;
@@ -238,14 +240,7 @@ export function BillForm(props: BillFormProps) {
             {t('help.project.see')}
           </Link>
         </div>
-      ) : (
-        <Link
-          href={`/bills/help?${props.customer.customerId ? `customer=${props.customer.customerId}&` : ''}from=${props.invoiceId}`}
-          className="btn btn--secondary help-link"
-        >
-          {t('help.entry')}
-        </Link>
-      )}
+      ) : null}
 
       {offerLastTime && props.lastTime && (
         <div className="card card--offer">
@@ -394,6 +389,18 @@ export function BillForm(props: BillFormProps) {
           {t('bill.addItem')}
         </button>
       </section>
+
+      {/* The contract helper, for the few bills that need it -- after the lines,
+          so it does not stand between the owner and the ordinary bill. */}
+      {!props.project && (
+        <Link
+          href={`/bills/help?${props.customer.customerId ? `customer=${props.customer.customerId}&` : ''}from=${props.invoiceId}`}
+          className="more__item"
+        >
+          <Icon name="help" size={20} />
+          <span>{t('help.entry')}</span>
+        </Link>
+      )}
 
       {props.chargesGst && (
         <section className="card">
