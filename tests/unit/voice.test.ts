@@ -64,6 +64,10 @@ describe('the session', () => {
     expect(body.session.model).toBe('gpt-realtime');
     expect(body.session.instructions).toContain('Sharma Electricals');
     expect(body.session.instructions).toContain('Mehta Traders');
+    // Follows the owner's language, and the transcriber is told what to expect.
+    expect(body.session.instructions).toMatch(/If the owner speaks English, or asks for English/);
+    expect(body.session.audio.input.transcription.prompt).toMatch(/Hinglish/);
+    expect(body.session.audio.input.noise_reduction).toEqual({ type: 'near_field' });
     expect(body.session.tools.map((t) => t.name)).toEqual(['start_bill', 'who_owes', 'remind', 'ask_records', 'open_screen']);
     expect(body.expires_after.seconds).toBeLessThanOrEqual(600);
     expect(() => JSON.stringify(body)).not.toThrow();
