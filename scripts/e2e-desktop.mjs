@@ -109,10 +109,11 @@ try {
   // A name that fits must not be cut off: the rail wraps rather than truncates.
   const topbars = await page.locator('.topbar__title').count();
   check('home has no top bar repeating the business name', topbars === 0, `(saw ${topbars})`);
-  const primaries = await page.locator('main .btn--primary').count();
-  check('home has no primary button: the chips are the action', primaries === 0, `(saw ${primaries})`);
-  const chips = await page.locator('.chip').count();
-  check('the demo customers are chips on the first card', chips >= 2, `(saw ${chips})`);
+  check('one big coloured card: Naya bill banana hai', (await page.locator('.task--primary').count()) === 1);
+  const cols = await page.evaluate(() => getComputedStyle(document.querySelector('.reception__body')).gridTemplateColumns.split(' ').length);
+  check('the jobs and the customer directory sit side by side', cols === 2, `(saw ${cols} columns)`);
+  const people = await page.locator('.people .person').count();
+  check('the demo customers are in the directory', people >= 2, `(saw ${people})`);
 
   console.log('\n3. The rail navigates');
   for (const [label, path] of [['Aap', '/you'], ['Ghar', '/home']]) {
@@ -135,8 +136,8 @@ try {
   await layoutRules('settings');
 
   console.log('\n5. The bill, three fields per line');
-  await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
-  await page.locator('.chip').first().click();
+  await page.goto(`${BASE}/bills/start`, { waitUntil: 'networkidle' });
+  await page.locator('.picker .person').nth(1).click();
   await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 25000 });
   await page.waitForTimeout(1200);
   await page.locator('input[id^="what-"]').first().fill('Ceiling fan installation');

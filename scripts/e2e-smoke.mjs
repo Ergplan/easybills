@@ -47,8 +47,9 @@ try {
   await fillProfile(page, BASE, { name: 'Kumar Electrical Repairs', city: 'Pune', stateCode: '27' });
   await page.waitForTimeout(600);
   await shot('01-home');
-  check('Home asks the three questions', await page.getByText('Chalo, bill banate hain').isVisible()
-    && await page.getByText('Bheje hue bills').isVisible() && await page.getByText('Kiske paise aane hain').isVisible());
+  check('Home greets and asks how to help', await page.getByText('Haan ji, kaise help karein aapki?').isVisible()
+    && await page.getByText('Naya bill banana hai').isVisible() && await page.getByText('Bheje hue bills dekhne hain').isVisible()
+    && await page.getByText('Kiske paise aane hain').isVisible());
   check('no GST number, so two tabs: Ghar and Aap', (await page.locator('.tabbar__item').count()) === 2);
   check('Home shows no chart', (await page.locator('canvas, svg.chart').count()) === 0);
 
@@ -63,7 +64,9 @@ try {
   });
   check('Home touch targets are at least 44px', homeSmall.length === 0, `(${homeSmall.join(', ')})`);
 
-  console.log('\n3. A bill from the Naya customer chip, at 360px');
+  console.log('\n3. Naya bill banana hai -> Naya customer, at 360px');
+  await page.getByTestId('task-bill').click();
+  await page.waitForURL('**/bills/start', { timeout: 20000 });
   await page.getByRole('button', { name: 'Naya customer' }).click();
   await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 20000 });
   await page.waitForTimeout(800);
@@ -115,14 +118,17 @@ try {
   check('WhatsApp is the next thing', await page.getByRole('button', { name: 'WhatsApp pe bhejo' }).isVisible());
   check('the message greets the customer with ji and gives the amount', /Namaste Ramesh ji/.test(doneText) && /₹2,050/.test(doneText));
 
-  console.log('\n6. The new customer is now a chip, and the bill is on Home');
+  console.log('\n6. The new customer is in the directory, and the bill is counted on Home');
   await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(600);
   const homeText = await page.locator('main').innerText();
-  check('Ramesh Patil is a chip', await page.locator('.chip', { hasText: 'Ramesh Patil' }).isVisible());
-  check('the bill is under Bheje hue bills', /1 bill is mahine/.test(homeText));
-  check('and under Kiske paise aane hain', /₹2,050/.test(homeText) && /Yaad dilao/.test(homeText));
-  await page.locator('section[aria-labelledby=sent-heading] .row-line').first().click();
+  check('Ramesh Patil is in Aapke customers, owing ₹2,050', /Ramesh Patil\s*₹2,050 baaki/.test(homeText));
+  check('the bill is counted under Bheje hue bills', /1 bill is mahine/.test(homeText));
+  check('and under Kiske paise aane hain', /₹2,050 · 1 se/.test(homeText));
+  await page.getByTestId('task-due').click();
+  await page.waitForURL('**/dues', { timeout: 20000 });
+  check('Kiske paise aane hain lists it with Yaad dilao', /Ramesh Patil/.test(await page.locator('main').innerText()) && (await page.getByRole('link', { name: 'Yaad dilao' }).count()) === 1);
+  await page.locator('.due-row__who').first().click();
   await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 20000 });
   await page.waitForTimeout(800);
   await shot('05-issued');
@@ -226,7 +232,7 @@ try {
   await page.waitForTimeout(800);
   check('Mehta Traders is now a customer with its GSTIN', (await page.locator('.row-line', { hasText: 'Mehta Traders' }).innerText()).includes('GST'));
   await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
-  check('and a chip on Home', await page.locator('.chip', { hasText: 'Priya Boutique' }).isVisible());
+  check('and in the directory on Home', await page.locator('.people .person', { hasText: 'Priya Boutique' }).isVisible());
 
   console.log('\n10e. Bill number, on Aap');
   await page.goto(`${BASE}/you`, { waitUntil: 'networkidle' });
@@ -243,8 +249,8 @@ try {
   check('prefix and next number change, with a preview', true);
 
   console.log('\n10f. Yeh bill pehle ban chuka hai?');
-  await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
-  await page.locator('.chip', { hasText: 'Ramesh Patil' }).click();
+  await page.goto(`${BASE}/bills/start`, { waitUntil: 'networkidle' });
+  await page.locator('.picker .person', { hasText: 'Ramesh Patil' }).click();
   await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 20000 });
   await page.waitForTimeout(800);
   check('the form says what Ramesh already owes', /Ramesh Patil ke ₹1,050 pehle se baaki hain/.test(await page.locator('main').innerText()));
@@ -282,8 +288,8 @@ try {
   await page.waitForTimeout(600);
   check('the cancelled bill says so and points at its replacement', /Cancel kiya/.test(await page.locator('main').innerText()) && await page.getByRole('link', { name: /Naya bill/ }).isVisible());
 
-  await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
-  await page.locator('section[aria-labelledby=due-heading] .row-line', { hasText: 'INV-001' }).locator('a').first().click();
+  await page.goto(`${BASE}/dues`, { waitUntil: 'networkidle' });
+  await page.locator('.due-row', { hasText: 'INV-001' }).locator('.due-row__who').click();
   await page.waitForURL(/\/bills\/[0-9a-f-]{36}$/, { timeout: 20000 });
   await page.getByRole('button', { name: 'Rakam kam karo' }).click();
   await page.locator('#fix-amount').fill('50');

@@ -1,51 +1,63 @@
 import Link from 'next/link';
 
-import { Money } from '@/components/Money';
+import { CustomerPicker } from '@/components/customer/CustomerPicker';
+import { Icon } from '@/components/Icon';
+import { TaskCard } from '@/components/home/TaskCard';
+import { VoiceButton } from '@/components/voice/VoiceButton';
 import { t, tCount } from '@/lib/copy';
-import { salutationFor } from '@/lib/copy/messages';
-import { formatDateShort, todayIst } from '@/lib/dates';
-import type { SentStatus } from '@/lib/domain/home';
-import { profileSetupStatus } from '@/lib/domain/setup-status';
+import { moneyForMessage, salutationFor } from '@/lib/copy/messages';
+import { financialYearOf, todayIst } from '@/lib/dates';
+import { gstTabVisible } from '@/lib/domain/gst-tab';
 import { initialOf } from '@/lib/domain/home';
+import { peopleRows } from '@/lib/domain/people';
+import { profileSetupStatus } from '@/lib/domain/setup-status';
+import { voiceConfig } from '@/lib/env';
 import { requireCurrentContext } from '@/server/auth/current';
 import { loadHome } from '@/server/services/home';
 
-import { VoiceButton } from '@/components/voice/VoiceButton';
-import { voiceConfig } from '@/lib/env';
-
-import { financialYearOf } from '@/lib/dates';
-
-import { CustomerChips } from './CustomerChips';
 import { NewYearBanner } from './NewYearBanner';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Three questions, three cards, nothing else.
+ * Home is the front desk.
  *
- *   Who do I bill?      Chalo, bill banate hain  -- the customers, as chips
- *   What have I sent?   Bheje hue bills          -- this month, latest first
- *   Who owes me?        Kiske paise aane hain    -- the total, then each one
- *
- * If a feature does not answer one of those, it is not on Home.
+ * You walk in, you are greeted by name, and someone asks "Haan ji, kaise help
+ * karein?". Then the few things people come here to do, each a big card in
+ * their own words with one line of where it stands, and each opening one
+ * screen that does only that. The customers sit to the side like a
+ * directory, with a search box.
  */
 export default async function HomePage() {
   const { business } = await requireCurrentContext();
   const today = todayIst();
   const home = await loadHome(business.id, today);
   const setup = profileSetupStatus(business, today);
-  const greetName = salutationFor({ name: business.legalName });
+  // "Namaste, Sharma ji" fits; "Namaste, Demo Appliance Repairs (sample)" drowns
+  // the greeting. A long name moves to a small line under "Namaste ji".
+  const greetName = salutationFor({ name: business.legalName }).replace(/\s*\(sample\)\s*/i, '').trim();
+  const nameFits = greetName.length <= 20;
+  const people = peopleRows(home);
+
+  const dueSub =
+    home.due.length === 0
+      ? t('home.due.subEmpty')
+      : home.dueFrom === 1
+        ? t('task.due.subOne', { amount: moneyForMessage(home.duePaise) })
+        : t('task.due.sub', { amount: moneyForMessage(home.duePaise), n: home.dueFrom });
 
   return (
-    <main className="page">
-      <header className="home__top">
-        <div className="grow">
-          <div className="home__greet">{t('home.greeting', { name: greetName })}</div>
-          {business.city && <div className="home__where">{business.city}</div>}
+    <main className="page reception">
+      <header className="hello">
+        <div className="hello__top">
+          <span className="hello__brand">EkBill</span>
+          <Link href="/you" className="avatar" aria-label={t('tab.you')}>
+            {initialOf(business.legalName)}
+          </Link>
         </div>
-        <Link href="/you" className="avatar" aria-label={t('tab.you')}>
-          {initialOf(business.legalName)}
-        </Link>
+        <h1 className="hello__name">{nameFits ? t('home.greeting', { name: greetName }) : t('home.greetingJi')}</h1>
+        {!nameFits && <p className="hello__who">{business.legalName}</p>}
+        <p className="hello__ask">{t('home.ask')}</p>
       </header>
 
       {financialYearOf(today) !== business.activeFinancialYear && (
@@ -60,105 +72,61 @@ export default async function HomePage() {
         </div>
       )}
 
-      <div className="deck">
-        {/* 1. Chalo, bill banate hain */}
-        <section className="card stack" aria-labelledby="bill-heading">
-          <div>
-            <h2 id="bill-heading" className="card__title">{t('home.bill.title')}</h2>
-            <p className="card__sub">{home.customers.length ? t('home.bill.sub') : t('home.bill.subEmpty')}</p>
-          </div>
-          <CustomerChips customers={home.customers.map((c) => ({ id: c.id, name: c.name }))} />
-          <Link href="/bills/help" className="btn btn--ghost btn--small help-link">{t('help.entry')}</Link>
-          <VoiceButton
-            businessId={business.id}
-            enabled={voiceConfig().enabled}
-            customers={home.customers.map((c) => ({ id: c.id, name: c.name }))}
-            due={home.due.map((d) => ({ invoiceId: d.id, customerId: d.customerId, customerName: d.customerName, amountPaise: d.balancePaise, days: d.days }))}
-          />
-        </section>
-
-        {/* 2. Bheje hue bills */}
-        <section className="card stack" aria-labelledby="sent-heading">
-          <div>
-            <h2 id="sent-heading" className="card__title">{t('home.sent.title')}</h2>
-            <p className="card__sub">
-              {tCount(home.sentThisMonth, { zero: 'home.sent.subEmpty', one: 'home.sent.subOne', many: 'home.sent.sub' })}
-            </p>
-          </div>
-          {home.recentSent.length > 0 && (
-            <div className="rows">
-              {home.recentSent.map((row) => (
-                <Link key={row.id} href={`/bills/${row.id}`} className="row-line">
-                  <div className="row-line__link">
-                    <div className="row-line__name">{row.customerName}</div>
-                    <div className="row-line__meta">{row.number} · {formatDateShort(row.issueDate)}</div>
-                  </div>
-                  <Money paise={row.grandTotalPaise} whole />
-                  <SentPill status={row.status} />
-                </Link>
-              ))}
+      <div className="reception__body">
+        <section className="stack" aria-labelledby="tasks-heading">
+          <h2 id="tasks-heading" className="section-label">{t('home.tasks')}</h2>
+          <div className="tasks">
+            <TaskCard href="/bills/start" icon="bill-new" title={t('task.bill.title')} sub={t('task.bill.sub')} primary testId="task-bill" />
+            <TaskCard
+              href="/bills"
+              icon="bills"
+              title={t('task.sent.title')}
+              sub={tCount(home.sentThisMonth, { zero: 'home.sent.subEmpty', one: 'home.sent.subOne', many: 'home.sent.sub' })}
+              testId="task-sent"
+            />
+            <TaskCard href="/dues" icon="rupee" title={t('task.due.title')} sub={dueSub} testId="task-due" />
+            <div className="task task--voice">
+              <span className="task__icon" aria-hidden="true">
+                <Icon name="mic" size={26} />
+              </span>
+              <span className="task__text">
+                <span className="task__title">{t('task.voice.title')}</span>
+                <span className="task__sub">{t('task.voice.sub')}</span>
+                <VoiceButton
+                  businessId={business.id}
+                  enabled={voiceConfig().enabled}
+                  customers={home.allCustomers.map((c) => ({ id: c.id, name: c.name }))}
+                  due={home.due.map((d) => ({ invoiceId: d.id, customerId: d.customerId, customerName: d.customerName, amountPaise: d.balancePaise, days: d.days }))}
+                />
+              </span>
             </div>
-          )}
-          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-            {home.recentSent.length > 0 && (
-              <Link href="/bills" className="btn btn--ghost">
-                {t('common.seeAll')}
+            <TaskCard href="/ask" icon="ask" title={t('task.ask.title')} sub={t('task.ask.sub')} testId="task-ask" />
+          </div>
+
+          <h2 className="section-label">{t('task.more')}</h2>
+          <div className="more">
+            <Link href="/bills/help" className="more__item">
+              <Icon name="help" size={20} />
+              <span>{t('help.entry')}</span>
+            </Link>
+            <Link href="/customers" className="more__item">
+              <Icon name="upload" size={20} />
+              <span>{t('task.upload')}</span>
+            </Link>
+            {gstTabVisible(business) && (
+              <Link href="/gst" className="more__item">
+                <Icon name="gst" size={20} />
+                <span>{t('task.gst')}</span>
               </Link>
             )}
-            <Link href="/ask" className="btn btn--ghost">
-              {t('ask.entry')}
-            </Link>
           </div>
         </section>
 
-        {/* 3. Kiske paise aane hain */}
-        <section className="card stack" aria-labelledby="due-heading">
-          <div>
-            <h2 id="due-heading" className="card__title">{t('home.due.title')}</h2>
-            {home.due.length > 0 && <div className="home__big amount"><Money paise={home.duePaise} whole /></div>}
-            <p className="card__sub">
-              {tCount(
-                home.dueFrom,
-                { zero: 'home.due.subEmpty', one: 'home.due.subOne', many: 'home.due.sub' },
-                { days: home.oldestDays },
-              )}
-            </p>
-          </div>
-          {home.due.length > 0 && (
-            <div className="rows">
-              {home.due.map((row) => (
-                <div key={row.id} className="row-line">
-                  <Link href={`/bills/${row.id}`} className="row-line__link">
-                    <div className="row-line__name">{row.customerName}</div>
-                    <div className="row-line__meta">{ageLine(row.days)} · {row.number}</div>
-                  </Link>
-                  <Money paise={row.balancePaise} whole />
-                  <Link href={`/bills/${row.id}/remind`} className="btn btn--secondary btn--small">
-                    {t('remind.button')}
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        <aside className="card people" aria-labelledby="people-heading">
+          <h2 id="people-heading" className="card__title">{t('people.title')}</h2>
+          <CustomerPicker customers={people} mode="open" limit={8} allHref="/customers" />
+        </aside>
       </div>
     </main>
   );
-}
-
-function ageLine(days: number): string {
-  if (days === 0) return t('home.due.ageToday');
-  if (days === 1) return t('home.due.ageOne');
-  return t('home.due.ageDays', { days });
-}
-
-function SentPill({ status }: { status: SentStatus }) {
-  const map: Record<SentStatus, { cls: string; key: 'status.sent' | 'status.paid' | 'status.partly' | 'status.due' }> = {
-    sent: { cls: 'pill--sent', key: 'status.sent' },
-    paid: { cls: 'pill--paid', key: 'status.paid' },
-    partly: { cls: 'pill--partly', key: 'status.partly' },
-    due: { cls: 'pill--unpaid', key: 'status.due' },
-  };
-  const { cls, key } = map[status];
-  return <span className={`pill ${cls}`}>{t(key)}</span>;
 }

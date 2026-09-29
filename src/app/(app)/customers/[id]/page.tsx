@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { CustomerForm } from '@/components/customer/CustomerForm';
+import { StartBillButton } from '@/components/customer/StartBillButton';
 import { Icon } from '@/components/Icon';
 import { Money } from '@/components/Money';
 import { t } from '@/lib/copy';
@@ -56,6 +57,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           <p className="faint">{t('customer.sub')}</p>
         </div>
       </div>
+
+      <StartBillButton customerId={customer.id} label={t('customer.billFor')} />
 
       <CustomerForm
         businessId={business.id}

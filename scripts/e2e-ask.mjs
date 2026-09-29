@@ -46,7 +46,7 @@ try {
 
   console.log('\n2. Poocho, from Home');
   await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
-  await page.getByRole('link', { name: 'Apne bills se kuch poocho' }).click();
+  await page.getByTestId('task-ask').click();
   await page.waitForURL('**/ask', { timeout: 15000 });
   check('the screen says what it can answer from', /Apne bills, contracts aur upload kiye purane bills/.test(await page.locator('main').innerText()));
   check('it offers questions to try', await page.getByRole('button', { name: 'Sharma ko pichli baar kya rate diya?' }).isVisible());

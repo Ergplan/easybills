@@ -6,7 +6,7 @@
  *   Terminal 3: node scripts/e2e-home.mjs
  *
  * Opens the demo shop, which has customers and bills, and checks that Home
- * answers its three questions in Hinglish, that a chip starts a bill for
+ * greets the owner and offers the jobs as cards in Hinglish, that choosing a customer starts a bill for
  * that customer, that the tab bar has two tabs without a GST number and three
  * with one, and that "Aap" saves in place. Screenshots at 360px and 1280px.
  */
@@ -45,17 +45,20 @@ try {
   await page.waitForTimeout(800);
   await shot('home-01-360');
 
-  console.log('\n2. Three questions');
+  console.log('\n2. The front desk');
   const text = await page.locator('main').innerText();
-  check('Namaste, by name', /^Namaste, /m.test(text));
-  check('Chalo, bill banate hain', text.includes('Chalo, bill banate hain'));
-  check('Bheje hue bills', text.includes('Bheje hue bills'));
-  check('Kiske paise aane hain', text.includes('Kiske paise aane hain'));
+  check('Namaste, by name (or "Namaste ji" for a long name)', /Namaste(,| ji)/.test(text));
+  check('Haan ji, kaise help karein aapki?', text.includes('Haan ji, kaise help karein aapki?'));
+  for (const task of ['Naya bill banana hai', 'Bheje hue bills dekhne hain', 'Kiske paise aane hain', 'Bolke batana hai', 'Kuch poochna hai']) {
+    check(`a card: ${task}`, text.includes(task));
+  }
+  check('the new bill is the one big coloured card', (await page.locator('.task--primary').count()) === 1);
+  check('the money owed is on its card', /₹[\d,]+ · \d+ logon se|₹[\d,]+ · 1 se/.test(text));
   check('nothing else: no charts, no monthly drafts, no GST card', !/Monthly|GST returns|Review|Create bill/.test(text) && (await page.locator('canvas').count()) === 0);
-  check('every bill row has a Hinglish status word', (await page.locator('.pill').count()) > 0
-    && !(await page.locator('.pill', { hasText: /^(Sent|Paid|Unpaid|Part paid|Draft)$/ }).count()));
-  check('the money owed is the biggest thing on the third card', await page.locator('.home__big').isVisible());
-  check('every unpaid row offers Yaad dilao', (await page.locator('.row-line', { hasText: 'Yaad dilao' }).count()) === (await page.locator('.home__big').count() ? (await page.locator('section[aria-labelledby=due-heading] .row-line').count()) : 0));
+  check('the customers are a directory with a search box', await page.getByPlaceholder('Naam se dhoondho').isVisible() && (await page.locator('.people .person').count()) >= 2);
+  await page.getByPlaceholder('Naam se dhoondho').fill('ravi');
+  check('searching narrows the list', (await page.locator('.people .person').count()) === 1);
+  await page.getByPlaceholder('Naam se dhoondho').fill('');
 
   check('Bolke karo is there, and says voice is off without a key', await page.getByRole('button', { name: 'Bolke karo' }).isVisible());
   await page.getByRole('button', { name: 'Bolke karo' }).click();
@@ -75,14 +78,26 @@ try {
   const tabs = await page.locator('.tabbar__item').allInnerTexts();
   check('the demo appliance shop has no GST number, so: Ghar, Aap', tabs.map((t) => t.trim()).join(' / ') === 'Ghar / Aap', `(saw ${tabs.join(' / ')})`);
 
-  console.log('\n4. A chip starts a bill for that customer');
-  const chipName = (await page.locator('.chip').first().locator('.chip__name').innerText()).trim();
-  await page.locator('.chip').first().click();
+  console.log('\n4. Naya bill banana hai -> Kiska? -> the bill');
+  await page.getByTestId('task-bill').click();
+  await page.waitForURL('**/bills/start', { timeout: 15000 });
+  check('it asks whose bill', await page.getByText('Naam pe tap karo').isVisible());
+  const pick = page.locator('.picker .person').nth(1); // first is "Naya customer"
+  const chipName = (await pick.locator('.person__name').innerText()).trim();
+  await pick.click();
   await page.waitForURL(/\/bills\/[0-9a-f-]{36}/, { timeout: 25000 });
   await page.waitForTimeout(1200);
   const editor = await page.locator('main').innerText();
   check(`the bill is for ${chipName}`, editor.includes(chipName));
   await shot('home-02-bill-from-chip');
+
+  console.log('\n4b. Kiske paise aane hain');
+  await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
+  await page.getByTestId('task-due').click();
+  await page.waitForURL('**/dues', { timeout: 15000 });
+  const dues = await page.locator('main').innerText();
+  check('the total, then each bill, each with Yaad dilao', /Kul baaki/.test(dues) && (await page.getByRole('link', { name: 'Yaad dilao' }).count()) >= 1);
+  await shot('dues-01');
 
   console.log('\n5. Aap saves in place, and a GST number earns the tab');
   await page.goto(`${BASE}/you`, { waitUntil: 'networkidle' });
@@ -128,7 +143,7 @@ try {
   await page.waitForTimeout(800);
   await shot('home-03-1280');
   check('the rail shows the same tabs', (await page.locator('.sidenav__item').allInnerTexts()).map((t) => t.trim()).join(' / ') === 'Ghar / Aap');
-  check('cards sit two across', (await page.locator('.deck').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)) === 2);
+  check('the jobs and the customer directory sit side by side', (await page.locator('.reception__body').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)) === 2);
 
   check('no page errors', pageErrors.length === 0, pageErrors.join(' | '));
 } catch (e) {

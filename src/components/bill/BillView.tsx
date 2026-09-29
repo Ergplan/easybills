@@ -118,7 +118,7 @@ export function BillView({
 
   return (
     <div className="stack">
-      <section className="card stack stack--tight">
+      <section id="paid" className="card stack stack--tight">
         <div className="row row--between">
           <span className="faint">{t('bill.view.sentOn', { date: formatDateShort(invoice.issueDate) })}</span>
           <span className={`pill ${status === 'paid' ? 'pill--paid' : status === 'partly' ? 'pill--partly' : 'pill--sent'}`}>

@@ -35,6 +35,8 @@ export interface DueRow {
 export interface HomeView {
   /** Customers to offer as chips, most recently billed first. */
   customers: CustomerRecord[];
+  /** Everyone, in the same order, for the searchable list. */
+  allCustomers: CustomerRecord[];
   sentThisMonth: number;
   recentSent: SentRow[];
   duePaise: number;
@@ -88,7 +90,7 @@ export function summariseHome(args: {
   const duePaise = due.reduce((sum, row) => sum + row.balancePaise, 0);
   const dueFrom = new Set(due.map((row) => row.customerId ?? `name:${row.customerName.trim().toLowerCase()}`)).size;
 
-  const customers = [...args.customers]
+  const allCustomers = [...args.customers]
     .filter((c) => !c.archived)
     .sort((a, b) => {
       // Billed recently first; never-billed after, by name, so a new customer
@@ -97,11 +99,11 @@ export function summariseHome(args: {
       if (a.lastBilledAt) return -1;
       if (b.lastBilledAt) return 1;
       return a.name.localeCompare(b.name);
-    })
-    .slice(0, CHIPS);
+    });
 
   return {
-    customers,
+    customers: allCustomers.slice(0, CHIPS),
+    allCustomers,
     sentThisMonth,
     recentSent,
     duePaise,
