@@ -58,7 +58,14 @@ fi
 
 say "Nightly backup at 02:30 IST (21:00 UTC)"
 line="0 21 * * * $REPO_DIR/deploy/vm/backup.sh >> \$HOME/ekbill-backup.log 2>&1"
-( crontab -l 2>/dev/null | grep -v 'deploy/vm/backup.sh' ; echo "$line" ) | crontab -
-crontab -l | grep backup.sh
+if command -v crontab >/dev/null 2>&1; then
+  ( crontab -l 2>/dev/null | grep -v 'deploy/vm/backup.sh' ; echo "$line" ) | crontab -
+  crontab -l | grep backup.sh
+else
+  # Not every image ships cron. The app does not need it; only the nightly backup does.
+  echo "cron is not installed, so the nightly backup is NOT scheduled yet. To schedule it:"
+  echo "  sudo apt-get install -y cron && deploy/vm/setup.sh"
+  echo "Until then, back up by hand with deploy/vm/backup.sh."
+fi
 
 "$REPO_DIR/deploy/vm/up.sh"
