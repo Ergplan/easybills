@@ -79,7 +79,7 @@ try {
   await page.goto(`${BASE}/signin`, { waitUntil: 'networkidle' });
   const who = await signInByPhone(page, BASE, digits);
   await page.waitForURL('**/start', { timeout: 20000 });
-  check('a new number lands on "Apne baare mein batayen"', true);
+  check('a new number is greeted as a first meeting', /Hum pehli baar mil rahe hain, to apne baare mein thoda bataiye please/.test(await page.locator('main').innerText()));
 
   console.log('\n3. Apne baare mein batayen: one question at a time');
   const aage = () => page.locator('.wizard__card').getByRole('button', { name: 'Aage', exact: true }).click();

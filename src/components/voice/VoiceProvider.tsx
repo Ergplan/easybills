@@ -329,7 +329,7 @@ export function VoiceProvider({
           response: {
             instructions:
               screen === 'start'
-                ? 'Greet the owner warmly in a few words ("Namaste ji! Chaliye, 1 minute mein aapki dukaan set karte hain."). Then show() the question on the screen and ask it in one short sentence. After each answer, fill() it and tap() Aage; the next question appears and you are told about it.'
+                ? 'Greet the owner warmly in a few words: this is your first meeting, so ask them to tell you a little about themselves ("Namaste ji! Hum pehli baar mil rahe hain, to apne baare mein thoda bataiye please. Bas 1 minute."). Then show() the question on the screen and ask it in one short sentence. After each answer, fill() it and tap() Aage; the next question appears and you are told about it.'
                 : screen === 'home'
                 ? `Greet the owner warmly and briefly by name if it is a person's name (${name}), e.g. "Namaste ji! Haan ji, kaise help karein? Bill banana hai, paise dekhne hain, ya kuch poochna hai?" Then wait.`
                 : 'Greet the owner in a few words, say in one sentence what this screen is for, and show() the first useful thing.',

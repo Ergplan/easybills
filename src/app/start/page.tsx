@@ -28,12 +28,14 @@ export default async function StartPage() {
   return (
     <VoiceProvider businessId={null} enabled={voiceConfig().enabled}>
       <main className="page" style={{ maxWidth: 480, paddingTop: 32 }}>
-        <div className="stack" style={{ gap: 4 }}>
+        {/* A first meeting: say hello, and say why we are asking, before the first question. */}
+        <div className="stack start-hello" style={{ gap: 6 }}>
           <div className="row row--between">
-            <h1>{t('you.title')}</h1>
+            <h1 className="start-hello__title">{t('start.hello')}</h1>
             <GuideButton />
           </div>
-          <p className="muted">{t('you.sub')}</p>
+          <p className="start-hello__line">{t('start.welcome')}</p>
+          <p className="muted">{t('start.welcomeSub')}</p>
         </div>
         <StartWizard phone={user.phone} />
       </main>

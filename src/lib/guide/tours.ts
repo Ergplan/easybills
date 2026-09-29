@@ -164,7 +164,8 @@ const TOURS: Record<ScreenKey, TourStep[]> = {
     { target: { sel: 'button', text: 'CA ko bhejo' }, say: 'CA ko ek file mein sab bhejo: Excel aur saare bills.' },
   ],
   start: [
-    { target: '.wizard__progress', say: 'Namaste! Bas kuch sawaal, ek-ek karke. 1 minute lagega.' },
+    { target: '.start-hello', say: 'Namaste ji! Hum pehli baar mil rahe hain, to apne baare mein thoda bataiye. Bas kuch sawaal, 1 minute.' },
+    { target: '.wizard__progress', say: 'Sawaal ek-ek karke aayenge. Yeh dots batate hain kitne bache.' },
     { target: '.wizard__q', say: 'Yeh sawaal hai. Jawaab neeche likho.' },
     { target: '.wizard__card .input, .wizard__choices', say: 'Yahan jawaab do.' },
     { target: { sel: '.wizard__card button', text: 'Aage' }, say: 'Phir Aage dabao. Galti ho to Peeche ja sakte ho.' },
