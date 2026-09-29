@@ -8,6 +8,7 @@ import { t } from '@/lib/copy';
 import { moneyForMessage, reminderMessage, suggestedTone, type ReminderTone } from '@/lib/copy/messages';
 import { daysBetween, todayIst } from '@/lib/dates';
 import { requireCurrentContext } from '@/server/auth/current';
+import { lookOf } from '@/lib/domain/bill-look';
 import { guessLanguage } from '@/lib/domain/language-guess';
 import { getCustomer } from '@/server/repos/customers';
 import { getInvoice } from '@/server/repos/invoices';
@@ -77,6 +78,7 @@ export default async function RemindPage({ params }: { params: Promise<{ id: str
         remindersSent={remindersSent}
         lastRemindedAt={invoice.lastRemindedAt ?? null}
         language={language}
+        shareAs={lookOf(business).shareAs}
       />
     </main>
     </>

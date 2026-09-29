@@ -2,12 +2,13 @@ import 'server-only';
 
 import { existsSync } from 'node:fs';
 
-import { chromium, type Browser } from 'playwright-core';
+import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core';
 
-import { pdfConfig } from '@/lib/env';
+import { DEFAULT_LOOK, PAPER } from '@/lib/domain/bill-look';
 import type { InvoiceRecord } from '@/lib/domain/types';
+import { pdfConfig } from '@/lib/env';
 
-import { renderInvoiceHtml } from './template';
+import { renderInvoiceHtml, type TemplateOptions } from './template';
 
 /**
  * Server-side PDF rendering.
@@ -90,15 +91,20 @@ export class PdfRenderError extends Error {
   }
 }
 
-export async function renderInvoicePdf(
-  invoice: InvoiceRecord,
-  opts: { upiQrDataUrl?: string | null } = {},
-): Promise<Buffer> {
-  const html = renderInvoiceHtml(invoice, opts);
-  let context;
+/** A page with the bill on it, in a context that cannot reach the network. */
+async function withBillPage<T>(
+  html: string,
+  viewport: { width: number; height: number; scale: number },
+  work: (page: Page) => Promise<T>,
+): Promise<T> {
+  let context: BrowserContext | undefined;
   try {
     const browser = await getBrowser();
-    context = await browser.newContext({ javaScriptEnabled: false });
+    context = await browser.newContext({
+      javaScriptEnabled: false,
+      viewport: { width: viewport.width, height: viewport.height },
+      deviceScaleFactor: viewport.scale,
+    });
     // Nothing in the template needs the network; block it so a crafted data
     // field can never turn a render into an outbound request.
     await context.route('**/*', (route) => {
@@ -108,8 +114,28 @@ export async function renderInvoicePdf(
     });
     const page = await context.newPage();
     await page.setContent(html, { waitUntil: 'load', timeout: 20_000 });
+    return await work(page);
+  } catch (error) {
+    throw new PdfRenderError('We could not produce the bill just now. Your bill is safe — please try again.', error);
+  } finally {
+    await context?.close().catch(() => undefined);
+  }
+}
+
+export async function renderInvoicePdf(invoice: InvoiceRecord, opts: TemplateOptions = {}): Promise<Buffer> {
+  const look = opts.look ?? DEFAULT_LOOK;
+  const paper = PAPER[look.paper];
+  const html = renderInvoiceHtml(invoice, { ...opts, look });
+  return withBillPage(html, { width: paper.widthPx, height: 1000, scale: 1 }, async (page) => {
+    if (paper.receipt) {
+      // A roll is as long as the bill: measure it, then cut the page there.
+      const box = await page.locator('body').boundingBox();
+      const heightMm = Math.ceil(((box?.height ?? 600) * 25.4) / 96) + 2;
+      const pdf = await page.pdf({ width: `${paper.widthMm}mm`, height: `${heightMm}mm`, printBackground: true, margin: { top: '0', right: '0', bottom: '0', left: '0' } });
+      return Buffer.from(pdf);
+    }
     const pdf = await page.pdf({
-      format: 'A4',
+      format: look.paper === 'a5' ? 'A5' : 'A4',
       printBackground: true,
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
       displayHeaderFooter: true,
@@ -119,14 +145,21 @@ export async function renderInvoicePdf(
         '<span class="pageNumber"></span> of <span class="totalPages"></span></div>',
     });
     return Buffer.from(pdf);
-  } catch (error) {
-    throw new PdfRenderError(
-      'We could not produce the PDF just now. Your bill is safe — please try again.',
-      error,
-    );
-  } finally {
-    await context?.close().catch(() => undefined);
-  }
+  });
+}
+
+/**
+ * The bill as a photo, for WhatsApp: many customers open a picture and
+ * never a PDF. The same page at the paper's width, twice the pixels so the
+ * text stays sharp when zoomed, as a JPEG small enough to send on 3G.
+ */
+export async function renderInvoiceImage(invoice: InvoiceRecord, opts: TemplateOptions = {}): Promise<Buffer> {
+  const look = opts.look ?? DEFAULT_LOOK;
+  const paper = PAPER[look.paper];
+  const html = renderInvoiceHtml(invoice, { ...opts, look });
+  return withBillPage(html, { width: paper.widthPx, height: 600, scale: 2 }, async (page) =>
+    Buffer.from(await page.screenshot({ type: 'jpeg', quality: 86, fullPage: true })),
+  );
 }
 
 /**

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
+import { formatPhone } from '@/lib/domain/profile';
 
 import { CustomerForm } from '@/components/customer/CustomerForm';
 import { StartBillButton } from '@/components/customer/StartBillButton';
@@ -49,7 +50,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-    <TopBar title={customer.name} sub={t('customer.sub')} back={{ href: '/customers' }} />
+    <TopBar title={customer.name} sub={[customer.city, customer.phone ? formatPhone(customer.phone) : null].filter(Boolean).join(' · ') || undefined} back={{ href: '/customers' }} />
     <main className="page">
 
       <StartBillButton customerId={customer.id} label={t('customer.billFor')} />

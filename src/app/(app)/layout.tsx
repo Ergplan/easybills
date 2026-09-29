@@ -1,3 +1,4 @@
+import { t } from '@/lib/copy';
 import { openAccess, voiceConfig } from '@/lib/env';
 import { VoiceProvider } from '@/components/voice/VoiceProvider';
 import { gstTabVisible } from '@/lib/domain/gst-tab';
@@ -28,13 +29,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             the records; the other is about who can reach them. */}
         {openAccess() && (
           <div className="open-access-banner" role="alert">
-            <strong>Sign-in is switched off.</strong> Anyone with this web address can see and change
-            these bills. Do not put a real business&rsquo;s books here.
+            <strong>{t('banner.openAccess.title')}</strong> {t('banner.openAccess')}
           </div>
         )}
         {business.isDemo && (
           <div className="demo-banner" role="status">
-            Demo business — these are sample records, not your real bills
+            {t('banner.demo')}
           </div>
         )}
         <VoiceProvider businessId={business.id} enabled={voiceConfig().enabled}>

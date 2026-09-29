@@ -52,7 +52,10 @@ export default async function BillsPage() {
 
       <section className="card stack stack--tight">
         {view.recentSent.length === 0 ? (
-          <p className="muted">{t('bills.empty')}</p>
+          <div className="stack">
+            <p className="muted">{t('bills.empty')}</p>
+            <Link href="/bills/start" className="btn btn--primary btn--block">{t('bills.first')}</Link>
+          </div>
         ) : (
           <div className="rows">
             {view.recentSent.map((row) => (

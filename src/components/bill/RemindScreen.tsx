@@ -6,8 +6,11 @@ import { useEffect, useState } from 'react';
 import { noteReminderAction } from '@/app/actions/invoices';
 import { t } from '@/lib/copy';
 import type { ReminderTone } from '@/lib/copy/messages';
+import type { BillShareAs } from '@/lib/domain/bill-look';
 import { whatsappLink } from '@/lib/domain/whatsapp';
 import { LanguageChoice, type LanguageState } from '@/components/customer/LanguageChoice';
+
+import { billFileUrl, fetchBillFile, saveFile } from './bill-file';
 
 const TONES: Array<{ key: ReminderTone; label: 'remind.tone.gentle' | 'remind.tone.direct' | 'remind.tone.second' }> = [
   { key: 'gentle', label: 'remind.tone.gentle' },
@@ -34,6 +37,8 @@ export function RemindScreen(props: {
   remindersSent: number;
   lastRemindedAt: string | null;
   language: LanguageState;
+  /** What goes with the message: the bill as a PDF or a photo, as chosen under Aap. */
+  shareAs: BillShareAs;
 }) {
   const [tone, setTone] = useState<ReminderTone>(props.suggested);
   const [text, setText] = useState(props.drafts[props.suggested]);
@@ -45,27 +50,19 @@ export function RemindScreen(props: {
   }, [props.drafts, tone, edited]);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
-  const pdfUrl = `/api/invoices/${props.invoiceId}/pdf?b=${encodeURIComponent(props.businessId)}`;
 
   async function go() {
     setBusy(true);
     setNote(null);
     try {
-      const res = await fetch(pdfUrl);
-      if (!res.ok) throw new Error(t('error.generic'));
-      const blob = await res.blob();
-      const file = new File([blob], `${props.number || 'bill'}.pdf`, { type: 'application/pdf' });
+      // The bill in the form the owner chose under Aap: a PDF or a photo.
+      const file = await fetchBillFile(billFileUrl(props.invoiceId, props.businessId), props.number);
       const nav = navigator as Navigator & { canShare?: (data: ShareData) => boolean };
       if (nav.share && nav.canShare?.({ files: [file] })) {
         await nav.share({ files: [file], text, title: props.number });
         setNote(t('remind.opened'));
       } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = file.name;
-        a.click();
-        URL.revokeObjectURL(url);
+        saveFile(file);
         window.open(whatsappLink(props.customerPhone, text), '_blank', 'noopener');
         setNote(props.customerPhone ? t('bill.done.noShare') : t('remind.noPhone'));
       }
@@ -122,9 +119,9 @@ export function RemindScreen(props: {
           aria-label={t('remind.note')}
         />
         <div className="row row--tight">
-          <span className="pdf-chip" aria-hidden="true">PDF</span>
+          <span className="pdf-chip" aria-hidden="true">{props.shareAs === 'jpg' ? 'JPG' : 'PDF'}</span>
           <div className="grow small">
-            <strong>{props.number}.pdf</strong>
+            <strong>{props.number}.{props.shareAs}</strong>
             <div className="faint">{t('remind.attached')}</div>
           </div>
         </div>

@@ -160,7 +160,7 @@ try {
   await page.getByRole('button', { name: 'Rehne do' }).click();
 
   console.log('\n9. PDF downloads');
-  const pdfHref = await page.locator('a:has-text("PDF download karo")').getAttribute('href');
+  const pdfHref = await page.locator('a:has-text("PDF download")').getAttribute('href');
   const res = await page.request.get(`${BASE}${pdfHref}`);
   check('PDF endpoint returns a PDF', res.ok() && res.headers()['content-type']?.includes('pdf'), `(status ${res.status()})`);
   const bytes = await res.body();

@@ -19,8 +19,11 @@ export default async function DuesPage() {
       <TopBar title={t('dues.title')} back={{ href: '/home' }} />
       <main className="page stack">
         {home.due.length === 0 ? (
-          <section className="card">
-            <p className="dues__none">{t('dues.none')}</p>
+          <section className="card stack">
+            <p className="dues__none">{t(home.recentSent.length ? 'dues.none' : 'dues.noBills')}</p>
+            {!home.recentSent.length && (
+              <Link href="/bills/start" className="btn btn--primary btn--block">{t('bills.first')}</Link>
+            )}
           </section>
         ) : (
           <>

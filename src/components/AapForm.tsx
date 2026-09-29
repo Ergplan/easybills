@@ -4,9 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 import { saveAapAction } from '@/app/actions/business';
+import { BillLookSection } from '@/components/aap/BillLookSection';
 import { t } from '@/lib/copy';
 import { PAYMENT_TERMS, parseAap, type AapField, type AapInput } from '@/lib/domain/aap';
 import { previewNumber } from '@/lib/domain/bill-guard';
+import { DEFAULT_LOOK } from '@/lib/domain/bill-look';
 import { formatPhone } from '@/lib/domain/profile';
 import type { FinancialYear } from '@/lib/dates';
 import { GST_STATES } from '@/lib/gst/state-codes';
@@ -74,7 +76,8 @@ export function AapForm({
     const checked = parseAap(form, { minNextNumber });
     if (!checked.ok) {
       setProblem({ field: checked.field, message: checked.message });
-      const id = checked.field === 'prefix' ? 'num-prefix' : checked.field === 'nextNumber' ? 'num-next' : `you-${checked.field}`;
+      const id =
+        checked.field === 'prefix' ? 'num-prefix' : checked.field === 'nextNumber' ? 'num-next' : checked.field === 'logoDataUrl' ? 'you-logo' : `you-${checked.field}`;
       document.getElementById(id)?.focus();
       return;
     }
@@ -197,6 +200,15 @@ export function AapForm({
           </div>
         </details>
       </section>
+
+      <BillLookSection
+        businessId={businessId}
+        look={form.look ?? DEFAULT_LOOK}
+        logo={form.logoDataUrl ?? null}
+        error={errorFor('logoDataUrl')}
+        onLook={(patch) => update({ look: { ...(form.look ?? DEFAULT_LOOK), ...patch } })}
+        onLogo={(logoDataUrl) => update({ logoDataUrl }, 'logoDataUrl')}
+      />
 
       <section className="card stack">
         <div>

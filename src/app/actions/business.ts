@@ -400,6 +400,8 @@ export async function saveAapAction(
       numbering,
       numberingConfirmed: true,
       defaultPaymentTermsDays: v.paymentTermsDays,
+      ...(v.look ? { billDesign: v.look.design, billPaper: v.look.paper, billShareAs: v.look.shareAs, accentColour: v.look.accent } : {}),
+      ...(v.logoDataUrl !== undefined ? { logoDataUrl: v.logoDataUrl } : {}),
     });
     revalidatePath('/home');
     revalidatePath('/you');

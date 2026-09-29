@@ -8,6 +8,7 @@
  * the server, so the message is the same both times. Pure.
  */
 import { t } from '@/lib/copy';
+import { checkLogo, parseLook, type BillLook } from '@/lib/domain/bill-look';
 import { parseProfile, type ProfileField, type ProfileInput } from '@/lib/domain/profile';
 
 export interface AapInput extends ProfileInput {
@@ -22,6 +23,10 @@ export interface AapInput extends ProfileInput {
   nextNumber: string | number;
   includeFinancialYear: boolean;
   paymentTermsDays: string | number;
+  /** How bills look. Absent: left as it is. */
+  look?: BillLook;
+  /** The logo as a data URL; null removes it; absent leaves it as it is. */
+  logoDataUrl?: string | null;
 }
 
 export type AapField =
@@ -35,7 +40,8 @@ export type AapField =
   | 'bankName'
   | 'prefix'
   | 'nextNumber'
-  | 'paymentTermsDays';
+  | 'paymentTermsDays'
+  | 'logoDataUrl';
 
 export interface AapClean {
   name: string;
@@ -52,6 +58,8 @@ export interface AapClean {
   bank: { accountHolderName: string | null; accountNumber: string | null; ifsc: string | null; bankName: string | null };
   numbering: { prefix: string; nextNumber: number; includeFinancialYear: boolean };
   paymentTermsDays: number;
+  look: BillLook | undefined;
+  logoDataUrl: string | null | undefined;
 }
 
 export type AapCheck = { ok: true; value: AapClean } | { ok: false; field: AapField; message: string };
@@ -96,6 +104,13 @@ export function parseAap(input: AapInput, ctx: { minNextNumber: number }): AapCh
     return { ok: false, field: 'paymentTermsDays', message: t('error.required') };
   }
 
+  let logoDataUrl: string | null | undefined;
+  if (input.logoDataUrl !== undefined) {
+    const logo = checkLogo(input.logoDataUrl);
+    if (!logo.ok) return { ok: false, field: 'logoDataUrl', message: logo.message };
+    logoDataUrl = logo.value;
+  }
+
   const p = profile.profile;
   return {
     ok: true,
@@ -114,6 +129,8 @@ export function parseAap(input: AapInput, ctx: { minNextNumber: number }): AapCh
       bank: { accountHolderName, accountNumber, ifsc, bankName },
       numbering: { prefix, nextNumber, includeFinancialYear: Boolean(input.includeFinancialYear) },
       paymentTermsDays,
+      look: input.look ? parseLook(input.look) : undefined,
+      logoDataUrl,
     },
   };
 }

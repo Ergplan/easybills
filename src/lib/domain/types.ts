@@ -9,6 +9,7 @@
  *  - Record timestamps are ISO-8601 instants and end in `At`.
  */
 
+import type { BillDesign, BillPaper, BillShareAs } from '@/lib/domain/bill-look';
 import type { CustomerLanguage } from '@/lib/copy';
 import type { CivilDate, FinancialYear, MonthPeriod } from '@/lib/dates';
 import type { GstRegistrationType, SupplyFlag } from '@/lib/gst/scenarios';
@@ -90,6 +91,10 @@ export interface BusinessRecord {
   logoDataUrl: string | null;
   signatureDataUrl: string | null;
   accentColour: string | null;
+  /** How bills look and go out (lib/domain/bill-look.ts). Absent on older records: the defaults. */
+  billDesign?: BillDesign;
+  billPaper?: BillPaper;
+  billShareAs?: BillShareAs;
 
   /** Active financial year for numbering. Explicit, never inferred silently. */
   activeFinancialYear: FinancialYear;
@@ -242,7 +247,7 @@ export interface InvoiceParty {
 export interface IssuedSnapshot {
   issuedAt: Iso;
   issuedByUid: string;
-  documentKind: 'tax-invoice' | 'invoice-no-gst';
+  documentKind: 'tax-invoice' | 'invoice-no-gst' | 'bill-of-supply';
   documentTitle: string;
   seller: {
     legalName: string;

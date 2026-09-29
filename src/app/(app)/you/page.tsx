@@ -1,6 +1,7 @@
 import { AapForm, type AppInfo } from '@/components/AapForm';
 import { TopBar } from '@/components/TopBar';
 import { t } from '@/lib/copy';
+import { lookOf } from '@/lib/domain/bill-look';
 import { openAccess, voiceConfig } from '@/lib/env';
 import { requireCurrentContext } from '@/server/auth/current';
 import { doclingHealth } from '@/server/import/docling';
@@ -56,6 +57,8 @@ export default async function YouPage() {
             nextNumber: String(business.numbering.nextNumber),
             includeFinancialYear: business.numbering.includeFinancialYear,
             paymentTermsDays: String([0, 7, 15, 30].includes(business.defaultPaymentTermsDays) ? business.defaultPaymentTermsDays : 7),
+            look: lookOf(business),
+            logoDataUrl: business.logoDataUrl,
           }}
         />
         {!openAccess() && <SignOut />}

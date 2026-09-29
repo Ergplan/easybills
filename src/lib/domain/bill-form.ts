@@ -18,6 +18,11 @@ export interface LineDraft {
   qty: string;
   /** "Rate (₹)": rupees, as typed. */
   rate: string;
+  /**
+   * This line's own GST rate, in basis points, when the owner chose "Har
+   * cheez ka alag rate". Absent or null: the bill's rate applies.
+   */
+  gstBp?: number | null;
 }
 
 export interface BillDraft {
@@ -26,8 +31,12 @@ export interface BillDraft {
   /** Only asked when the owner charges GST: it decides IGST or CGST+SGST. */
   customerGstin: string;
   lines: LineDraft[];
-  /** Basis points, one rate for the whole bill. Only asked of a GST-registered owner. */
+  /** Basis points: the bill's rate, and every line's unless it has its own. Only asked of a GST-registered owner. */
   gstRateBp: number | null;
+  /** "GST lagega?" -- a registered owner can say Nahi for one bill. */
+  gstOn: boolean;
+  /** "Har cheez ka alag rate": each line shows its own rate. */
+  perLine: boolean;
 }
 
 export type BillProblem =
@@ -51,7 +60,14 @@ export function isBlankLine(line: LineDraft): boolean {
  * in it is ignored, so "+ Aur kuch" never leaves a bill un-makeable; a line
  * with a description and no rate is a question, not a mistake to hide.
  */
+/** The GST rate a line is charged at, or null when the owner has not chosen one. */
+export function lineRateBp(draft: Pick<BillDraft, 'gstRateBp' | 'perLine'>, line: LineDraft): number | null {
+  if (draft.perLine && line.gstBp !== undefined && line.gstBp !== null) return line.gstBp;
+  return draft.gstRateBp;
+}
+
 export function checkBill(draft: BillDraft, opts: { needsCustomerName: boolean; chargesGst: boolean }): BillCheck {
+  const taxed = opts.chargesGst && draft.gstOn;
   if (opts.needsCustomerName && !draft.customerName.trim()) {
     return { ok: false, problem: { field: 'customerName' }, message: t('error.required') };
   }
@@ -75,16 +91,17 @@ export function checkBill(draft: BillDraft, opts: { needsCustomerName: boolean; 
     } catch {
       return { ok: false, problem: { field: 'rate', lineId: line.id }, message: t('error.amount') };
     }
+    const rateBp = taxed ? lineRateBp(draft, line) : 0;
     lines.push({
       id: line.id,
       description: line.what.trim(),
       quantityMilli,
       unitPricePaise,
       discountPaise: 0,
-      taxRateBp: opts.chargesGst ? (draft.gstRateBp ?? 0) : 0,
-      // For an owner who does not charge GST the rate is not a question; for
-      // one who does, the bill-level select answers it for every line.
-      taxRateChosen: !opts.chargesGst || draft.gstRateBp !== null,
+      taxRateBp: rateBp ?? 0,
+      // Without GST on this bill the rate is not a question; with it, the
+      // bill's select (or the line's own) must have been answered.
+      taxRateChosen: !taxed || rateBp !== null,
       cessRateBp: 0,
       priceIncludesTax: false,
       unit: null,
@@ -102,7 +119,35 @@ export function linesToDraft(lines: readonly InvoiceLine[], newId: () => string)
     what: l.description,
     qty: formatQuantityPlain(l.quantityMilli),
     rate: formatMoneyPlain(l.unitPricePaise).replace(/\.00$/, ''),
+    gstBp: l.taxRateChosen === false ? null : l.taxRateBp,
   }));
+}
+
+/** Whether lines carry more than one rate, so the form opens with a rate on each line. */
+export function hasMixedRates(lines: readonly LineDraft[]): boolean {
+  return new Set(lines.map((l) => l.gstBp ?? null).filter((r) => r !== null)).size > 1;
+}
+
+/**
+ * GST as the owner types, rate by rate, for the running total. The server
+ * works the real figure (with the CGST/SGST split and rounding); this is the
+ * same arithmetic without the split.
+ */
+export function gstByRate(draft: BillDraft, chargesGst: boolean): Array<{ rateBp: number; taxablePaise: number; gstPaise: number }> {
+  if (!chargesGst || !draft.gstOn) return [];
+  const rows = new Map<number, { rateBp: number; taxablePaise: number; gstPaise: number }>();
+  for (const line of draft.lines) {
+    if (isBlankLine(line)) continue;
+    const rateBp = lineRateBp(draft, line);
+    if (!rateBp) continue;
+    const amount = subtotalOf([line]);
+    const row = rows.get(rateBp) ?? { rateBp, taxablePaise: 0, gstPaise: 0 };
+    row.taxablePaise += amount;
+    rows.set(rateBp, row);
+  }
+  return [...rows.values()]
+    .map((r) => ({ ...r, gstPaise: Math.round((r.taxablePaise * r.rateBp) / 10000) }))
+    .sort((a, b) => a.rateBp - b.rateBp);
 }
 
 /** "AMC visit + 2 fans": last time's bill in a few words, for the offer. */

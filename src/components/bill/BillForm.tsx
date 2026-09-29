@@ -12,6 +12,9 @@ import { formatDateShort, type CivilDate } from '@/lib/dates';
 import {
   blankLine,
   checkBill,
+  gstByRate,
+  hasMixedRates,
+  lineRateBp,
   linesToDraft,
   subtotalOf,
   type BillDraft,
@@ -41,6 +44,8 @@ export interface BillFormProps {
   customer: { customerId: string | null; name: string; phone: string | null };
   /** Whether the business charges GST: decides if the rate is asked at all. */
   chargesGst: boolean;
+  /** "GST lagega?" as it was last answered on this draft. */
+  initialGstOn: boolean;
   gstRatesBp: number[];
   defaultGstRateBp: number | null;
   lastTime: LastTime | null;
@@ -76,6 +81,8 @@ export function BillForm(props: BillFormProps) {
     customerGstin: '',
     lines: props.initialLines.length ? props.initialLines : [blankLine(newId())],
     gstRateBp: props.chargesGst ? props.defaultGstRateBp : null,
+    gstOn: props.initialGstOn,
+    perLine: hasMixedRates(props.initialLines),
   });
   const [problem, setProblem] = useState<{ problem: BillProblem; message: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +116,9 @@ export function BillForm(props: BillFormProps) {
   };
 
   const subtotal = subtotalOf(draft.lines);
-  const gst = props.chargesGst && draft.gstRateBp ? Math.round((subtotal * draft.gstRateBp) / 10000) : 0;
+  const gstRows = gstByRate(draft, props.chargesGst);
+  const gst = gstRows.reduce((s, r) => s + r.gstPaise, 0);
+  const taxed = props.chargesGst && draft.gstOn;
 
   async function make(opts: { force?: boolean; ratesConfirmed?: boolean } = {}) {
     const checked = checkBill(draft, { needsCustomerName: isNewCustomer, chargesGst: props.chargesGst });
@@ -141,6 +150,7 @@ export function BillForm(props: BillFormProps) {
         gstin: draft.customerGstin || null,
       },
       lines: checked.lines,
+      withoutGst: props.chargesGst && !draft.gstOn,
     });
     setBusy(false);
     if (!r.ok) {
@@ -259,7 +269,8 @@ export function BillForm(props: BillFormProps) {
               type="button"
               className="btn btn--secondary btn--small"
               onClick={() => {
-                setDraft((d) => ({ ...d, lines: linesToDraft(props.lastTime!.lines, newId) }));
+                const lines = linesToDraft(props.lastTime!.lines, newId);
+                setDraft((d) => ({ ...d, lines, perLine: d.perLine || hasMixedRates(lines) }));
                 setOfferLastTime(false);
               }}
             >
@@ -366,6 +377,22 @@ export function BillForm(props: BillFormProps) {
                 />
                 {lineProblem(line.id, 'rate') && <span className="field__error" role="alert">{lineProblem(line.id, 'rate')}</span>}
               </div>
+              {taxed && draft.perLine && (
+                <div className="field bill-line__gst">
+                  <label className="field__label" htmlFor={`gst-${line.id}`}>{t('bill.line.gst')}</label>
+                  <select
+                    id={`gst-${line.id}`}
+                    className="select"
+                    value={lineRateBp(draft, line) ?? ''}
+                    onChange={(e) => setLine(line.id, { gstBp: e.target.value === '' ? null : Number(e.target.value) })}
+                  >
+                    <option value="">—</option>
+                    {props.gstRatesBp.map((bp) => (
+                      <option key={bp} value={bp}>{bp / 100}%</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {draft.lines.length > 1 && (
                 <button
                   type="button"
@@ -384,7 +411,7 @@ export function BillForm(props: BillFormProps) {
           type="button"
           className="btn btn--ghost"
           style={{ alignSelf: 'flex-start', paddingInline: 4 }}
-          onClick={() => setDraft((d) => ({ ...d, lines: [...d.lines, blankLine(newId())] }))}
+          onClick={() => setDraft((d) => ({ ...d, lines: [...d.lines, { ...blankLine(newId()), gstBp: d.gstRateBp }] }))}
         >
           {t('bill.addItem')}
         </button>
@@ -403,36 +430,71 @@ export function BillForm(props: BillFormProps) {
       )}
 
       {props.chargesGst && (
-        <section className="card">
+        <section className="card stack" data-testid="bill-gst">
           <div className="field">
-            <label className="field__label" htmlFor="bill-gst">{t('bill.gstRate')}</label>
-            <select
-              id="bill-gst"
-              className="select"
-              value={draft.gstRateBp ?? ''}
-              onChange={(e) => setDraft((d) => ({ ...d, gstRateBp: e.target.value === '' ? null : Number(e.target.value) }))}
-            >
-              <option value="">—</option>
-              {props.gstRatesBp.map((bp) => (
-                <option key={bp} value={bp}>{bp / 100}%</option>
-              ))}
-            </select>
-            <span className="field__hint">{t('bill.gstRateHint')}</span>
+            <span className="field__label" id="bill-gst-on">{t('bill.gstOn.q')}</span>
+            <div className="chips" role="group" aria-labelledby="bill-gst-on">
+              <button type="button" id="bill-gst-yes" className="chip" aria-pressed={draft.gstOn} onClick={() => setDraft((d) => ({ ...d, gstOn: true }))}>
+                <span className="chip__name">{t('bill.gstOn.yes')}</span>
+              </button>
+              <button type="button" id="bill-gst-no" className="chip" aria-pressed={!draft.gstOn} onClick={() => setDraft((d) => ({ ...d, gstOn: false }))}>
+                <span className="chip__name">{t('bill.gstOn.no')}</span>
+              </button>
+            </div>
+            {!draft.gstOn && <span className="field__hint">{t('bill.gstOff.hint')}</span>}
           </div>
+          {draft.gstOn && !draft.perLine && (
+            <div className="field">
+              <label className="field__label" htmlFor="bill-gst">{t('bill.gstRate')}</label>
+              <select
+                id="bill-gst"
+                className="select"
+                value={draft.gstRateBp ?? ''}
+                onChange={(e) => setDraft((d) => ({ ...d, gstRateBp: e.target.value === '' ? null : Number(e.target.value) }))}
+              >
+                <option value="">—</option>
+                {props.gstRatesBp.map((bp) => (
+                  <option key={bp} value={bp}>{bp / 100}%</option>
+                ))}
+              </select>
+              <span className="field__hint">{t('bill.gstRateHint')}</span>
+            </div>
+          )}
+          {draft.gstOn && draft.perLine && <span className="field__hint">{t('bill.perLine.hint')}</span>}
+          {draft.gstOn && (
+            <button
+              type="button"
+              className="btn btn--ghost btn--small"
+              style={{ alignSelf: 'flex-start', paddingInline: 4 }}
+              data-testid="bill-per-line"
+              onClick={() =>
+                setDraft((d) =>
+                  d.perLine
+                    ? { ...d, perLine: false }
+                    : // Each line starts from the bill's rate, so switching changes nothing until a line is changed.
+                      { ...d, perLine: true, lines: d.lines.map((l) => ({ ...l, gstBp: l.gstBp ?? d.gstRateBp })) },
+                )
+              }
+            >
+              {draft.perLine ? t('bill.perLine.off') : t('bill.perLine')}
+            </button>
+          )}
         </section>
       )}
 
       <section className="card stack stack--tight">
-        {props.chargesGst && (
+        {taxed && (
           <>
             <div className="row row--between small muted">
               <span>{t('bill.subtotal')}</span>
               <Money paise={subtotal} />
             </div>
-            <div className="row row--between small muted">
-              <span>{t('bill.gst', { rate: (draft.gstRateBp ?? 0) / 100 })}</span>
-              <Money paise={gst} />
-            </div>
+            {(gstRows.length ? gstRows : [{ rateBp: draft.gstRateBp ?? 0, gstPaise: 0 }]).map((r) => (
+              <div key={r.rateBp} className="row row--between small muted">
+                <span>{t('bill.gst', { rate: r.rateBp / 100 })}</span>
+                <Money paise={r.gstPaise} />
+              </div>
+            ))}
           </>
         )}
         <div className="row row--between">

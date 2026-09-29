@@ -239,6 +239,20 @@ describe('issuance assessment', () => {
     expect(a.chargesGst).toBe(false);
   });
 
+  it('a registered business can make one bill without GST: a Bill of Supply', () => {
+    const a = assessIssuance({ ...base, supplyFlags: ['without-gst'], eInvoicingSelfDeclaredNotApplicable: false, placeOfSupplyStateCode: null, linesMissingRate: 0 });
+    expect(a.canIssue).toBe(true);
+    expect(a.documentKind).toBe('bill-of-supply');
+    expect(a.documentTitle).toBe('Bill of Supply');
+    expect(a.chargesGst).toBe(false);
+  });
+
+  it('"without GST" changes nothing for a business that never charges it', () => {
+    const a = assessIssuance({ ...base, registrationType: 'not-registered', sellerGstin: null, supplyFlags: ['without-gst'] });
+    expect(a.canIssue).toBe(true);
+    expect(a.documentTitle).toBe('Invoice');
+  });
+
   it('blocks until e-invoicing applicability has been settled', () => {
     const a = assessIssuance({ ...base, eInvoicingSelfDeclaredNotApplicable: false });
     expect(a.canIssue).toBe(false);

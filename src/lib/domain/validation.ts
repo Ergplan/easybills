@@ -114,6 +114,7 @@ export const supplyFlag = z.enum([
   'advance-receipt',
   'exempt-or-nil-rated',
   'non-gst-supply',
+  'without-gst',
 ]);
 
 const invoiceLineFields = z.object({

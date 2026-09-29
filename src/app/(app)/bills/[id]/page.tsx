@@ -9,6 +9,7 @@ import { Icon } from '@/components/Icon';
 import { t } from '@/lib/copy';
 import { formatDateShort, todayIst } from '@/lib/dates';
 import { linesToDraft, summariseLines } from '@/lib/domain/bill-form';
+import { lookOf } from '@/lib/domain/bill-look';
 import Link from 'next/link';
 
 import { TopBar } from '@/components/TopBar';
@@ -64,6 +65,8 @@ export default async function BillPage({
             bill: { number: invoice.number ?? '', amountDuePaise: invoice.balancePaise, issueDate: invoice.issueDate },
           })}
           language={customer ? { customerId: customer.id, current, suggestion: guess && guess.language !== current ? guess : null } : null}
+          shareAs={lookOf(business).shareAs}
+          paper={lookOf(business).paper}
         />
       </main>
       </>
@@ -112,6 +115,7 @@ export default async function BillPage({
           payments={payments.filter((p) => !p.reversalOfPaymentId && !p.reversedByPaymentId)}
           adjustments={adjustments.map((a) => ({ number: a.number ?? '', amountPaise: a.amountPaise, reason: a.reason, issueDate: a.issueDate }))}
           today={todayIst()}
+          paper={lookOf(business).paper}
         />
       </main>
       </>
@@ -126,7 +130,8 @@ export default async function BillPage({
     sellerStateCode: business.stateCode,
     sellerGstin: business.gstin,
     placeOfSupplyStateCode: invoice.placeOfSupplyStateCode,
-    supplyFlags: invoice.supplyFlags,
+    // Whether the business charges GST at all; "not on this bill" is the form's own choice.
+    supplyFlags: invoice.supplyFlags.filter((f) => f !== 'without-gst'),
     declaredAggregateTurnoverPaise: business.declaredAggregateTurnoverPaise,
     eInvoicingSelfDeclaredNotApplicable: business.eInvoicingSelfDeclaredNotApplicable,
     issueDate: invoice.issueDate,
@@ -164,6 +169,7 @@ export default async function BillPage({
         issueDate={invoice.issueDate}
         customer={{ customerId: invoice.customer.customerId, name: invoice.customer.name, phone: invoice.customer.phone }}
         chargesGst={assessment.chargesGst}
+        initialGstOn={!invoice.supplyFlags.includes('without-gst')}
         gstRatesBp={[...DEFAULT_RULE_PACK.selectableRates.value]}
         defaultGstRateBp={
           invoice.lines[0]?.taxRateChosen && invoice.lines[0].taxRateBp > 0

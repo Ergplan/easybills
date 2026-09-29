@@ -26,7 +26,13 @@ export type SupplyFlag =
   | 'reverse-charge'
   | 'advance-receipt'
   | 'exempt-or-nil-rated'
-  | 'non-gst-supply';
+  | 'non-gst-supply'
+  /**
+   * The owner said "GST nahi lagega" on this bill. For a registered business
+   * it is issued as a Bill of Supply with no tax on it; for everyone else it
+   * changes nothing, since no GST is charged anyway.
+   */
+  | 'without-gst';
 
 export const SUPPLY_FLAG_LABELS: Record<SupplyFlag, string> = {
   export: 'Export outside India',
@@ -36,6 +42,7 @@ export const SUPPLY_FLAG_LABELS: Record<SupplyFlag, string> = {
   'advance-receipt': 'Advance received before supply',
   'exempt-or-nil-rated': 'Exempt or nil-rated supply',
   'non-gst-supply': 'Non-GST supply (such as petrol or alcohol)',
+  'without-gst': 'No GST charged on this bill',
 };
 
 export type DocumentKind = 'tax-invoice' | 'invoice-no-gst' | 'bill-of-supply' | 'blocked';
@@ -86,7 +93,9 @@ export function assessIssuance(subject: IssuanceSubject, pack: RulePack = DEFAUL
   const notices: string[] = [];
 
   // --- Unsupported supply types -------------------------------------------
+  const withoutGst = subject.supplyFlags.includes('without-gst');
   for (const flag of subject.supplyFlags) {
+    if (flag === 'without-gst') continue;
     blockers.push({
       code: `unsupported-supply:${flag}`,
       message: `This bill is marked as: ${SUPPLY_FLAG_LABELS[flag]}. This app cannot issue that kind of bill yet.`,
@@ -109,6 +118,22 @@ export function assessIssuance(subject: IssuanceSubject, pack: RulePack = DEFAUL
       break;
     }
     case 'regular': {
+      if (withoutGst) {
+        // A registered seller's bill that carries no tax is a Bill of Supply:
+        // their GST number is still printed, and no tax is added or split.
+        documentKind = 'bill-of-supply';
+        documentTitle = 'Bill of Supply';
+        chargesGst = false;
+        if (!subject.sellerGstin) {
+          blockers.push({
+            code: 'missing-gstin',
+            message: 'Your GST number is needed on this bill.',
+            whatYouCanDo: 'Add your GST number under Aap.',
+          });
+        }
+        notices.push('No GST is added to this bill, as you chose.');
+        break;
+      }
       documentKind = 'tax-invoice';
       documentTitle = 'Tax Invoice';
       chargesGst = true;
@@ -167,7 +192,7 @@ export function assessIssuance(subject: IssuanceSubject, pack: RulePack = DEFAUL
   // Without an implemented IRP flow, a covered supplier must not be handed a PDF
   // as though it were a complete document. We can only clear this when we have a
   // VERIFIED threshold; otherwise we ask the owner to confirm, once.
-  if (subject.registrationType === 'regular') {
+  if (subject.registrationType === 'regular' && !withoutGst) {
     const threshold = resolveVerified(pack.eInvoicing.aggregateTurnoverThreshold, subject.issueDate);
     if (threshold === null) {
       if (!subject.eInvoicingSelfDeclaredNotApplicable) {

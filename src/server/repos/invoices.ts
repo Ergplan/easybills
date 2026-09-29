@@ -310,7 +310,8 @@ export async function issueInvoice(args: {
     const issued: IssuedSnapshot = {
       issuedAt: now,
       issuedByUid: args.uid,
-      documentKind: assessment.documentKind === 'tax-invoice' ? 'tax-invoice' : 'invoice-no-gst',
+      documentKind:
+        assessment.documentKind === 'tax-invoice' || assessment.documentKind === 'bill-of-supply' ? assessment.documentKind : 'invoice-no-gst',
       documentTitle: assessment.documentTitle,
       seller: {
         legalName: business.legalName,

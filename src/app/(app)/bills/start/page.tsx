@@ -19,7 +19,7 @@ export default async function StartBillPage() {
     <>
       <TopBar title={t('start.title')} back={{ href: '/home' }} />
       <main className="page stack">
-        <p className="muted">{t('start.sub')}</p>
+        <p className="muted">{t(home.allCustomers.length ? 'start.sub' : 'start.subFirst')}</p>
         <section className="card">
           <CustomerPicker customers={peopleRows(home)} mode="bill" autoFocus={home.allCustomers.length > 8} />
         </section>

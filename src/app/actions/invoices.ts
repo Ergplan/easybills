@@ -12,6 +12,7 @@ import { revalidatePath } from 'next/cache';
 import { assertCivilDate, formatDateShort, todayIst } from '@/lib/dates';
 import { saveDraftInput, paymentInput } from '@/lib/domain/validation';
 import type { InvoiceLine, InvoiceRecord } from '@/lib/domain/types';
+import type { SupplyFlag } from '@/lib/gst/scenarios';
 import { formatMoneyPlain, formatPercentPlain, formatQuantityPlain, parseMoney } from '@/lib/money';
 import { requireBusiness } from '@/server/auth/guard';
 import { requireCurrentContext } from '@/server/auth/current';
@@ -243,6 +244,8 @@ export async function makeBillAction(
     lines: InvoiceLine[];
     /** The owner saw the "already billed?" question and said make it anyway. */
     force?: boolean;
+    /** "GST lagega? Nahi": this one bill carries no GST. */
+    withoutGst?: boolean;
   },
 ): Promise<ActionResult<{ invoice: InvoiceRecord; message: string }> | { ok: false; code: 'duplicate'; error: string; duplicate: DuplicateHit }> {
   try {
@@ -285,6 +288,7 @@ export async function makeBillAction(
     }
 
     const issueDate = assertCivilDate(raw.issueDate, 'date');
+    const supplyFlags: SupplyFlag[] = raw.withoutGst ? ['without-gst'] : [];
 
     // "Didn't I bill them this already?" Same customer, same total, within a
     // week: asked once, and made anyway when the owner says so.
@@ -295,7 +299,7 @@ export async function makeBillAction(
     if (draft.projectId && draft.projectStage) {
       const project = await getProject(businessId, draft.projectId);
       if (project) {
-        const priced = priceInvoice({ business, lines: raw.lines, placeOfSupplyStateCode: party.stateCode ?? business.stateCode, supplyFlags: [], issueDate });
+        const priced = priceInvoice({ business, lines: raw.lines, placeOfSupplyStateCode: party.stateCode ?? business.stateCode, supplyFlags, issueDate });
         stageBasis = project.gstMode === 'included' ? priced.totals.totalBeforeRoundingPaise : priced.totals.taxableValuePaise;
         const { entries } = await billsForProject(businessId, project.id);
         const before = entries.filter((e) => e.status === 'issued' && e.invoiceId !== draft.id).reduce((s, e) => s + e.basisPaise, 0);
@@ -304,7 +308,7 @@ export async function makeBillAction(
     }
 
     if (!raw.force && !draft.projectId) {
-      const priced = priceInvoice({ business, lines: raw.lines, placeOfSupplyStateCode: party.stateCode ?? business.stateCode, supplyFlags: [], issueDate });
+      const priced = priceInvoice({ business, lines: raw.lines, placeOfSupplyStateCode: party.stateCode ?? business.stateCode, supplyFlags, issueDate });
       const recent = party.customerId
         ? await listInvoices(businessId, { status: 'issued', customerId: party.customerId, limit: 20 })
         : await listInvoices(businessId, { status: 'issued', limit: 50 });
@@ -330,7 +334,7 @@ export async function makeBillAction(
       issueDate,
       customer: party,
       placeOfSupplyStateCode: party.stateCode ?? business.stateCode,
-      supplyFlags: [],
+      supplyFlags,
       lines: saveDraftInput.shape.lines.parse(
         raw.lines.map((l) => ({
           ...l,

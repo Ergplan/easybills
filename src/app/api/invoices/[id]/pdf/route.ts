@@ -1,15 +1,17 @@
 import { NextResponse } from 'next/server';
 
+import { lookFromQuery, lookOf } from '@/lib/domain/bill-look';
 import { requireBusiness } from '@/server/auth/guard';
 import { getInvoice } from '@/server/repos/invoices';
-import { renderInvoicePdf } from '@/server/pdf/render';
+import { renderInvoiceImage, renderInvoicePdf } from '@/server/pdf/render';
 import { upiQrDataUrl } from '@/server/pdf/upi';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * Serve an invoice PDF.
+ * Serve a bill: a PDF, or a photo (?format=jpg), in the owner's saved design
+ * and paper unless the link asks for another (?paper=80mm, ?design=simple).
  *
  * The PDF is generated on demand and streamed straight to the owner. It is never
  * written to a public bucket, never given a guessable permanent URL, and the
@@ -37,13 +39,17 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
           })
         : null;
 
-    const pdf = await renderInvoicePdf(invoice, { upiQrDataUrl: qr });
+    const { look, format } = lookFromQuery(url.searchParams, lookOf(business));
+    const file =
+      format === 'jpg'
+        ? await renderInvoiceImage(invoice, { upiQrDataUrl: qr, look })
+        : await renderInvoicePdf(invoice, { upiQrDataUrl: qr, look });
     const safeNumber = (invoice.number ?? 'draft').replace(/[^A-Za-z0-9\-_]/g, '-');
 
-    return new NextResponse(new Uint8Array(pdf), {
+    return new NextResponse(new Uint8Array(file), {
       headers: {
-        'content-type': 'application/pdf',
-        'content-disposition': `${disposition}; filename="${safeNumber}.pdf"`,
+        'content-type': format === 'jpg' ? 'image/jpeg' : 'application/pdf',
+        'content-disposition': `${disposition}; filename="${safeNumber}.${format}"`,
         // Never cached by a shared cache: this is a private business document.
         'cache-control': 'private, no-store',
       },

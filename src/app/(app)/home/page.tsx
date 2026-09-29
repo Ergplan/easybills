@@ -41,7 +41,7 @@ export default async function HomePage() {
 
   const dueSub =
     home.due.length === 0
-      ? t('home.due.subEmpty')
+      ? t(home.recentSent.length ? 'home.due.subEmpty' : 'home.due.subNoBills')
       : home.dueFrom === 1
         ? t('task.due.subOne', { amount: moneyForMessage(home.duePaise) })
         : t('task.due.sub', { amount: moneyForMessage(home.duePaise), n: home.dueFrom });

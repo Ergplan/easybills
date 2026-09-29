@@ -7,10 +7,14 @@ import { useState } from 'react';
 import { cancelAndRedoAction, kamKaroAction, likhLoAction } from '@/app/actions/invoices';
 import { Money } from '@/components/Money';
 import { t } from '@/lib/copy';
+import type { BillPaper } from '@/lib/domain/bill-look';
 import { moneyForMessage } from '@/lib/copy/messages';
 import { formatDateShort, todayIst, type CivilDate } from '@/lib/dates';
 import { formatQuantityPlain } from '@/lib/money';
 import type { InvoiceRecord, PaymentRecord } from '@/lib/domain/types';
+
+import { billFileUrl } from './bill-file';
+import { OtherFormats } from './BillDone';
 
 type How = 'upi' | 'cash' | 'bank-transfer' | 'other';
 const HOWS: Array<{ key: How; label: 'paid.how.upi' | 'paid.how.cash' | 'paid.how.bank' | 'paid.how.other' }> = [
@@ -34,9 +38,12 @@ export function BillView({
   payments,
   adjustments,
   today,
+  paper,
 }: {
   businessId: string;
   invoice: InvoiceRecord;
+  /** The paper chosen under Aap, marked among the other sizes. */
+  paper: BillPaper;
   payments: PaymentRecord[];
   adjustments: Array<{ number: string; amountPaise: number; reason: string; issueDate: CivilDate }>;
   today: CivilDate;
@@ -89,7 +96,7 @@ export function BillView({
     setReason('');
     router.refresh();
   }
-  const pdfUrl = `/api/invoices/${invoice.id}/pdf?b=${encodeURIComponent(businessId)}`;
+  const fileUrl = (ask: Parameters<typeof billFileUrl>[2]) => billFileUrl(invoice.id, businessId, ask);
 
   async function likhLo() {
     setBusy(true);
@@ -332,10 +339,11 @@ export function BillView({
         )}
       </section>
 
-      <div className="row row--tight">
-        <a className="btn btn--secondary grow" href={`${pdfUrl}&download=1`}>{t('bill.done.pdf')}</a>
-        <Link className="btn btn--secondary grow" href={`/bills/${invoice.id}?done=1`}>{t('bill.view.share')}</Link>
+      <div className="stack stack--tight">
+        <Link className="btn btn--secondary btn--block" href={`/bills/${invoice.id}?done=1`}>{t('bill.view.share')}</Link>
+        <a className="btn btn--secondary btn--block" href={fileUrl({ format: 'pdf', download: true })}>{t('bill.done.pdf')}</a>
       </div>
+      <OtherFormats url={fileUrl} current={paper} />
     </div>
   );
 }
