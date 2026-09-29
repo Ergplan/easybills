@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { openAccess, publicFirebaseConfig, usingAuthEmulator, voiceConfig } from '@/lib/env';
 import { pool } from '@/server/db/pool';
+import { doclingHealth } from '@/server/import/docling';
 import { pdfCapability } from '@/server/pdf/render';
 
 export const dynamic = 'force-dynamic';
@@ -53,6 +54,9 @@ export async function GET() {
   } catch {
     checks.pdfs = 'FAILED - could not be checked';
   }
+
+  // Optional: without it, photos of bills are refused with a sentence.
+  checks.docling = await doclingHealth();
 
   const ok = checks.database === 'ok';
   return NextResponse.json(

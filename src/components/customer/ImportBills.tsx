@@ -16,7 +16,8 @@ interface Reading {
   kind: string;
   customers: ImportedCustomer[];
   existing: Array<string | null>;
-  problem: 'no-text' | 'scanned' | 'unrecognised' | 'unsupported' | 'too-big' | null;
+  problem: 'no-text' | 'scanned' | 'unrecognised' | 'unsupported' | 'too-big' | 'ocr-failed' | null;
+  reader: 'text' | 'docling' | 'sheet' | null;
 }
 
 interface Row {
@@ -121,7 +122,7 @@ export function ImportBills({ businessId, fy }: { businessId: string; fy: string
         id="import-files"
         type="file"
         multiple
-        accept=".pdf,.csv,.xlsx,application/pdf,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        accept=".pdf,.csv,.xlsx,.jpg,.jpeg,.png,.webp,application/pdf,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*"
         className="sr-only"
         onChange={(e) => void upload(e.target.files)}
       />
@@ -143,6 +144,7 @@ export function ImportBills({ businessId, fy }: { businessId: string; fy: string
           ) : (
             t('import.found', { n: r.customers.length })
           )}
+          {r.reader === 'docling' && !r.problem ? <span className="faint">{' · '}{t('import.viaOcr')}</span> : null}
         </div>
       ))}
 

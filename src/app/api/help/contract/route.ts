@@ -3,14 +3,14 @@ import { NextResponse } from 'next/server';
 import { DEFAULT_RULE_PACK } from '@/lib/gst/ruleset';
 import { requireBusiness } from '@/server/auth/guard';
 import { readContract } from '@/server/help/read-contract';
-import { MAX_FILE_BYTES, pdfPages } from '@/server/import/read-file';
+import { documentText, MAX_FILE_BYTES } from '@/server/import/read-file';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /**
- * Read contract terms from typed text or a contract PDF. Nothing is stored:
+ * Read contract terms from typed text, a contract PDF, or a photo of one. Nothing is stored:
  * the result goes back to the helper for the owner to check.
  */
 export async function POST(request: Request) {
@@ -23,9 +23,10 @@ export async function POST(request: Request) {
     if (file instanceof File) {
       const bytes = new Uint8Array(await file.arrayBuffer());
       if (bytes.length > MAX_FILE_BYTES) return NextResponse.json({ problem: 'too-big' });
-      if (Buffer.from(bytes.subarray(0, 4)).toString() !== '%PDF') return NextResponse.json({ problem: 'no-text' });
-      text = (await pdfPages(bytes)).join('\n');
-      if (text.replace(/\s/g, '').length < 40) return NextResponse.json({ problem: 'no-text' });
+      // A typed PDF is read from its text; a scan or a photo goes to Docling.
+      const read = await documentText(file.name, bytes);
+      if (!read) return NextResponse.json({ problem: 'no-text' });
+      text = read.text;
     }
     if (!text.trim()) return NextResponse.json({ problem: 'no-text' });
     const result = await readContract(text, [...DEFAULT_RULE_PACK.selectableRates.value]);

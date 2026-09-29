@@ -7,7 +7,8 @@ import { listCustomers } from '@/server/repos/customers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120;
+// A phone photo through OCR on the VM's CPU takes a while.
+export const maxDuration = 300;
 
 export interface ImportReading extends FileReading {
   /** For each customer found, the id of an existing record it matches, if any. */
@@ -36,9 +37,10 @@ export async function POST(request: Request) {
       try {
         reading = await readFile(file.name, bytes, owner);
       } catch {
-        reading = { filename: file.name, kind: 'unknown', customers: [], problem: 'unrecognised', pages: 0 };
+        reading = { filename: file.name, kind: 'unknown', customers: [], problem: 'unrecognised', pages: 0, reader: null, text: [] };
       }
-      readings.push({ ...reading, existing: reading.customers.map((c) => matchExisting(c, existing)) });
+      // The text stays on the server; the screen needs only what was found.
+      readings.push({ ...reading, text: [], existing: reading.customers.map((c) => matchExisting(c, existing)) });
     }
     return NextResponse.json({ readings });
   } catch (error) {

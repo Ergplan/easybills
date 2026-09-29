@@ -184,6 +184,22 @@ export const contractReaderConfig = () => ({
   timeoutMs: Number(optional('CONTRACT_READER_TIMEOUT_MS') ?? 15_000),
 });
 
+// --- Docling: reading photos and scans of old bills --------------------------
+/**
+ * A docling-serve container that reads a scanned PDF or a phone photo of a
+ * bill (layout, tables and OCR) and hands back its text. On the VM it is the
+ * `docling` service of the compose stack and is never exposed outside it.
+ * Unset, a typed PDF or a spreadsheet still works; a photo is refused with a
+ * sentence rather than guessed at.
+ */
+export const doclingConfig = () => ({
+  url: optional('DOCLING_URL'),
+  apiKey: optional('DOCLING_API_KEY'),
+  timeoutMs: Number(optional('DOCLING_TIMEOUT_MS') ?? 180_000),
+  /** BCP-47 tags, in order of preference. Bills here are English with the odd Hindi line. */
+  ocrLanguages: (optional('DOCLING_OCR_LANGS') ?? 'en,hi').split(',').map((l) => l.trim()).filter(Boolean),
+});
+
 export const pdfConfig = () => ({
   /** Playwright Chromium path. Set in containers where the browser is preinstalled. */
   chromiumExecutablePath: optional('PLAYWRIGHT_CHROMIUM_PATH'),

@@ -436,7 +436,7 @@ export function HelpAgent(props: Props) {
               ref={fileRef}
               id="help-pdf"
               type="file"
-              accept="application/pdf,.pdf"
+              accept="application/pdf,.pdf,image/*,.jpg,.jpeg,.png"
               className="sr-only"
               onChange={(e) => {
                 const file = e.target.files?.[0];
