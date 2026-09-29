@@ -9,7 +9,6 @@ import { createCustomer, customerToParty } from '@/server/repos/customers';
 import { createItem } from '@/server/repos/items';
 import { emptyParty, issueInvoice, newInvoiceId, saveDraft } from '@/server/repos/invoices';
 import { recordPayment } from '@/server/repos/payments';
-import { createSchedule } from '@/server/repos/schedules';
 
 /**
  * Synthetic seed data.
@@ -229,28 +228,6 @@ export async function seedDemoBusiness(args: {
     reference: null,
     note: null,
     allocations: [{ invoiceId: walkInIssued.id, amountPaise: walkInIssued.totals.grandTotalPaise }],
-  });
-
-  // A monthly schedule, so the Home review queue has something to show.
-  await createSchedule({
-    businessId: business.id,
-    uid: args.uid,
-    customerId: ravi.id,
-    customerName: ravi.name,
-    anchorDay: 1,
-    startDate: addDays(today, -1),
-    endDate: null,
-    billingPeriodChoice: 'previous-month',
-    template: {
-      version: 1,
-      customer: customerToParty(ravi),
-      placeOfSupplyStateCode: specs.registrationType === 'regular' ? specs.stateCode : null,
-      lines: [line('Monthly service', '1', '700')],
-      notes: null,
-      paymentTermsDays: 7,
-      supplyFlags: [],
-      effectiveFromPeriod: monthPeriodOf(today),
-    },
   });
 
   return configured;

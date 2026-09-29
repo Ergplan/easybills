@@ -3,7 +3,7 @@ import { SUPPORTED_SCENARIOS_SUMMARY, UNSUPPORTED_SCENARIOS_SUMMARY } from '@/li
 import { TopBar } from '@/components/TopBar';
 import { requireCurrentContext } from '@/server/auth/current';
 import { describeAiConfiguration } from '@/server/ai/adapters';
-import { backgroundWorkConfigured, gspConfig, openAccess } from '@/lib/env';
+import { openAccess } from '@/lib/env';
 import { pdfCapability } from '@/server/pdf/render';
 
 import { SettingsForm } from './SettingsForm';
@@ -24,11 +24,9 @@ export default async function SettingsPage({
   const { business, user } = await requireCurrentContext();
   const audit = auditRulePack();
   const ai = describeAiConfiguration();
-  const gsp = gspConfig();
   // Whether this deployment can actually produce a PDF. Asked here rather than
   // discovered when an owner taps Download on a bill they have already sent.
   const pdf = await pdfCapability();
-  const backgroundWork = backgroundWorkConfigured();
 
   return (
     <>
@@ -40,9 +38,7 @@ export default async function SettingsPage({
           userEmail={user.email}
           ruleAudit={audit}
           aiStatus={ai}
-          gspMode={gsp.mode}
           pdfStatus={pdf}
-          backgroundWork={backgroundWork}
           openAccess={openAccess()}
           supported={[...SUPPORTED_SCENARIOS_SUMMARY]}
           unsupported={[...UNSUPPORTED_SCENARIOS_SUMMARY]}

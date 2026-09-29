@@ -18,8 +18,8 @@ import type {
 } from '@/lib/domain/types';
 import type { SupplyFlag } from '@/lib/gst/scenarios';
 import { DEFAULT_RULE_PACK } from '@/lib/gst/ruleset';
-import { db, FieldValue } from '@/server/firebase/admin';
-import { businessDoc, countersCol, counterId, invoicesCol } from '@/server/firebase/paths';
+import { deleteDoc, getDoc, patchDoc, putDoc, queryDocs } from '@/server/db/docs';
+import { pool, withTx, type Db } from '@/server/db/pool';
 import { recordAudit, recordAuditInTransaction } from '@/server/services/audit';
 import { computeBalance, computeDueDate, paymentStatusFor, priceInvoice } from '@/server/services/invoice-calc';
 
@@ -65,13 +65,13 @@ export function emptyParty(name = 'Walk-in customer'): InvoiceParty {
 }
 
 /**
- * Fill in fields added after a document was written.
+ * Fill in fields added after a record was written.
  *
- * A Firestore read is a cast, so a document written by an earlier build arrives
+ * A JSON read is a cast, so a record written by an earlier build arrives
  * missing whatever has been added since, while the type says otherwise. Filling
  * the gap in one place lets every caller trust the type rather than re-checking.
  */
-function asInvoice(data: FirebaseFirestore.DocumentData): InvoiceRecord {
+function asInvoice(data: InvoiceRecord): InvoiceRecord {
   const rec = data as InvoiceRecord;
   return {
     ...rec,
@@ -86,15 +86,23 @@ function asInvoice(data: FirebaseFirestore.DocumentData): InvoiceRecord {
 
 /** The owner opened WhatsApp with a reminder. Counted, dated, and that is all we know. */
 export async function noteReminder(businessId: string, invoiceId: string): Promise<void> {
-  await invoicesCol(businessId).doc(invoiceId).update({
-    remindersSent: FieldValue.increment(1),
-    lastRemindedAt: new Date().toISOString(),
-  });
+  await pool().query(
+    `update invoices set data = data || jsonb_build_object(
+       'remindersSent', coalesce((data->>'remindersSent')::int, 0) + 1,
+       'lastRemindedAt', $3::text)
+     where business_id = $1 and id = $2`,
+    [businessId, invoiceId, new Date().toISOString()],
+  );
 }
 
 export async function getInvoice(businessId: string, invoiceId: string): Promise<InvoiceRecord | null> {
-  const snap = await invoicesCol(businessId).doc(invoiceId).get();
-  return snap.exists ? asInvoice(snap.data()!) : null;
+  const data = await getDoc<InvoiceRecord>(pool(), 'invoices', businessId, invoiceId);
+  return data ? asInvoice(data) : null;
+}
+
+/** Merge fields into a bill's record. For links (contract, stage) set after the fact. */
+export async function patchInvoice(businessId: string, invoiceId: string, patch: Partial<InvoiceRecord>): Promise<void> {
+  await patchDoc(pool(), 'invoices', businessId, invoiceId, patch);
 }
 
 /**
@@ -121,12 +129,11 @@ export async function saveDraft(args: {
   notes: string | null;
   baseRevision: number;
 }): Promise<InvoiceRecord> {
-  const ref = invoicesCol(args.business.id).doc(args.invoiceId);
   const now = new Date().toISOString();
 
-  return db().runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const existing = snap.exists ? asInvoice(snap.data()!) : null;
+  return withTx(async (tx) => {
+    const stored = await getDoc<InvoiceRecord>(tx, 'invoices', args.business.id, args.invoiceId, { lock: true });
+    const existing = stored ? asInvoice(stored) : null;
 
     if (existing && existing.status !== 'draft') {
       throw new InvoiceStateError('This bill has already been issued and cannot be edited.');
@@ -184,7 +191,7 @@ export async function saveDraft(args: {
       createdByUid: existing?.createdByUid ?? args.uid,
     };
 
-    tx.set(ref, record);
+    await putDoc(tx, 'invoices', args.business.id, args.invoiceId, record);
     return record;
   });
 }
@@ -198,7 +205,7 @@ function formatNumber(series: BusinessRecord['numbering'], fy: FinancialYear, se
 /**
  * Issue an invoice.
  *
- * Everything below happens in ONE Firestore transaction:
+ * Everything below happens in ONE Postgres transaction:
  *   1. re-read the draft and re-authorise it,
  *   2. re-price it from the stored lines (the client's totals are never trusted),
  *   3. re-run the legal assessment, refusing outright if it is blocked,
@@ -207,8 +214,8 @@ function formatNumber(series: BusinessRecord['numbering'], fy: FinancialYear, se
  *   6. write the immutable snapshot of seller, customer, lines and tax terms.
  *
  * Double-click safety: if the draft is already issued when the transaction runs,
- * the existing invoice is returned unchanged. Firestore retries the whole
- * transaction on contention, so two concurrent calls cannot both allocate.
+ * the existing invoice is returned unchanged. The draft row is locked first,
+ * so a second concurrent call waits, then finds it issued.
  *
  * PDF rendering is deliberately OUTSIDE this transaction. A failed render must
  * never roll back an issued invoice -- the owner retries the render of the same
@@ -222,12 +229,11 @@ export async function issueInvoice(args: {
   expectedRevision?: number;
 }): Promise<{ invoice: InvoiceRecord; alreadyIssued: boolean }> {
   const businessId = args.business.id;
-  const invoiceRef = invoicesCol(businessId).doc(args.invoiceId);
 
-  return db().runTransaction(async (tx) => {
-    const snap = await tx.get(invoiceRef);
-    if (!snap.exists) throw new InvoiceStateError('This bill no longer exists.');
-    const draft = asInvoice(snap.data()!);
+  return withTx(async (tx) => {
+    const stored = await getDoc<InvoiceRecord>(tx, 'invoices', businessId, args.invoiceId, { lock: true });
+    if (!stored) throw new InvoiceStateError('This bill no longer exists.');
+    const draft = asInvoice(stored);
 
     if (draft.status === 'issued') {
       // Idempotent: a second tap, a retry or a duplicated request returns the
@@ -246,9 +252,11 @@ export async function issueInvoice(args: {
 
     // Re-read the business inside the transaction: the snapshot must reflect the
     // profile as it stands at issue time, not as it was when the page loaded.
-    const bizSnap = await tx.get(businessDoc(businessId));
-    if (!bizSnap.exists) throw new InvoiceStateError('Business not found.');
-    const business = { id: bizSnap.id, ...(bizSnap.data() as Omit<BusinessRecord, 'id'>) };
+    const bizRows = await tx.query<{ data: BusinessRecord }>('select data from businesses where id = $1 for update', [
+      businessId,
+    ]);
+    if (!bizRows.rows[0]) throw new InvoiceStateError('Business not found.');
+    const business: BusinessRecord = { ...bizRows.rows[0].data, id: businessId };
 
     const { totals, computation, assessment } = priceInvoice({
       business,
@@ -276,21 +284,19 @@ export async function issueInvoice(args: {
       ]);
     }
 
-    const seriesId = 'default';
-    const counterRef = countersCol(businessId).doc(counterId(fy, seriesId));
-    const counterSnap = await tx.get(counterRef);
-    const nextSequence = counterSnap.exists
-      ? (counterSnap.data()!.nextNumber as number)
-      : business.numbering.nextNumber;
+    const counterKey = counterId(fy, 'default');
+    const nextSequence = (await readCounter(tx, businessId, counterKey, { lock: true })) ?? business.numbering.nextNumber;
 
     const number = formatNumber(business.numbering, fy, nextSequence);
 
-    // Reserve the formatted number itself. If the owner edits the prefix so that
-    // a number would repeat, this create() fails and the whole issue aborts,
-    // rather than producing two documents bearing the same number.
-    const reservationRef = countersCol(businessId).doc(`issued__${fy}__${number}`);
-    const reservationSnap = await tx.get(reservationRef);
-    if (reservationSnap.exists) {
+    // The number itself is unique per year in the schema (invoices_number_once).
+    // Checked here first so an owner whose prefix edit would repeat a number is
+    // told why, rather than shown a database error.
+    const taken = await tx.query(
+      'select 1 from invoices where business_id = $1 and financial_year = $2 and number = $3',
+      [businessId, fy, number],
+    );
+    if (taken.rowCount) {
       throw new IssuanceBlockedError([
         {
           code: 'duplicate-number',
@@ -351,17 +357,15 @@ export async function issueInvoice(args: {
       updatedAt: now,
     };
 
-    tx.set(invoiceRef, issuedInvoice);
-    tx.set(counterRef, {
-      seriesId,
-      financialYear: fy,
-      nextNumber: nextSequence + 1,
-      updatedAt: now,
-    });
-    tx.set(reservationRef, { number, invoiceId: draft.id, financialYear: fy, issuedAt: now });
-    tx.update(businessDoc(businessId), { 'numbering.nextNumber': nextSequence + 1, updatedAt: now });
+    await putDoc(tx, 'invoices', businessId, draft.id, issuedInvoice);
+    await writeCounter(tx, businessId, counterKey, nextSequence + 1);
+    await tx.query(
+      `update businesses set data = jsonb_set(data, '{numbering,nextNumber}', to_jsonb($2::int)) || jsonb_build_object('updatedAt', $3::text)
+       where id = $1`,
+      [businessId, nextSequence + 1, now],
+    );
 
-    recordAuditInTransaction(tx, businessId, {
+    await recordAuditInTransaction(tx, businessId, {
       actorUid: args.uid,
       actorKind: 'user',
       action: 'invoice.issued',
@@ -413,23 +417,24 @@ export async function duplicateInvoice(args: {
   }).then(async (draft) => {
     // A redone contract bill is still that instalment of that contract.
     const link = { projectId: source.projectId ?? null, projectStage: source.projectStage ?? null };
-    await invoicesCol(args.business.id)
-      .doc(draft.id)
-      .update({ duplicatedFromInvoiceId: source.id, scheduleId: null, occurrenceKey: null, ...link });
+    await patchDoc(pool(), 'invoices', args.business.id, draft.id, {
+      duplicatedFromInvoiceId: source.id,
+      scheduleId: null,
+      occurrenceKey: null,
+      ...link,
+    });
     return { ...draft, duplicatedFromInvoiceId: source.id, ...link };
   });
 }
 
 export async function cancelDraft(businessId: string, invoiceId: string): Promise<void> {
-  const ref = invoicesCol(businessId).doc(invoiceId);
-  await db().runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists) return;
-    const inv = asInvoice(snap.data()!);
+  await withTx(async (tx) => {
+    const inv = await getDoc<InvoiceRecord>(tx, 'invoices', businessId, invoiceId, { lock: true });
+    if (!inv) return;
     if (inv.status !== 'draft') {
       throw new InvoiceStateError('An issued bill cannot be deleted. Use a credit note instead.');
     }
-    tx.delete(ref);
+    await deleteDoc(tx, 'invoices', businessId, invoiceId);
   });
 }
 
@@ -447,11 +452,10 @@ export async function cancelIssuedInvoice(args: {
   reason: string;
   redoneAsInvoiceId?: string | null;
 }): Promise<InvoiceRecord> {
-  const ref = invoicesCol(args.businessId).doc(args.invoiceId);
-  const cancelled = await db().runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists) throw new InvoiceStateError('That bill no longer exists.');
-    const inv = asInvoice(snap.data()!);
+  const cancelled = await withTx(async (tx) => {
+    const stored = await getDoc<InvoiceRecord>(tx, 'invoices', args.businessId, args.invoiceId, { lock: true });
+    if (!stored) throw new InvoiceStateError('That bill no longer exists.');
+    const inv = asInvoice(stored);
     if (inv.status === 'cancelled') return inv;
     if (inv.status !== 'issued') throw new InvoiceStateError('Only an issued bill can be cancelled.');
     if (inv.amountPaidPaise > 0 || inv.creditAppliedPaise > 0 || inv.debitAppliedPaise > 0 || inv.settlementDeductionPaise > 0) {
@@ -468,7 +472,7 @@ export async function cancelIssuedInvoice(args: {
       updatedAt: now,
       revision: inv.revision + 1,
     };
-    tx.update(ref, patch);
+    await patchDoc(tx, 'invoices', args.businessId, args.invoiceId, patch);
     return { ...inv, ...patch };
   });
   await recordAudit(args.businessId, {
@@ -489,13 +493,31 @@ export async function cancelIssuedInvoice(args: {
  * reservation of every issued number stays, and the counter only grows.
  */
 export async function setNextNumber(businessId: string, fy: FinancialYear, nextNumber: number): Promise<void> {
-  const ref = countersCol(businessId).doc(counterId(fy, 'default'));
-  await db().runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const current = snap.exists ? (snap.data()!.nextNumber as number) : 1;
+  await withTx(async (tx) => {
+    const current = (await readCounter(tx, businessId, counterId(fy, 'default'), { lock: true })) ?? 1;
     if (nextNumber < current && current > 1) throw new InvoiceStateError(`The next number cannot go below ${current}.`);
-    tx.set(ref, { nextNumber, updatedAt: new Date().toISOString() }, { merge: true });
+    await writeCounter(tx, businessId, counterId(fy, 'default'), nextNumber);
   });
+}
+
+/** Number-series key, e.g. "default__2026-27". */
+export const counterId = (financialYear: string, seriesId: string) => `${seriesId}__${financialYear}`;
+
+/** The next number of a series, or null when the series has not started. */
+export async function readCounter(db: Db, businessId: string, id: string, opts: { lock?: boolean } = {}): Promise<number | null> {
+  const { rows } = await db.query<{ next_number: number }>(
+    `select next_number from counters where business_id = $1 and id = $2${opts.lock ? ' for update' : ''}`,
+    [businessId, id],
+  );
+  return rows[0]?.next_number ?? null;
+}
+
+export async function writeCounter(db: Db, businessId: string, id: string, nextNumber: number): Promise<void> {
+  await db.query(
+    `insert into counters (business_id, id, next_number) values ($1, $2, $3)
+     on conflict (business_id, id) do update set next_number = excluded.next_number, updated_at = now()`,
+    [businessId, id, nextNumber],
+  );
 }
 
 export interface InvoiceListFilter {
@@ -506,42 +528,76 @@ export interface InvoiceListFilter {
 }
 
 export async function listInvoices(businessId: string, filter: InvoiceListFilter = {}): Promise<InvoiceRecord[]> {
-  let q: FirebaseFirestore.Query = invoicesCol(businessId);
-  if (filter.status) q = q.where('status', '==', filter.status);
-  if (filter.paymentStatus) q = q.where('paymentStatus', '==', filter.paymentStatus);
-  if (filter.customerId) q = q.where('customer.customerId', '==', filter.customerId);
-  q = q.orderBy('updatedAt', 'desc').limit(filter.limit ?? 100);
-  const snap = await q.get();
-  return snap.docs.map((d) => asInvoice(d.data()));
+  const where: string[] = [];
+  const params: unknown[] = [];
+  const add = (sql: string, value: unknown) => {
+    params.push(value);
+    where.push(sql.replace('?', `$${params.length + 1}`));
+  };
+  if (filter.status) add('status = ?', filter.status);
+  if (filter.paymentStatus) add('payment_status = ?', filter.paymentStatus);
+  if (filter.customerId) add('customer_id = ?', filter.customerId);
+  const rows = await queryDocs<InvoiceRecord>(pool(), 'invoices', businessId, {
+    where: where.join(' and ') || undefined,
+    params,
+    order: 'updated_at desc',
+    limit: filter.limit ?? 100,
+  });
+  return rows.map(asInvoice);
 }
 
 /**
  * The customer's most recent issued bill, for "Pichle jaisa hi?".
- *
- * No orderBy: the composite index that exists is (customer, status), and a
- * customer's bills are few enough to sort here.
  */
 export async function lastIssuedForCustomer(businessId: string, customerId: string): Promise<InvoiceRecord | null> {
-  const snap = await invoicesCol(businessId)
-    .where('customer.customerId', '==', customerId)
-    .where('status', '==', 'issued')
-    .limit(100)
-    .get();
-  const bills = snap.docs.map((d) => asInvoice(d.data()));
-  bills.sort((a, b) => (a.issueDate < b.issueDate ? 1 : a.issueDate > b.issueDate ? -1 : (b.numberSequence ?? 0) - (a.numberSequence ?? 0)));
-  return bills[0] ?? null;
+  const rows = await queryDocs<InvoiceRecord>(pool(), 'invoices', businessId, {
+    where: "customer_id = $2 and status = 'issued'",
+    params: [customerId],
+    order: 'issue_date desc, number_sequence desc nulls last',
+    limit: 1,
+  });
+  return rows[0] ? asInvoice(rows[0]) : null;
 }
 
-/** Issued bills in a date range, for the quarter's hisaab. Uses the (status, issueDate) index. */
+/** Every issued bill, newest first. A business this app is for has a few hundred at most. */
+export async function listIssued(businessId: string, limit = 1000): Promise<InvoiceRecord[]> {
+  const rows = await queryDocs<InvoiceRecord>(pool(), 'invoices', businessId, {
+    where: "status = 'issued'",
+    order: 'issue_date desc, number_sequence desc nulls last',
+    limit,
+  });
+  return rows.map(asInvoice);
+}
+
+/** Issued bills to one customer. */
+export async function listIssuedForCustomer(businessId: string, customerId: string, limit = 500): Promise<InvoiceRecord[]> {
+  const rows = await queryDocs<InvoiceRecord>(pool(), 'invoices', businessId, {
+    where: "customer_id = $2 and status = 'issued'",
+    params: [customerId],
+    order: 'issue_date desc',
+    limit,
+  });
+  return rows.map(asInvoice);
+}
+
+/** Every bill, newest bill date first, for the bills list. */
+export async function listAllByIssueDate(businessId: string, limit = 300): Promise<InvoiceRecord[]> {
+  const rows = await queryDocs<InvoiceRecord>(pool(), 'invoices', businessId, {
+    order: 'issue_date desc, number_sequence desc nulls last',
+    limit,
+  });
+  return rows.map(asInvoice);
+}
+
+/** Issued bills in a date range, for the quarter's hisaab. */
 export async function listIssuedBetween(businessId: string, from: CivilDate, to: CivilDate): Promise<InvoiceRecord[]> {
-  const snap = await invoicesCol(businessId)
-    .where('status', '==', 'issued')
-    .where('issueDate', '>=', from)
-    .where('issueDate', '<=', to)
-    .orderBy('issueDate', 'asc')
-    .limit(1000)
-    .get();
-  return snap.docs.map((d) => asInvoice(d.data()));
+  const rows = await queryDocs<InvoiceRecord>(pool(), 'invoices', businessId, {
+    where: "status = 'issued' and issue_date >= $2 and issue_date <= $3",
+    params: [from, to],
+    order: 'issue_date asc, number_sequence asc nulls last',
+    limit: 1000,
+  });
+  return rows.map(asInvoice);
 }
 
 /** Recompute stored balance fields after a payment or adjustment changes. */
@@ -563,4 +619,3 @@ export function applyLedgerToInvoice(invoice: InvoiceRecord, ledger: {
   };
 }
 
-export { FieldValue };

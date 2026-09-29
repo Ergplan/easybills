@@ -2,7 +2,7 @@ import 'server-only';
 
 import { compareDates, todayIst, type CivilDate } from '@/lib/dates';
 import type { InvoiceRecord } from '@/lib/domain/types';
-import { invoicesCol } from '@/server/firebase/paths';
+import { listAllByIssueDate, listIssuedForCustomer } from '@/server/repos/invoices';
 
 /**
  * Bills list: a search box and three filters. That is the whole feature.
@@ -32,10 +32,9 @@ export async function searchBills(
   opts: { filter?: BillFilter; query?: string; limit?: number } = {},
 ): Promise<BillListItem[]> {
   const today = todayIst();
-  const snap = await invoicesCol(businessId).orderBy('issueDate', 'desc').limit(opts.limit ?? 300).get();
+  const all = await listAllByIssueDate(businessId, opts.limit ?? 300);
 
-  let items = snap.docs
-    .map((d) => d.data() as InvoiceRecord)
+  let items = all
     .map((inv): BillListItem => ({
       id: inv.id,
       number: inv.number,
@@ -89,19 +88,14 @@ export interface CustomerBalance {
 
 export async function customerBalance(businessId: string, customerId: string): Promise<CustomerBalance> {
   const today = todayIst();
-  const snap = await invoicesCol(businessId)
-    .where('customer.customerId', '==', customerId)
-    .where('status', '==', 'issued')
-    .limit(500)
-    .get();
+  const issued = await listIssuedForCustomer(businessId, customerId);
 
   let outstandingPaise = 0;
   let overduePaise = 0;
-  for (const doc of snap.docs) {
-    const inv = doc.data() as InvoiceRecord;
+  for (const inv of issued) {
     if (inv.balancePaise <= 0) continue;
     outstandingPaise += inv.balancePaise;
     if (inv.dueDate && compareDates(inv.dueDate, today) < 0) overduePaise += inv.balancePaise;
   }
-  return { outstandingPaise, overduePaise, invoiceCount: snap.size };
+  return { outstandingPaise, overduePaise, invoiceCount: issued.length };
 }

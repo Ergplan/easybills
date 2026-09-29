@@ -4,8 +4,8 @@
  * Rules this file enforces:
  *  - No secret is ever read into a module that the browser bundle can import.
  *    Only `NEXT_PUBLIC_*` values are exposed client-side, and the Firebase Web
- *    config is public by design (it identifies the project; it does not grant
- *    access, because Firestore rules deny all direct client access).
+ *    config is public by design (it identifies the sign-in project; it grants
+ *    nothing, because the browser never touches the database).
  *  - A missing required value fails loudly at startup, not silently at runtime.
  *  - Optional integrations report "not configured" rather than pretending.
  */
@@ -31,8 +31,20 @@ function required(name: string): string {
 export const runtime: Runtime =
   process.env.NODE_ENV === 'production' ? 'production' : process.env.NODE_ENV === 'test' ? 'test' : 'development';
 
-/** True when talking to the local Firebase emulator suite rather than a real project. */
-export const usingEmulators = Boolean(optional('FIRESTORE_EMULATOR_HOST'));
+/**
+ * The Postgres database that holds every business record.
+ *
+ * On the VM it is the `db` service of the compose stack; locally it is the
+ * throwaway cluster `scripts/local-postgres.sh` starts. There is no default:
+ * a server that does not know where its books are should not start guessing.
+ */
+export const databaseUrl = (): string => required('DATABASE_URL');
+
+/**
+ * True when sign-in talks to the local Firebase Auth emulator. Sign-in is the
+ * only thing Firebase still does here; the records live in Postgres.
+ */
+export const usingAuthEmulator = Boolean(optional('FIREBASE_AUTH_EMULATOR_HOST'));
 
 /**
  * The project this server talks to.
@@ -58,8 +70,8 @@ export interface PublicFirebaseConfig {
 
 /**
  * Public Firebase Web config. Safe to ship to the browser -- it identifies the
- * project, it does not grant anything, and Firestore rules deny all direct
- * client access regardless.
+ * sign-in project, it does not grant anything, and the browser never talks to
+ * the database regardless.
  *
  * Read on the server at request time, where the whole environment is visible.
  * The browser is handed the result rather than reading it itself: Next inlines
@@ -98,31 +110,6 @@ export const publicFirebaseConfig = (): PublicFirebaseConfig => {
 };
 
 export const authEmulatorHost = () => process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST ?? null;
-
-/** Shared secret the job runner must present. Prevents anyone poking the worker endpoint. */
-export const jobRunnerSecret = (): string => required('JOB_RUNNER_SECRET');
-
-/**
- * Whether background work can run at all.
- *
- * Without the shared secret the runner endpoint refuses every request, so the
- * queue is never drained and monthly drafts are never prepared. That is the
- * one failure an owner would not notice until a customer asks where their bill
- * is -- so it is reported in Business details rather than left to be found.
- */
-export const backgroundWorkConfigured = (): boolean => optional('JOB_RUNNER_SECRET') !== null;
-
-/**
- * Which Firestore database, when it is not the default one.
- *
- * A project can hold several databases, and a database's LOCATION can never be
- * changed after it is created. So a `(default)` created in the wrong region is
- * not a mistake that can be corrected in place -- the way out is a second
- * database in the right region, named, and this pointing at it.
- *
- * Unset means `(default)`, which is what a normal project has.
- */
-export const firestoreDatabaseId = (): string | null => optional('FIRESTORE_DATABASE_ID');
 
 /**
  * Open access: no sign-in, everybody is the same test user.
@@ -196,22 +183,6 @@ export const contractReaderConfig = () => ({
   baseUrl: optional('OPENAI_BASE_URL') ?? 'https://api.openai.com',
   timeoutMs: Number(optional('CONTRACT_READER_TIMEOUT_MS') ?? 15_000),
 });
-
-// --- GST filing provider (GSP) ---------------------------------------------
-export type GspMode = 'unconfigured' | 'sandbox' | 'production';
-
-export const gspConfig = () => {
-  const mode = (optional('GSP_MODE') ?? 'unconfigured') as GspMode;
-  return {
-    mode,
-    baseUrl: optional('GSP_BASE_URL'),
-    clientId: optional('GSP_CLIENT_ID'),
-    clientSecret: optional('GSP_CLIENT_SECRET'),
-    providerName: optional('GSP_PROVIDER_NAME'),
-    /** Production filing stays off unless BOTH the mode and this flag say so. */
-    productionEnabled: optional('GSP_PRODUCTION_ENABLED') === 'true' && mode === 'production',
-  };
-};
 
 export const pdfConfig = () => ({
   /** Playwright Chromium path. Set in containers where the browser is preinstalled. */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { todayIst } from '@/lib/dates';
-import { auditCol } from '@/server/firebase/paths';
+import { auditEvents } from '../helpers';
 import {
   PaymentError,
   customerUnappliedCredit,
@@ -225,8 +225,8 @@ describe('reversals', () => {
     expect(after!.paymentStatus).toBe('unpaid');
     expect(after!.balancePaise).toBe(100000);
 
-    const audit = await auditCol(business.id).where('action', '==', 'payment.reversed').get();
-    expect(audit.size).toBe(1);
+    const audit = await auditEvents(business.id, 'payment.reversed');
+    expect(audit).toHaveLength(1);
   });
 
   it('refuses to reverse the same payment twice', async () => {

@@ -1,7 +1,9 @@
 import 'server-only';
 
-import { auditCol } from '@/server/firebase/paths';
+import { randomUUID } from 'node:crypto';
+
 import type { AuditEventRecord } from '@/lib/domain/types';
+import { pool, type Db } from '@/server/db/pool';
 
 /**
  * Append-only audit trail.
@@ -9,14 +11,17 @@ import type { AuditEventRecord } from '@/lib/domain/types';
  * `detail` is deliberately small and non-sensitive: it records WHAT changed and
  * by how much, never bank account numbers, full customer records, PANs or AI
  * prompts. Anything that would be uncomfortable in a log stays out of one.
+ *
+ * Pass the transaction's client as `db` and the row commits or rolls back with
+ * the change it describes, so an audit row can never be orphaned.
  */
 export async function recordAudit(
   businessId: string,
   event: Omit<AuditEventRecord, 'id' | 'at'> & { at?: string },
+  db: Db = pool(),
 ): Promise<void> {
-  const ref = auditCol(businessId).doc();
   const record: AuditEventRecord = {
-    id: ref.id,
+    id: randomUUID(),
     at: event.at ?? new Date().toISOString(),
     actorUid: event.actorUid,
     actorKind: event.actorKind,
@@ -25,24 +30,25 @@ export async function recordAudit(
     subjectId: event.subjectId,
     detail: event.detail ?? null,
   };
-  await ref.set(record);
+  await db.query('insert into audit_events (business_id, id, at, data) values ($1, $2, $3, $4)', [
+    businessId,
+    record.id,
+    record.at,
+    JSON.stringify(record),
+  ]);
 }
 
-/** Same, but inside an existing transaction so the audit row cannot be orphaned. */
-export function recordAuditInTransaction(
-  tx: FirebaseFirestore.Transaction,
+/** Same, inside a transaction. Kept as a name so call sites read as they did. */
+export const recordAuditInTransaction = (
+  db: Db,
   businessId: string,
   event: Omit<AuditEventRecord, 'id' | 'at'> & { at?: string },
-): void {
-  const ref = auditCol(businessId).doc();
-  tx.set(ref, {
-    id: ref.id,
-    at: event.at ?? new Date().toISOString(),
-    actorUid: event.actorUid,
-    actorKind: event.actorKind,
-    action: event.action,
-    subjectType: event.subjectType,
-    subjectId: event.subjectId,
-    detail: event.detail ?? null,
-  } satisfies AuditEventRecord);
+): Promise<void> => recordAudit(businessId, event, db);
+
+export async function listAudit(businessId: string, limit = 100): Promise<AuditEventRecord[]> {
+  const { rows } = await pool().query<{ data: AuditEventRecord }>(
+    'select data from audit_events where business_id = $1 order by at desc limit $2',
+    [businessId, limit],
+  );
+  return rows.map((r) => r.data);
 }

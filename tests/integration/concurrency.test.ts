@@ -33,7 +33,7 @@ import {
   newInvoiceId,
   saveDraft,
 } from '@/server/repos/invoices';
-import { countersCol } from '@/server/firebase/paths';
+import { pool } from '@/server/db/pool';
 
 import { line, makeGstBusiness, ownerUidOf } from '../helpers';
 
@@ -153,9 +153,12 @@ describe('two tabs on the same draft', () => {
     expect(ok.filter((r) => !r.alreadyIssued)).toHaveLength(1);
 
     // The counter moved exactly once, so the next bill is not given a gap.
-    const counters = await countersCol(business.id).get();
-    const series = counters.docs.find((c) => c.id.includes('default'));
-    expect(series!.data().nextNumber).toBe(2);
+    const { rows } = await pool().query<{ id: string; next_number: number }>(
+      'select id, next_number from counters where business_id = $1',
+      [business.id],
+    );
+    const series = rows.find((c) => c.id.includes('default'));
+    expect(series!.next_number).toBe(2);
   });
 
   it('gives two duplicates of one bill their own separate drafts', async () => {

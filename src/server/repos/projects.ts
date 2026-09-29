@@ -4,7 +4,8 @@ import { randomUUID } from 'node:crypto';
 
 import type { BilledEntry, ContractTerms } from '@/lib/domain/contract';
 import type { InvoiceRecord, ProjectRecord } from '@/lib/domain/types';
-import { invoicesCol, projectsCol } from '@/server/firebase/paths';
+import { getDoc, insertDoc, patchDoc, queryDocs } from '@/server/db/docs';
+import { pool } from '@/server/db/pool';
 import { recordAudit } from '@/server/services/audit';
 
 /**
@@ -32,7 +33,7 @@ export async function createProject(args: {
     updatedAt: now,
     createdByUid: args.uid,
   };
-  await projectsCol(args.businessId).doc(record.id).set(record);
+  await insertDoc(pool(), 'projects', args.businessId, record.id, record);
   await recordAudit(args.businessId, {
     actorUid: args.uid,
     actorKind: 'user',
@@ -45,7 +46,7 @@ export async function createProject(args: {
 }
 
 export async function updateProjectTerms(businessId: string, uid: string, projectId: string, terms: ContractTerms): Promise<void> {
-  await projectsCol(businessId).doc(projectId).update({ ...terms, updatedAt: new Date().toISOString() });
+  await patchDoc(pool(), 'projects', businessId, projectId, { ...terms, updatedAt: new Date().toISOString() });
   await recordAudit(businessId, {
     actorUid: uid,
     actorKind: 'user',
@@ -57,19 +58,25 @@ export async function updateProjectTerms(businessId: string, uid: string, projec
 }
 
 export async function getProject(businessId: string, projectId: string): Promise<ProjectRecord | null> {
-  const snap = await projectsCol(businessId).doc(projectId).get();
-  return snap.exists ? (snap.data() as ProjectRecord) : null;
+  return getDoc<ProjectRecord>(pool(), 'projects', businessId, projectId);
 }
 
 export async function listProjectsForCustomer(businessId: string, customerId: string): Promise<ProjectRecord[]> {
-  const snap = await projectsCol(businessId).where('customerId', '==', customerId).limit(50).get();
-  return snap.docs.map((d) => d.data() as ProjectRecord).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return queryDocs<ProjectRecord>(pool(), 'projects', businessId, {
+    where: 'customer_id = $2',
+    params: [customerId],
+    order: "data->>'createdAt' desc",
+    limit: 50,
+  });
 }
 
 /** The bills raised against a contract, as the calculator reads them. */
 export async function billsForProject(businessId: string, projectId: string): Promise<{ entries: BilledEntry[]; bills: InvoiceRecord[] }> {
-  const snap = await invoicesCol(businessId).where('projectId', '==', projectId).limit(200).get();
-  const bills = snap.docs.map((d) => d.data() as InvoiceRecord).filter((b) => b.status !== 'cancelled');
+  const bills = await queryDocs<InvoiceRecord>(pool(), 'invoices', businessId, {
+    where: "project_id = $2 and status <> 'cancelled'",
+    params: [projectId],
+    limit: 200,
+  });
   const entries: BilledEntry[] = bills
     .filter((b) => b.projectStage)
     .map((b) => ({

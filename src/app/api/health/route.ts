@@ -1,15 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import {
-  backgroundWorkConfigured,
-  voiceConfig,
-  firebaseProjectId,
-  firestoreDatabaseId,
-  openAccess,
-  publicFirebaseConfig,
-  usingEmulators,
-} from '@/lib/env';
-import { db } from '@/server/firebase/admin';
+import { openAccess, publicFirebaseConfig, usingAuthEmulator, voiceConfig } from '@/lib/env';
+import { pool } from '@/server/db/pool';
 import { pdfCapability } from '@/server/pdf/render';
 
 export const dynamic = 'force-dynamic';
@@ -18,48 +10,37 @@ export const runtime = 'nodejs';
 /**
  * What this installation can actually do, and what it cannot.
  *
- * A deployment that cannot reach its database returns a blank 500 with a
- * request id, and finding out why means going to Cloud Logging. This says it
- * directly, in one request, so the first thing to try after a bad rollout is
- * opening /api/health rather than digging.
- *
- * It reports state, never secrets: which project, whether Firestore answered
- * and with what error code if it did not, whether a browser is available for
- * PDFs. There is no key, token or credential anywhere in the response, and the
- * error text is the provider's own code and message -- "NOT_FOUND",
- * "PERMISSION_DENIED" -- not a stack trace.
+ * The first thing to open after a rollout. It reports state, never secrets:
+ * whether Postgres answered and which schema version it is on, whether a
+ * browser is available for PDFs, which optional services are wired. There is
+ * no key, password or connection string anywhere in the response, and an
+ * error is the driver's code and a short message, not a stack trace.
  */
 export async function GET() {
   const checks: Record<string, unknown> = {
     builtAt: process.env.NEXT_PUBLIC_BUILD_STAMP ?? 'unknown',
-    projectId: firebaseProjectId(),
-    database: firestoreDatabaseId() ?? '(default)',
-    usingEmulators,
-    // Plain ASCII: this is read in terminals and consoles that do not all
-    // agree that an unlabelled JSON body is UTF-8, and an em dash comes back
-    // as mojibake in the ones that do not.
+    // Plain ASCII: this is read in terminals that do not all agree an
+    // unlabelled JSON body is UTF-8.
     signIn: openAccess() ? 'switched off - OPEN ACCESS, anyone can read and write' : 'required',
+    authEmulator: usingAuthEmulator,
     webConfig: publicFirebaseConfig().projectId ? 'present' : 'MISSING',
-    backgroundWork: backgroundWorkConfigured() ? 'configured' : 'not configured',
     voice: voiceConfig().enabled ? `configured (${voiceConfig().model})` : 'off - no OPENAI_API_KEY',
   };
 
-  // The one that matters. Every page reads Firestore before it renders
-  // anything, so if this fails, nothing in the app works.
-  //
-  // Under a timeout, because an unreachable Firestore does not fail -- it
-  // retries, and the request hangs until the platform gives up and returns a
-  // blank 500 with a request id. That is the very failure this endpoint exists
-  // to explain, so it must not fail the same way itself.
+  // The one that matters: every page reads Postgres before it renders.
+  // Under a timeout, so an unreachable database is reported rather than
+  // turning this request into the same hang it exists to explain.
   try {
-    // A read of a document that need not exist. Cheap, and it still proves the
-    // database is reachable and this service is allowed to read it.
-    await withTimeout(db().collection('_health').doc('probe').get(), 8000);
-    checks.firestore = 'ok';
+    const { rows } = await withTimeout(
+      pool().query<{ version: string | null }>('select max(version) as version from schema_migrations'),
+      8000,
+    );
+    checks.database = 'ok';
+    checks.schema = rows[0]?.version ?? 'none';
   } catch (error) {
-    const e = error as { code?: string | number; message?: string };
-    checks.firestore = 'FAILED';
-    checks.firestoreError = {
+    const e = error as { code?: string; message?: string };
+    checks.database = 'FAILED';
+    checks.databaseError = {
       code: String(e.code ?? 'unknown'),
       message: (e.message ?? String(error)).slice(0, 300),
       hint: hintFor(e),
@@ -68,12 +49,12 @@ export async function GET() {
 
   try {
     const pdf = await pdfCapability();
-    checks.pdfs = pdf.ok ? 'ok' : `FAILED — ${pdf.detail}`;
+    checks.pdfs = pdf.ok ? 'ok' : `FAILED - ${pdf.detail}`;
   } catch {
-    checks.pdfs = 'FAILED — could not be checked';
+    checks.pdfs = 'FAILED - could not be checked';
   }
 
-  const ok = checks.firestore === 'ok';
+  const ok = checks.database === 'ok';
   return NextResponse.json(
     { ok, ...checks },
     { status: ok ? 200 : 503, headers: { 'content-type': 'application/json; charset=utf-8' } },
@@ -83,7 +64,7 @@ export async function GET() {
 class TimeoutError extends Error {
   readonly code = 'TIMEOUT';
   constructor(ms: number) {
-    super(`No response from Firestore within ${ms}ms.`);
+    super(`No response from Postgres within ${ms}ms.`);
   }
 }
 
@@ -95,41 +76,22 @@ function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
 }
 
 /** The things that actually go wrong on a first deployment. */
-function hintFor(e: { code?: string | number; message?: string }): string {
+function hintFor(e: { code?: string; message?: string }): string {
   const text = `${e.code ?? ''} ${e.message ?? ''}`;
-  if (/NOT_FOUND|5 NOT_FOUND|database.*does not exist/i.test(text)) {
-    return 'No database by the name shown above exists in this project. Either ' +
-      'it has not been created (Firebase Console > Firestore Database > Create ' +
-      'database, Native mode), or the name is wrong. If the database above says ' +
-      '(default) but yours has a name, FIRESTORE_DATABASE_ID has not reached ' +
-      'this server -- check builtAt above against when that setting was pushed, ' +
-      'because a rollout built before it will not have it.';
+  if (/42P01|schema_migrations.*does not exist/i.test(text)) {
+    return 'The database is reachable but empty. Run the migrations: node db/migrate.mjs (the app container does this on start).';
   }
-  if (/PERMISSION_DENIED|7 PERMISSION_DENIED|IAM/i.test(text)) {
-    return 'This service cannot read Firestore. Grant its service account ' +
-      '(firebase-app-hosting-compute@…) the Cloud Datastore User role in IAM.';
+  if (/ECONNREFUSED|ENOTFOUND|EAI_AGAIN|TIMEOUT/i.test(text)) {
+    return 'Postgres is not answering at DATABASE_URL. On the VM: docker compose -p ekbill ps, and check the db service is healthy.';
   }
-  if (/database.*not found|NOT_FOUND.*database|does not exist/i.test(text)) {
-    return 'The project has no database by that name. Check FIRESTORE_DATABASE_ID ' +
-      'against Firebase Console > Firestore Database: a database named something ' +
-      'other than (default) must be named here exactly.';
+  if (/28P01|28000|password authentication/i.test(text)) {
+    return 'Postgres refused the credentials in DATABASE_URL. The password must match the ekbill-db-password secret.';
   }
-  if (/INVALID_ARGUMENT|not supported|unimplemented|UNIMPLEMENTED/i.test(text)) {
-    return 'The database rejected a normal Firestore call. Check its EDITION in ' +
-      'Firebase Console: this app speaks the Firestore API and uses Firestore ' +
-      'security rules, which is Standard edition. Enterprise edition is the ' +
-      'MongoDB-compatible offering and is a different query surface.';
+  if (/3D000/i.test(text)) {
+    return 'The database named in DATABASE_URL does not exist.';
   }
-  if (/TIMEOUT/i.test(text)) {
-    return 'Firestore did not answer at all. That is usually no database in ' +
-      'this project yet: create one in Firebase Console > Firestore Database > ' +
-      'Create database, in Native mode. An unreachable Firestore does not ' +
-      'error, it retries, which is why the app returns a blank server error ' +
-      'rather than a message.';
-  }
-  if (/UNAUTHENTICATED|credential/i.test(text)) {
-    return 'No usable credentials. On Google infrastructure this should come ' +
-      'from the service account automatically; check the backend is running as one.';
+  if (/DATABASE_URL/i.test(text)) {
+    return 'DATABASE_URL is not set on this server.';
   }
   return 'See docs/deployment.md.';
 }

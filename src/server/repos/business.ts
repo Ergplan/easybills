@@ -4,8 +4,7 @@ import { randomUUID } from 'node:crypto';
 
 import { financialYearOf, todayIst } from '@/lib/dates';
 import type { BusinessRecord, MemberRecord, UserRecord } from '@/lib/domain/types';
-import { db, FieldValue } from '@/server/firebase/admin';
-import { businessDoc, businessesCol, membersCol, usersCol } from '@/server/firebase/paths';
+import { pool, withTx, type Db } from '@/server/db/pool';
 import { recordAudit } from '@/server/services/audit';
 
 /**
@@ -84,16 +83,16 @@ export async function createBusiness(args: {
   const business = blankBusiness({ id, legalName: args.legalName, isDemo: args.isDemo, profile: args.profile });
   const now = new Date().toISOString();
 
-  const batch = db().batch();
-  batch.set(businessDoc(id), business);
-  batch.set(membersCol(id).doc(args.uid), { uid: args.uid, role: 'owner', createdAt: now } satisfies MemberRecord);
-
-  const userRef = usersCol().doc(args.uid);
-  const userSnap = await userRef.get();
-  if (userSnap.exists) {
-    batch.update(userRef, { businessIds: FieldValue.arrayUnion(id), lastSeenAt: now });
-  } else {
-    batch.set(userRef, {
+  // The business, its owner's membership and the owner's index of businesses
+  // land together or not at all.
+  await withTx(async (tx) => {
+    await tx.query('insert into businesses (id, data) values ($1, $2)', [id, JSON.stringify(business)]);
+    await tx.query('insert into members (business_id, uid, data) values ($1, $2, $3)', [
+      id,
+      args.uid,
+      JSON.stringify({ uid: args.uid, role: 'owner', createdAt: now } satisfies MemberRecord),
+    ]);
+    const user: UserRecord = {
       uid: args.uid,
       phone: args.phone ?? null,
       email: args.email,
@@ -101,23 +100,33 @@ export async function createBusiness(args: {
       businessIds: [id],
       createdAt: now,
       lastSeenAt: now,
-    } satisfies UserRecord);
-  }
-  await batch.commit();
-  await recordAudit(id, {
-    actorUid: args.uid,
-    actorKind: 'user',
-    action: 'business.created',
-    subjectType: 'business',
-    subjectId: id,
-    detail: { isDemo: Boolean(args.isDemo) },
+    };
+    await tx.query(
+      `insert into users (uid, data) values ($1, $2)
+       on conflict (uid) do update set data = users.data || jsonb_build_object(
+         'businessIds', (users.data->'businessIds') || to_jsonb($3::text),
+         'lastSeenAt', $4::text)`,
+      [args.uid, JSON.stringify(user), id, now],
+    );
+    await recordAudit(
+      id,
+      {
+        actorUid: args.uid,
+        actorKind: 'user',
+        action: 'business.created',
+        subjectType: 'business',
+        subjectId: id,
+        detail: { isDemo: Boolean(args.isDemo) },
+      },
+      tx,
+    );
   });
   return business;
 }
 
-export async function getBusiness(businessId: string): Promise<BusinessRecord | null> {
-  const snap = await businessDoc(businessId).get();
-  return snap.exists ? ({ id: snap.id, ...(snap.data() as Omit<BusinessRecord, 'id'>) }) : null;
+export async function getBusiness(businessId: string, db: Db = pool()): Promise<BusinessRecord | null> {
+  const { rows } = await db.query<{ data: BusinessRecord }>('select data from businesses where id = $1', [businessId]);
+  return rows[0] ? { ...rows[0].data, id: businessId } : null;
 }
 
 /**
@@ -132,9 +141,12 @@ export async function updateBusiness(
   patch: Partial<Omit<BusinessRecord, 'id' | 'createdAt'>>,
 ): Promise<BusinessRecord> {
   const now = new Date().toISOString();
-  await businessDoc(businessId).update({ ...patch, updatedAt: now });
-  const updated = await getBusiness(businessId);
-  if (!updated) throw new Error('Business disappeared during update');
+  const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
+  const { rows } = await pool().query<{ data: BusinessRecord }>(
+    'update businesses set data = data || $2::jsonb where id = $1 returning data',
+    [businessId, JSON.stringify({ ...clean, updatedAt: now })],
+  );
+  if (!rows[0]) throw new Error('Business disappeared during update');
   await recordAudit(businessId, {
     actorUid: uid,
     actorKind: 'user',
@@ -144,7 +156,12 @@ export async function updateBusiness(
     // Field names only -- never the values, which may include bank details.
     detail: { fields: Object.keys(patch) },
   });
-  return updated;
+  return { ...rows[0].data, id: businessId };
+}
+
+export async function getUserRecord(uid: string): Promise<UserRecord | null> {
+  const { rows } = await pool().query<{ data: UserRecord }>('select data from users where uid = $1', [uid]);
+  return rows[0]?.data ?? null;
 }
 
 export async function ensureUserRecord(args: {
@@ -153,16 +170,7 @@ export async function ensureUserRecord(args: {
   email: string | null;
   displayName: string | null;
 }): Promise<UserRecord> {
-  const ref = usersCol().doc(args.uid);
   const now = new Date().toISOString();
-  const snap = await ref.get();
-  if (snap.exists) {
-    // The phone is kept current: an account that predates phone sign-in
-    // has none on record until its owner signs in this way.
-    const patch = args.phone ? { lastSeenAt: now, phone: args.phone } : { lastSeenAt: now };
-    await ref.update(patch);
-    return { ...(snap.data() as UserRecord), ...patch };
-  }
   const record: UserRecord = {
     uid: args.uid,
     phone: args.phone ?? null,
@@ -172,11 +180,35 @@ export async function ensureUserRecord(args: {
     createdAt: now,
     lastSeenAt: now,
   };
-  await ref.set(record);
-  return record;
+  // The phone is kept current: an account that predates phone sign-in has
+  // none on record until its owner signs in this way.
+  const patch = args.phone ? { lastSeenAt: now, phone: args.phone } : { lastSeenAt: now };
+  const { rows } = await pool().query<{ data: UserRecord }>(
+    `insert into users (uid, data) values ($1, $2)
+     on conflict (uid) do update set data = users.data || $3::jsonb
+     returning data`,
+    [args.uid, JSON.stringify(record), JSON.stringify(patch)],
+  );
+  return rows[0]!.data;
+}
+
+/** Whether `uid` is a member of `businessId`. The authority for every access check. */
+export async function isMember(businessId: string, uid: string, db: Db = pool()): Promise<boolean> {
+  const { rowCount } = await db.query('select 1 from members where business_id = $1 and uid = $2', [businessId, uid]);
+  return (rowCount ?? 0) > 0;
+}
+
+/** The businesses `uid` is a member of, oldest first (the first is the one they work in). */
+export async function businessesForUser(uid: string): Promise<BusinessRecord[]> {
+  const { rows } = await pool().query<{ id: string; data: BusinessRecord }>(
+    `select b.id, b.data from members m join businesses b on b.id = m.business_id
+     where m.uid = $1 order by b.created_at asc, b.id asc`,
+    [uid],
+  );
+  return rows.map((r) => ({ ...r.data, id: r.id }));
 }
 
 export async function countBusinesses(): Promise<number> {
-  const snap = await businessesCol().count().get();
-  return snap.data().count;
+  const { rows } = await pool().query<{ n: string }>('select count(*) as n from businesses');
+  return Number(rows[0]!.n);
 }

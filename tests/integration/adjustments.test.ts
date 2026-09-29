@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { todayIst } from '@/lib/dates';
-import { auditCol } from '@/server/firebase/paths';
+import { auditEvents } from '../helpers';
 import { AdjustmentError, createAdjustment, listAdjustmentsForInvoice } from '@/server/repos/adjustments';
 import { emptyParty, getInvoice, issueInvoice, newInvoiceId, saveDraft } from '@/server/repos/invoices';
 import { recordPayment } from '@/server/repos/payments';
@@ -141,11 +141,11 @@ describe('credit notes', () => {
       business, uid, invoiceId: invoice.id, kind: 'credit-note',
       amountPaise: 10000, reason: 'billed twice', affectsTaxLiability: false,
     });
-    const audit = await auditCol(business.id).where('action', '==', 'adjustment.credit-note').get();
-    expect(audit.size).toBe(1);
-    const event = audit.docs[0]!.data();
+    const audit = await auditEvents(business.id, 'adjustment.credit-note');
+    expect(audit).toHaveLength(1);
+    const event = audit[0]!;
     expect(event.actorUid).toBe(uid);
-    expect(event.detail.reason).toBe('billed twice');
+    expect(event.detail!.reason).toBe('billed twice');
     expect(event.at).toBeTruthy();
   });
 });

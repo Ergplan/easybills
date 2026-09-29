@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { t } from '@/lib/copy';
 import { currentUser } from '@/server/auth/session';
-import { usersCol } from '@/server/firebase/paths';
+import { businessesForUser } from '@/server/repos/business';
 
 import { ProfileForm } from '@/components/ProfileForm';
 
@@ -19,9 +19,7 @@ export default async function StartPage() {
   const user = await currentUser();
   if (!user) redirect('/signin');
 
-  const snap = await usersCol().doc(user.uid).get();
-  const ids = (snap.data()?.businessIds as string[] | undefined) ?? [];
-  if (ids.length) redirect('/home');
+  if ((await businessesForUser(user.uid)).length) redirect('/home');
 
   return (
     <main className="page" style={{ maxWidth: 480, paddingTop: 32 }}>

@@ -2,25 +2,20 @@ import 'server-only';
 
 import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getAuth, type Auth } from 'firebase-admin/auth';
-import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
-import { firebaseProjectId, firestoreDatabaseId, usingEmulators } from '@/lib/env';
+import { firebaseProjectId, usingAuthEmulator } from '@/lib/env';
 
 /**
- * The Firebase Admin SDK is the ONLY path to Firestore in this application.
- *
- * Browsers never read or write Firestore directly: `firestore.rules` denies all
- * client access, and every business record is reached through a server route
- * that has already resolved the caller's session and checked membership of the
- * business being touched. That makes tenant isolation a server-side invariant
- * rather than a rules-file guess.
+ * Firebase is used for one thing: phone sign-in. It verifies the OTP and hands
+ * the server a token, which the server exchanges for its own session cookie.
+ * Every business record lives in Postgres (src/server/db).
  */
 
 let appInstance: App | null = null;
 
 function credentials() {
-  // Emulators need no credentials -- and must not be given real ones.
-  if (usingEmulators) return undefined;
+  // The emulator needs no credentials -- and must not be given real ones.
+  if (usingAuthEmulator) return undefined;
   const inline = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (inline && inline.trim()) {
     const parsed = JSON.parse(inline) as { project_id: string; client_email: string; private_key: string };
@@ -31,8 +26,7 @@ function credentials() {
       privateKey: parsed.private_key.replace(/\\n/g, '\n'),
     });
   }
-  // Otherwise fall back to Application Default Credentials
-  // (GOOGLE_APPLICATION_CREDENTIALS, or the metadata server on Google infra).
+  // Otherwise Application Default Credentials (the VM's service account).
   return undefined;
 }
 
@@ -51,30 +45,6 @@ export function adminApp(): App {
   return appInstance;
 }
 
-let dbInstance: Firestore | null = null;
-
-export function db(): Firestore {
-  if (!dbInstance) {
-    // A named database when one is configured, the project's `(default)`
-    // otherwise. This exists because a database's region is fixed at creation:
-    // the only way off a `(default)` in the wrong part of the world is to make
-    // another one in the right part and point here at it.
-    const named = firestoreDatabaseId();
-    const instance = named ? getFirestore(adminApp(), named) : getFirestore(adminApp());
-    try {
-      instance.settings({ ignoreUndefinedProperties: true });
-    } catch {
-      // `settings()` may only be called once per Firestore instance. In dev the
-      // module is re-evaluated by hot reload while the instance survives, so a
-      // second call throws -- and the settings from the first call still apply.
-    }
-    dbInstance = instance;
-  }
-  return dbInstance;
-}
-
 export function adminAuth(): Auth {
   return getAuth(adminApp());
 }
-
-export { FieldValue, Timestamp } from 'firebase-admin/firestore';

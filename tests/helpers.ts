@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
 import { todayIst } from '@/lib/dates';
-import type { BusinessRecord, InvoiceLine } from '@/lib/domain/types';
+import type { AuditEventRecord, BusinessRecord, InvoiceLine } from '@/lib/domain/types';
 import { parseMoney, parsePercent, parseQuantity } from '@/lib/money';
+import { pool } from '@/server/db/pool';
 import { createBusiness, updateBusiness } from '@/server/repos/business';
 
 /** A business that is fully set up and allowed to issue GST bills. */
@@ -42,9 +43,19 @@ export async function makeUnregisteredBusiness(): Promise<BusinessRecord> {
 }
 
 export async function ownerUidOf(business: BusinessRecord): Promise<string> {
-  const { membersCol } = await import('@/server/firebase/paths');
-  const snap = await membersCol(business.id).limit(1).get();
-  return snap.docs[0]!.id;
+  const { rows } = await pool().query<{ uid: string }>('select uid from members where business_id = $1 limit 1', [
+    business.id,
+  ]);
+  return rows[0]!.uid;
+}
+
+/** Audit rows of one kind, oldest first. */
+export async function auditEvents(businessId: string, action: string): Promise<AuditEventRecord[]> {
+  const { rows } = await pool().query<{ data: AuditEventRecord }>(
+    "select data from audit_events where business_id = $1 and data->>'action' = $2 order by at",
+    [businessId, action],
+  );
+  return rows.map((r) => r.data);
 }
 
 export function line(

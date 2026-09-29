@@ -4,8 +4,10 @@ import { randomUUID } from 'node:crypto';
 
 import { financialYearOf, todayIst, type CivilDate } from '@/lib/dates';
 import type { AdjustmentRecord, BusinessRecord, InvoiceRecord } from '@/lib/domain/types';
-import { db } from '@/server/firebase/admin';
-import { adjustmentsCol, countersCol, idempotentId, invoicesCol } from '@/server/firebase/paths';
+import { getDoc, insertDoc, patchDoc, queryDocs } from '@/server/db/docs';
+import { idempotentId } from '@/server/db/ids';
+import { pool, withTx } from '@/server/db/pool';
+import { readCounter, writeCounter } from '@/server/repos/invoices';
 import { recordAuditInTransaction } from '@/server/services/audit';
 import { computeBalance, paymentStatusFor } from '@/server/services/invoice-calc';
 
@@ -59,22 +61,18 @@ export async function createAdjustment(args: {
   const businessId = args.business.id;
   const issueDate = args.issueDate ?? todayIst();
   const fy = financialYearOf(issueDate);
-  const invoiceRef = invoicesCol(businessId).doc(args.invoiceId);
-  const adjRef = adjustmentsCol(businessId).doc(
-    args.idempotencyKey ? idempotentId('adj', args.idempotencyKey) : randomUUID(),
-  );
+  const adjId = args.idempotencyKey ? idempotentId('adj', args.idempotencyKey) : randomUUID();
   const prefix = args.kind === 'credit-note' ? 'CN-' : 'DN-';
-  const counterRef = countersCol(businessId).doc(`${args.kind}__${fy}`);
+  const counterKey = `${args.kind}__${fy}`;
 
-  return db().runTransaction(async (tx) => {
+  return withTx(async (tx) => {
     // Read first, so the losing side of a race returns the note the winner
     // raised instead of raising a second one against the same bill.
-    const prior = await tx.get(adjRef);
-    if (prior.exists) return prior.data() as AdjustmentRecord;
+    const prior = await getDoc<AdjustmentRecord>(tx, 'adjustments', businessId, adjId);
+    if (prior) return prior;
 
-    const invoiceSnap = await tx.get(invoiceRef);
-    if (!invoiceSnap.exists) throw new AdjustmentError('That bill no longer exists.');
-    const invoice = invoiceSnap.data() as InvoiceRecord;
+    const invoice = await getDoc<InvoiceRecord>(tx, 'invoices', businessId, args.invoiceId, { lock: true });
+    if (!invoice) throw new AdjustmentError('That bill no longer exists.');
 
     if (invoice.status !== 'issued') {
       throw new AdjustmentError('A note can only be raised against a bill that has been issued.');
@@ -90,8 +88,7 @@ export async function createAdjustment(args: {
       }
     }
 
-    const counterSnap = await tx.get(counterRef);
-    const sequence = counterSnap.exists ? (counterSnap.data()!.nextNumber as number) : 1;
+    const sequence = (await readCounter(tx, businessId, counterKey, { lock: true })) ?? 1;
     const number = `${prefix}${String(sequence).padStart(3, '0')}`;
 
     const now = new Date().toISOString();
@@ -100,7 +97,7 @@ export async function createAdjustment(args: {
       : { taxableValuePaise: 0, cgstPaise: 0, sgstPaise: 0, igstPaise: 0, cessPaise: 0 };
 
     const adjustment: AdjustmentRecord = {
-      id: adjRef.id,
+      id: adjId,
       kind: args.kind,
       number,
       financialYear: fy,
@@ -116,7 +113,7 @@ export async function createAdjustment(args: {
       createdAt: now,
       createdByUid: args.uid,
     };
-    tx.set(adjRef, adjustment);
+    await insertDoc(tx, 'adjustments', businessId, adjId, adjustment);
 
     const creditAppliedPaise =
       invoice.creditAppliedPaise + (args.kind === 'credit-note' ? args.amountPaise : 0);
@@ -130,7 +127,7 @@ export async function createAdjustment(args: {
       settlementDeductionPaise: invoice.settlementDeductionPaise,
     });
 
-    tx.update(invoiceRef, {
+    await patchDoc(tx, 'invoices', businessId, invoice.id, {
       creditAppliedPaise,
       debitAppliedPaise,
       balancePaise,
@@ -138,9 +135,9 @@ export async function createAdjustment(args: {
       updatedAt: now,
     });
 
-    tx.set(counterRef, { kind: args.kind, financialYear: fy, nextNumber: sequence + 1, updatedAt: now });
+    await writeCounter(tx, businessId, counterKey, sequence + 1);
 
-    recordAuditInTransaction(tx, businessId, {
+    await recordAuditInTransaction(tx, businessId, {
       actorUid: args.uid,
       actorKind: 'user',
       action: `adjustment.${args.kind}`,
@@ -162,13 +159,14 @@ export async function listAdjustmentsForInvoice(
   businessId: string,
   invoiceId: string,
 ): Promise<AdjustmentRecord[]> {
-  const snap = await adjustmentsCol(businessId).where('invoiceId', '==', invoiceId).limit(100).get();
-  return snap.docs
-    .map((d) => d.data() as AdjustmentRecord)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  return queryDocs<AdjustmentRecord>(pool(), 'adjustments', businessId, {
+    where: 'invoice_id = $2',
+    params: [invoiceId],
+    order: 'created_at asc',
+    limit: 100,
+  });
 }
 
 export async function listAdjustments(businessId: string, limit = 200): Promise<AdjustmentRecord[]> {
-  const snap = await adjustmentsCol(businessId).orderBy('createdAt', 'desc').limit(limit).get();
-  return snap.docs.map((d) => d.data() as AdjustmentRecord);
+  return queryDocs<AdjustmentRecord>(pool(), 'adjustments', businessId, { order: 'created_at desc', limit });
 }

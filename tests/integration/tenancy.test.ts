@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { todayIst } from '@/lib/dates';
-import { membersCol, invoicesCol, customersCol } from '@/server/firebase/paths';
+import { isMember } from '@/server/repos/business';
+import { listCustomers } from '@/server/repos/customers';
+import { pool } from '@/server/db/pool';
 import { createCustomer } from '@/server/repos/customers';
 import { emptyParty, getInvoice, issueInvoice, listInvoices, newInvoiceId, saveDraft } from '@/server/repos/invoices';
 
@@ -62,10 +64,8 @@ describe('tenant isolation', () => {
     expect(await getInvoice(alpha.id, alphaDraft.id)).not.toBeNull();
 
     // Alpha's customer collection is untouched by Beta's write.
-    const alphaCustomers = await customersCol(alpha.id).get();
-    expect(alphaCustomers.empty).toBe(true);
-    const betaCustomers = await customersCol(beta.id).get();
-    expect(betaCustomers.size).toBe(1);
+    expect(await listCustomers(alpha.id, { includeArchived: true })).toHaveLength(0);
+    expect(await listCustomers(beta.id, { includeArchived: true })).toHaveLength(1);
   });
 
   it('grants access only to members of the business', async () => {
@@ -75,9 +75,9 @@ describe('tenant isolation', () => {
     const betaUid = await ownerUidOf(beta);
 
     // Alpha's owner is a member of Alpha only.
-    expect((await membersCol(alpha.id).doc(alphaUid).get()).exists).toBe(true);
-    expect((await membersCol(alpha.id).doc(betaUid).get()).exists).toBe(false);
-    expect((await membersCol(beta.id).doc(alphaUid).get()).exists).toBe(false);
+    expect(await isMember(alpha.id, alphaUid)).toBe(true);
+    expect(await isMember(alpha.id, betaUid)).toBe(false);
+    expect(await isMember(beta.id, alphaUid)).toBe(false);
   });
 
   it('numbers each business independently', async () => {
@@ -109,7 +109,7 @@ describe('tenant isolation', () => {
     expect(await mk(alpha, alphaUid)).toBe('INV-002');
   });
 
-  it('stores every invoice under its own business path', async () => {
+  it('stores every invoice against its own business', async () => {
     const alpha = await makeGstBusiness();
     const alphaUid = await ownerUidOf(alpha);
     const d = await saveDraft({
@@ -125,7 +125,7 @@ describe('tenant isolation', () => {
       notes: null,
       baseRevision: 0,
     });
-    const ref = invoicesCol(alpha.id).doc(d.id);
-    expect(ref.path).toBe(`businesses/${alpha.id}/invoices/${d.id}`);
+    const { rows } = await pool().query<{ business_id: string }>('select business_id from invoices where id = $1', [d.id]);
+    expect(rows.map((r) => r.business_id)).toEqual([alpha.id]);
   });
 });

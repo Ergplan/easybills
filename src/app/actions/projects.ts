@@ -11,9 +11,8 @@ import { gstTabVisible } from '@/lib/domain/gst-tab';
 import type { ProjectRecord } from '@/lib/domain/types';
 import { DEFAULT_RULE_PACK } from '@/lib/gst/ruleset';
 import { requireBusiness } from '@/server/auth/guard';
-import { invoicesCol } from '@/server/firebase/paths';
 import { customerToParty, getCustomer } from '@/server/repos/customers';
-import { cancelDraft, getInvoice, newInvoiceId, saveDraft } from '@/server/repos/invoices';
+import { cancelDraft, getInvoice, newInvoiceId, patchInvoice, saveDraft } from '@/server/repos/invoices';
 import { billsForProject, createProject, getProject, updateProjectTerms } from '@/server/repos/projects';
 
 import { ok, toActionError, type ActionResult } from './common';
@@ -127,7 +126,7 @@ export async function prepareProjectBillAction(
       project.billing === 'milestones'
         ? project.milestones.find((m) => m.id === bill.milestoneId)?.label ?? ''
         : `${(bill.cumulativeBp ?? 0) / 100}%`;
-    await invoicesCol(businessId).doc(invoiceId).update({
+    await patchInvoice(businessId, invoiceId, {
       projectId: project.id,
       projectStage: { milestoneId: bill.milestoneId, label, basisPaise: bill.basisPaise, cumulativeBp: bill.cumulativeBp },
     });

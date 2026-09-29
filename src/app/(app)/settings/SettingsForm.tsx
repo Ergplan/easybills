@@ -26,9 +26,7 @@ export function SettingsForm({
   userEmail,
   ruleAudit,
   aiStatus,
-  gspMode,
   pdfStatus,
-  backgroundWork,
   openAccess,
   supported,
   unsupported,
@@ -39,9 +37,7 @@ export function SettingsForm({
   userEmail: string | null;
   ruleAudit: RulePackAudit;
   aiStatus: { enabled: boolean; llmProvider: string; llmConfigured: boolean; transcriptionProvider: string; transcriptionConfigured: boolean };
-  gspMode: string;
   pdfStatus: { ok: boolean; detail: string };
-  backgroundWork: boolean;
   openAccess: boolean;
   supported: string[];
   unsupported: string[];
@@ -467,16 +463,6 @@ export function SettingsForm({
             We do not make a blanket claim that every bill is GST compliant. Where we cannot be sure, we say so and
             stop, rather than issuing a document that might be wrong.
           </p>
-          {!backgroundWork && (
-            <div className="notice notice--warn">
-              <span className="notice__icon" aria-hidden="true">!</span>
-              <span className="small">
-                Monthly bills will not be prepared automatically on this installation. You can still create every
-                bill yourself, and nothing already saved is affected. Whoever looks after this app for you needs to
-                finish setting up the background worker.
-              </span>
-            </div>
-          )}
           {!pdfStatus.ok && (
             <div className="notice notice--danger">
               <span className="notice__icon" aria-hidden="true">!</span>
@@ -512,13 +498,6 @@ export function SettingsForm({
           </div>
           <div className="row row--between"><span className="muted">Assistant</span><span>{aiStatus.enabled ? `${aiStatus.llmProvider}${aiStatus.llmConfigured ? '' : ' (not configured)'}` : 'off'}</span></div>
           <div className="row row--between"><span className="muted">Voice</span><span>{aiStatus.transcriptionProvider}{aiStatus.transcriptionConfigured ? '' : ' (not configured)'}</span></div>
-          <div className="row row--between"><span className="muted">GST filing</span><span>{gspMode}</span></div>
-          <div className="row row--between">
-            <span className="muted">Monthly drafts</span>
-            <span style={backgroundWork ? undefined : { color: 'var(--warn)', fontWeight: 650 }}>
-              {backgroundWork ? 'ready' : 'not configured'}
-            </span>
-          </div>
           <div className="row row--between">
             <span className="muted">Bill PDFs</span>
             <span style={pdfStatus.ok ? undefined : { color: 'var(--danger)', fontWeight: 650 }}>

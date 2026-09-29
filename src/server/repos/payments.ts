@@ -10,8 +10,9 @@ import type {
   PaymentMethod,
   PaymentRecord,
 } from '@/lib/domain/types';
-import { db } from '@/server/firebase/admin';
-import { adjustmentsCol, idempotentId, invoicesCol, paymentsCol } from '@/server/firebase/paths';
+import { getDoc, insertDoc, patchDoc, queryDocs } from '@/server/db/docs';
+import { idempotentId } from '@/server/db/ids';
+import { pool, withTx } from '@/server/db/pool';
 import { recordAuditInTransaction } from '@/server/services/audit';
 import { computeBalance, paymentStatusFor } from '@/server/services/invoice-calc';
 
@@ -56,28 +57,31 @@ export async function recordPayment(args: {
 }): Promise<PaymentRecord> {
   if (args.amountPaise <= 0) throw new PaymentError('Enter an amount greater than zero.');
 
-  const paymentRef = paymentsCol(args.businessId).doc(
-    args.idempotencyKey ? idempotentId('pay', args.idempotencyKey) : randomUUID(),
-  );
+  const paymentId = args.idempotencyKey ? idempotentId('pay', args.idempotencyKey) : randomUUID();
   const now = new Date().toISOString();
 
-  return db().runTransaction(async (tx) => {
+  return withTx(async (tx) => {
     // Read first, so the losing side of a race sees the winner's row rather
-    // than writing its own.
-    const prior = await tx.get(paymentRef);
-    if (prior.exists) return prior.data() as PaymentRecord;
+    // than writing its own. (If both read nothing, the second insert hits the
+    // primary key, the transaction retries, and this read finds the winner.)
+    const prior = await getDoc<PaymentRecord>(tx, 'payments', args.businessId, paymentId);
+    if (prior) return prior;
 
-    const invoiceRefs = args.allocations.map((a) => invoicesCol(args.businessId).doc(a.invoiceId));
-    const invoiceSnaps = invoiceRefs.length ? await tx.getAll(...invoiceRefs) : [];
+    // Lock the bills in a fixed order, so two payments touching the same two
+    // bills cannot each hold one and wait for the other.
+    const locked = new Map<string, InvoiceRecord>();
+    for (const id of [...new Set(args.allocations.map((a) => a.invoiceId))].sort()) {
+      const inv = await getDoc<InvoiceRecord>(tx, 'invoices', args.businessId, id, { lock: true });
+      if (inv) locked.set(id, inv);
+    }
 
     let allocatedTotal = 0;
-    const updates: Array<{ ref: FirebaseFirestore.DocumentReference; invoice: InvoiceRecord; add: number }> = [];
+    const updates: Array<{ id: string; invoice: InvoiceRecord; add: number }> = [];
 
     for (let i = 0; i < args.allocations.length; i += 1) {
       const alloc = args.allocations[i]!;
-      const snap = invoiceSnaps[i]!;
-      if (!snap.exists) throw new PaymentError('One of the bills no longer exists.');
-      const invoice = snap.data() as InvoiceRecord;
+      const invoice = locked.get(alloc.invoiceId);
+      if (!invoice) throw new PaymentError('One of the bills no longer exists.');
       if (invoice.status !== 'issued') {
         throw new PaymentError(`Payment can only be recorded against an issued bill (${invoice.number ?? 'draft'}).`);
       }
@@ -89,7 +93,7 @@ export async function recordPayment(args: {
         );
       }
       allocatedTotal += alloc.amountPaise;
-      updates.push({ ref: invoiceRefs[i]!, invoice, add: alloc.amountPaise });
+      updates.push({ id: alloc.invoiceId, invoice, add: alloc.amountPaise });
     }
 
     if (allocatedTotal > args.amountPaise) {
@@ -99,7 +103,7 @@ export async function recordPayment(args: {
     const unappliedPaise = args.amountPaise - allocatedTotal;
 
     const payment: PaymentRecord = {
-      id: paymentRef.id,
+      id: paymentId,
       customerId: args.customerId,
       receivedOn: args.receivedOn,
       amountPaise: args.amountPaise,
@@ -113,7 +117,7 @@ export async function recordPayment(args: {
       createdAt: now,
       createdByUid: args.uid,
     };
-    tx.set(paymentRef, payment);
+    await insertDoc(tx, 'payments', args.businessId, paymentId, payment);
 
     for (const u of updates) {
       const amountPaidPaise = u.invoice.amountPaidPaise + u.add;
@@ -124,7 +128,7 @@ export async function recordPayment(args: {
         debitAppliedPaise: u.invoice.debitAppliedPaise,
         settlementDeductionPaise: u.invoice.settlementDeductionPaise,
       });
-      tx.update(u.ref, {
+      await patchDoc(tx, 'invoices', args.businessId, u.id, {
         amountPaidPaise,
         balancePaise,
         paymentStatus: paymentStatusFor(balancePaise, u.invoice.totals.grandTotalPaise),
@@ -132,12 +136,12 @@ export async function recordPayment(args: {
       });
     }
 
-    recordAuditInTransaction(tx, args.businessId, {
+    await recordAuditInTransaction(tx, args.businessId, {
       actorUid: args.uid,
       actorKind: 'user',
       action: 'payment.recorded',
       subjectType: 'payment',
-      subjectId: paymentRef.id,
+      subjectId: paymentId,
       detail: { amountPaise: args.amountPaise, allocations: args.allocations.length, unappliedPaise },
     });
 
@@ -160,22 +164,23 @@ export async function reversePayment(args: {
   reason: string;
   reversedOn: CivilDate;
 }): Promise<PaymentRecord> {
-  const originalRef = paymentsCol(args.businessId).doc(args.paymentId);
-  const reversalRef = paymentsCol(args.businessId).doc(randomUUID());
+  const reversalId = randomUUID();
   const now = new Date().toISOString();
 
-  return db().runTransaction(async (tx) => {
-    const snap = await tx.get(originalRef);
-    if (!snap.exists) throw new PaymentError('That payment no longer exists.');
-    const original = snap.data() as PaymentRecord;
+  return withTx(async (tx) => {
+    const original = await getDoc<PaymentRecord>(tx, 'payments', args.businessId, args.paymentId, { lock: true });
+    if (!original) throw new PaymentError('That payment no longer exists.');
     if (original.reversedByPaymentId) throw new PaymentError('That payment has already been reversed.');
     if (original.reversalOfPaymentId) throw new PaymentError('A reversal cannot itself be reversed.');
 
-    const invoiceRefs = original.allocations.map((a) => invoicesCol(args.businessId).doc(a.invoiceId));
-    const invoiceSnaps = invoiceRefs.length ? await tx.getAll(...invoiceRefs) : [];
+    const locked = new Map<string, InvoiceRecord>();
+    for (const id of [...new Set(original.allocations.map((a) => a.invoiceId))].sort()) {
+      const inv = await getDoc<InvoiceRecord>(tx, 'invoices', args.businessId, id, { lock: true });
+      if (inv) locked.set(id, inv);
+    }
 
     const reversal: PaymentRecord = {
-      id: reversalRef.id,
+      id: reversalId,
       customerId: original.customerId,
       receivedOn: args.reversedOn,
       amountPaise: -original.amountPaise,
@@ -190,14 +195,13 @@ export async function reversePayment(args: {
       createdByUid: args.uid,
     };
 
-    tx.set(reversalRef, reversal);
-    tx.update(originalRef, { reversedByPaymentId: reversalRef.id });
+    await insertDoc(tx, 'payments', args.businessId, reversalId, reversal);
+    await patchDoc(tx, 'payments', args.businessId, original.id, { reversedByPaymentId: reversalId });
 
-    for (let i = 0; i < original.allocations.length; i += 1) {
-      const snapI = invoiceSnaps[i]!;
-      if (!snapI.exists) continue;
-      const invoice = snapI.data() as InvoiceRecord;
-      const amountPaidPaise = invoice.amountPaidPaise - original.allocations[i]!.amountPaise;
+    for (const alloc of original.allocations) {
+      const invoice = locked.get(alloc.invoiceId);
+      if (!invoice) continue;
+      const amountPaidPaise = invoice.amountPaidPaise - alloc.amountPaise;
       const balancePaise = computeBalance({
         grandTotalPaise: invoice.totals.grandTotalPaise,
         amountPaidPaise,
@@ -205,21 +209,29 @@ export async function reversePayment(args: {
         debitAppliedPaise: invoice.debitAppliedPaise,
         settlementDeductionPaise: invoice.settlementDeductionPaise,
       });
-      tx.update(invoiceRefs[i]!, {
+      const updated = {
+        ...invoice,
         amountPaidPaise,
         balancePaise,
         paymentStatus: paymentStatusFor(balancePaise, invoice.totals.grandTotalPaise),
         updatedAt: now,
+      };
+      locked.set(alloc.invoiceId, updated);
+      await patchDoc(tx, 'invoices', args.businessId, alloc.invoiceId, {
+        amountPaidPaise,
+        balancePaise,
+        paymentStatus: updated.paymentStatus,
+        updatedAt: now,
       });
     }
 
-    recordAuditInTransaction(tx, args.businessId, {
+    await recordAuditInTransaction(tx, args.businessId, {
       actorUid: args.uid,
       actorKind: 'user',
       action: 'payment.reversed',
       subjectType: 'payment',
       subjectId: original.id,
-      detail: { reversalId: reversalRef.id, amountPaise: original.amountPaise },
+      detail: { reversalId, amountPaise: original.amountPaise },
     });
 
     return reversal;
@@ -245,26 +257,22 @@ export async function recordSettlementDeduction(args: {
   idempotencyKey?: string;
 }): Promise<AdjustmentRecord> {
   if (args.amountPaise <= 0) throw new PaymentError('Enter an amount greater than zero.');
-  const invoiceRef = invoicesCol(args.businessId).doc(args.invoiceId);
-  const adjRef = adjustmentsCol(args.businessId).doc(
-    args.idempotencyKey ? idempotentId('deduct', args.idempotencyKey) : randomUUID(),
-  );
+  const adjId = args.idempotencyKey ? idempotentId('deduct', args.idempotencyKey) : randomUUID();
   const now = new Date().toISOString();
 
-  return db().runTransaction(async (tx) => {
-    const prior = await tx.get(adjRef);
-    if (prior.exists) return prior.data() as AdjustmentRecord;
+  return withTx(async (tx) => {
+    const prior = await getDoc<AdjustmentRecord>(tx, 'adjustments', args.businessId, adjId);
+    if (prior) return prior;
 
-    const snap = await tx.get(invoiceRef);
-    if (!snap.exists) throw new PaymentError('That bill no longer exists.');
-    const invoice = snap.data() as InvoiceRecord;
+    const invoice = await getDoc<InvoiceRecord>(tx, 'invoices', args.businessId, args.invoiceId, { lock: true });
+    if (!invoice) throw new PaymentError('That bill no longer exists.');
     if (invoice.status !== 'issued') throw new PaymentError('Only an issued bill can have a deduction recorded.');
     if (args.amountPaise > invoice.balancePaise) {
       throw new PaymentError('The deduction is more than the amount still outstanding on this bill.');
     }
 
     const adjustment: AdjustmentRecord = {
-      id: adjRef.id,
+      id: adjId,
       kind: 'settlement-deduction',
       number: null,
       financialYear: invoice.financialYear,
@@ -285,7 +293,7 @@ export async function recordSettlementDeduction(args: {
       createdAt: now,
       createdByUid: args.uid,
     };
-    tx.set(adjRef, adjustment);
+    await insertDoc(tx, 'adjustments', args.businessId, adjId, adjustment);
 
     const settlementDeductionPaise = invoice.settlementDeductionPaise + args.amountPaise;
     const balancePaise = computeBalance({
@@ -295,14 +303,14 @@ export async function recordSettlementDeduction(args: {
       debitAppliedPaise: invoice.debitAppliedPaise,
       settlementDeductionPaise,
     });
-    tx.update(invoiceRef, {
+    await patchDoc(tx, 'invoices', args.businessId, invoice.id, {
       settlementDeductionPaise,
       balancePaise,
       paymentStatus: paymentStatusFor(balancePaise, invoice.totals.grandTotalPaise),
       updatedAt: now,
     });
 
-    recordAuditInTransaction(tx, args.businessId, {
+    await recordAuditInTransaction(tx, args.businessId, {
       actorUid: args.uid,
       actorKind: 'user',
       action: 'adjustment.settlement-deduction',
@@ -316,19 +324,24 @@ export async function recordSettlementDeduction(args: {
 }
 
 export async function listPayments(businessId: string, limit = 200): Promise<PaymentRecord[]> {
-  const snap = await paymentsCol(businessId).orderBy('createdAt', 'desc').limit(limit).get();
-  return snap.docs.map((d) => d.data() as PaymentRecord);
+  return queryDocs<PaymentRecord>(pool(), 'payments', businessId, { order: 'created_at desc', limit });
 }
 
 export async function listPaymentsForInvoice(businessId: string, invoiceId: string): Promise<PaymentRecord[]> {
-  const snap = await paymentsCol(businessId).orderBy('createdAt', 'desc').limit(500).get();
-  return snap.docs
-    .map((d) => d.data() as PaymentRecord)
-    .filter((p) => p.allocations.some((a) => a.invoiceId === invoiceId));
+  return queryDocs<PaymentRecord>(pool(), 'payments', businessId, {
+    where: "data->'allocations' @> $2::jsonb",
+    params: [JSON.stringify([{ invoiceId }])],
+    order: 'created_at desc',
+    limit: 500,
+  });
 }
 
 /** Unapplied credit sitting with a customer, from overpayments. */
 export async function customerUnappliedCredit(businessId: string, customerId: string): Promise<number> {
-  const snap = await paymentsCol(businessId).where('customerId', '==', customerId).limit(500).get();
-  return snap.docs.reduce((total, d) => total + ((d.data() as PaymentRecord).unappliedPaise ?? 0), 0);
+  const { rows } = await pool().query<{ total: string | null }>(
+    `select sum(coalesce((data->>'unappliedPaise')::bigint, 0)) as total from payments
+     where business_id = $1 and customer_id = $2`,
+    [businessId, customerId],
+  );
+  return Number(rows[0]?.total ?? 0);
 }

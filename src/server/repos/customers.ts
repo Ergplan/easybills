@@ -3,31 +3,32 @@ import 'server-only';
 import { randomUUID } from 'node:crypto';
 
 import type { CustomerRecord, InvoiceParty } from '@/lib/domain/types';
-import { customersCol } from '@/server/firebase/paths';
+import { getDoc, insertDoc, patchDoc, queryDocs } from '@/server/db/docs';
+import { pool } from '@/server/db/pool';
 import { recordAudit } from '@/server/services/audit';
 
 export async function listCustomers(
   businessId: string,
   opts: { includeArchived?: boolean; limit?: number } = {},
 ): Promise<CustomerRecord[]> {
-  const snap = await customersCol(businessId).orderBy('name').limit(opts.limit ?? 500).get();
-  const all = snap.docs.map((d) => d.data() as CustomerRecord);
-  return opts.includeArchived ? all : all.filter((c) => !c.archived);
+  return queryDocs<CustomerRecord>(pool(), 'customers', businessId, {
+    where: opts.includeArchived ? undefined : 'not archived',
+    order: 'name asc',
+    limit: opts.limit ?? 500,
+  });
 }
 
 /** Recent customers first -- what the editor's picker shows before any typing. */
 export async function recentCustomers(businessId: string, limit = 8): Promise<CustomerRecord[]> {
-  const snap = await customersCol(businessId)
-    .where('archived', '==', false)
-    .orderBy('lastBilledAt', 'desc')
-    .limit(limit)
-    .get();
-  return snap.docs.map((d) => d.data() as CustomerRecord);
+  return queryDocs<CustomerRecord>(pool(), 'customers', businessId, {
+    where: 'not archived and last_billed_at is not null',
+    order: 'last_billed_at desc',
+    limit,
+  });
 }
 
 export async function getCustomer(businessId: string, customerId: string): Promise<CustomerRecord | null> {
-  const snap = await customersCol(businessId).doc(customerId).get();
-  return snap.exists ? (snap.data() as CustomerRecord) : null;
+  return getDoc<CustomerRecord>(pool(), 'customers', businessId, customerId);
 }
 
 type NewCustomer = Omit<
@@ -52,7 +53,7 @@ export async function createCustomer(businessId: string, uid: string, input: New
     updatedAt: now,
     lastBilledAt: null,
   };
-  await customersCol(businessId).doc(record.id).set(record);
+  await insertDoc(pool(), 'customers', businessId, record.id, record);
   await recordAudit(businessId, {
     actorUid: uid,
     actorKind: 'user',
@@ -74,7 +75,8 @@ export async function updateCustomer(
   customerId: string,
   patch: Partial<Omit<CustomerRecord, 'id' | 'createdAt'>>,
 ): Promise<void> {
-  await customersCol(businessId).doc(customerId).update({ ...patch, updatedAt: new Date().toISOString() });
+  const found = await patchDoc(pool(), 'customers', businessId, customerId, { ...patch, updatedAt: new Date().toISOString() });
+  if (!found) throw new Error('That customer no longer exists.');
   await recordAudit(businessId, {
     actorUid: uid,
     actorKind: 'user',
@@ -86,7 +88,7 @@ export async function updateCustomer(
 }
 
 export async function markBilled(businessId: string, customerId: string): Promise<void> {
-  await customersCol(businessId).doc(customerId).update({ lastBilledAt: new Date().toISOString() });
+  await patchDoc(pool(), 'customers', businessId, customerId, { lastBilledAt: new Date().toISOString() });
 }
 
 export function customerToParty(customer: CustomerRecord): InvoiceParty {

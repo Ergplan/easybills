@@ -14,7 +14,8 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     setupFiles: ['./tests/setup.ts'],
-    // Integration tests share one emulator, so they run in a single worker to
+    globalSetup: ['./tests/global-setup.ts'],
+    // Integration tests share one database, so they run in a single worker to
     // keep collection state predictable. Concurrency is exercised explicitly
     // inside the tests that care about it, via Promise.all.
     pool: 'forks',

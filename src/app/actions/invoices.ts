@@ -5,7 +5,6 @@ import { billSentMessage, moneyForMessage } from '@/lib/copy/messages';
 import { parseCustomer } from '@/lib/domain/customer-form';
 import { contractNotes } from '@/lib/domain/contract';
 import { billsForProject, getProject } from '@/server/repos/projects';
-import { invoicesCol } from '@/server/firebase/paths';
 import { findDuplicate, proportionalCredit, type DuplicateHit } from '@/lib/domain/bill-guard';
 
 import { revalidatePath } from 'next/cache';
@@ -26,6 +25,7 @@ import {
   listInvoices,
   newInvoiceId,
   noteReminder,
+  patchInvoice,
   saveDraft,
 } from '@/server/repos/invoices';
 import { createCustomer, customerToParty, getCustomer, markBilled } from '@/server/repos/customers';
@@ -347,7 +347,7 @@ export async function makeBillAction(
 
     const result = await issueInvoice({ business, uid: user.uid, invoiceId: raw.invoiceId, expectedRevision: saved.revision });
     if (stageBasis !== null && draft.projectStage) {
-      await invoicesCol(businessId).doc(raw.invoiceId).update({ projectStage: { ...draft.projectStage, basisPaise: stageBasis } });
+      await patchInvoice(businessId, raw.invoiceId, { projectStage: { ...draft.projectStage, basisPaise: stageBasis } });
     }
     if (result.invoice.customer.customerId) {
       await markBilled(businessId, result.invoice.customer.customerId).catch(() => undefined);

@@ -13,6 +13,7 @@
  */
 import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
+import pg from 'pg';
 
 import { fillProfile, freshPhone, signInByPhone } from './e2e-auth.mjs';
 
@@ -32,25 +33,17 @@ function check(label, condition, detail = '') {
 }
 
 /**
- * Read what the app wrote, through the Firestore emulator's REST surface. The
- * rules deny every client read, so this presents the emulator's owner token,
- * which the emulator treats the way it treats the Admin SDK.
+ * Read what the app wrote, straight from Postgres -- the same database the dev
+ * server is pointed at (DATABASE_URL, default the local dev database).
  */
+const db = new pg.Client({ connectionString: process.env.DATABASE_URL ?? 'postgres://postgres@127.0.0.1:5440/ekbill_dev' });
+await db.connect();
 async function findBusiness(legalName) {
-  const res = await fetch('http://127.0.0.1:8080/v1/projects/easybills-dev/databases/(default)/documents:runQuery', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer owner', 'content-type': 'application/json' },
-    body: JSON.stringify({
-      structuredQuery: {
-        from: [{ collectionId: 'businesses' }],
-        where: { fieldFilter: { field: { fieldPath: 'legalName' }, op: 'EQUAL', value: { stringValue: legalName } } },
-        orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'DESCENDING' }],
-        limit: 1,
-      },
-    }),
-  });
-  const rows = await res.json();
-  return rows.find((r) => r.document)?.document?.fields ?? null;
+  const { rows } = await db.query(
+    "select data from businesses where data->>'legalName' = $1 order by created_at desc limit 1",
+    [legalName],
+  );
+  return rows[0]?.data ?? null;
 }
 
 const browser = await chromium.launch({ executablePath: CHROMIUM, args: ['--no-sandbox'] });
@@ -119,14 +112,14 @@ try {
 
   console.log('\n4. What was saved');
   const health = await (await page.request.get(`${BASE}/api/health`)).json();
-  check('the server is talking to the emulator', health.usingEmulators === true, JSON.stringify(health));
+  check('sign-in is talking to the Auth emulator', health.authEmulator === true, JSON.stringify(health));
   const mine = await findBusiness('Sharma Electricals');
   check('business exists with the name given', Boolean(mine));
-  check('registered under GST, because a GSTIN was given', mine?.registrationType?.stringValue === 'regular');
-  check('state came from the GST number', mine?.stateCode?.stringValue === '27');
-  check('phone stored in +91 form', mine?.phone?.stringValue === who.phone);
-  check('UPI stored with the bank details', mine?.bank?.mapValue?.fields?.upiId?.stringValue === 'sharma@upi');
-  check('city kept', mine?.city?.stringValue === 'Pune');
+  check('registered under GST, because a GSTIN was given', mine?.registrationType === 'regular');
+  check('state came from the GST number', mine?.stateCode === '27');
+  check('phone stored in +91 form', mine?.phone === who.phone);
+  check('UPI stored with the bank details', mine?.bank?.upiId === 'sharma@upi');
+  check('city kept', mine?.city === 'Pune');
 
   console.log('\n5. Sign out, sign in again');
   await page.request.delete(`${BASE}/api/auth/session`);
@@ -141,7 +134,7 @@ try {
   await signInByPhone(page, BASE);
   await fillProfile(page, BASE, { name: 'Ramesh Patil' });
   const ramesh = await findBusiness('Ramesh Patil');
-  check('no GST number means not registered, and no guessing', ramesh?.registrationType?.stringValue === 'not-registered');
+  check('no GST number means not registered, and no guessing', ramesh?.registrationType === 'not-registered');
 
   check('no page errors', pageErrors.length === 0, pageErrors.join(' | '));
 } catch (e) {
@@ -150,6 +143,7 @@ try {
   await shot('crash').catch(() => undefined);
 } finally {
   await browser.close();
+  await db.end();
 }
 
 console.log(failures.length ? `\n${failures.length} failed: ${failures.join(', ')}` : '\nAll checks passed.');
