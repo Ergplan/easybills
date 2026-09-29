@@ -85,7 +85,7 @@ const TOURS: Record<ScreenKey, TourStep[]> = {
   ],
   bill: [
     { target: '#bill-customer', say: 'Pehle customer ka naam likho.' },
-    { target: { sel: 'button', text: 'Pichle jaisa hi' }, say: 'Pichli baar jaisa bill? Yeh dabao, wahi lines aa jayengi.' },
+    { target: { sel: '.card--offer', text: 'Pichle jaisa hi' }, say: 'Pichli baar jaisa bill? Yeh dabao, wahi lines aa jayengi.' },
     { target: 'input[id^="what-"]', say: 'Kya kaam kiya? Jaise "Repair visit" ya "Fan fitting".' },
     { target: 'input[id^="qty-"]', say: 'Kitna? Kitni baar ya kitne piece. Ek hai to 1 hi rehne do.' },
     { target: 'input[id^="rate-"]', say: 'Ek ka rate, rupaye mein.' },
