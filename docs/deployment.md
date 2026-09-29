@@ -26,7 +26,8 @@ named `ekbill-*` and labelled `app=ekbill`.
 ## First time
 
 The quickest path is to paste [prompts/ekbill-on-vm.md](prompts/ekbill-on-vm.md) into Claude
-Code on the VM. By hand, it's the following steps.
+Code on the VM. It does everything except step 2, which you run yourself in a second SSH window
+because it waits for typed answers. By hand, it's the following steps.
 
 1. **Get the code onto the VM** with its own deploy key (never the tariff key):
 

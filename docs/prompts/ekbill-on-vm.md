@@ -38,13 +38,16 @@ Ask before anything you cannot undo.
    - `git clone -b claude/admiring-wright-5w8x4g git@github-ekbill:Ergplan/easybills.git ~/easybills`
 3. Read `~/easybills/docs/deployment.md` and `~/easybills/deploy/vm/setup.sh` before running
    anything.
-4. Run `cd ~/easybills && deploy/vm/setup.sh`. When it asks for the OpenAI key, tell the
-   operator to paste it themselves (the prompt hides it). If they have no key, press Enter; it can
-   be added later with `deploy/vm/set-openai-key.sh`.
-   - If Terraform's plan shows anything outside `ekbill-*` resources, the `ekbill-ip` address and
-     IAM bindings on those, stop and show the plan.
-   - If pulling the Docling image fails on the tag, rerun with
+4. **The operator runs `deploy/vm/setup.sh` themselves**, in a second SSH window. It waits for
+   typed input: `y` to apply the Terraform plan, and the OpenAI key at a hidden prompt. Your Bash
+   tool cannot answer those, so do not run it. Tell the operator:
+   "Open a second SSH window and run: `cd ~/easybills && deploy/vm/setup.sh`. Type `y` only if
+   the plan shows ekbill-* resources (and random_password, ekbill-ip) with 0 to destroy. Paste the
+   OpenAI key when asked (nothing shows), or press Enter to skip." Then wait until they say it
+   finished.
+   - If they report a Docling image pull failure on the tag, suggest they rerun with
      `DOCLING_IMAGE=quay.io/docling-project/docling-serve-cpu:latest deploy/vm/up.sh`.
+   - Updates later need no input: `git pull && deploy/vm/up.sh` can be run by you.
 5. Check it works:
    - `curl -s localhost:8080/api/health` must show `"database":"ok"`, `"pdfs":"ok"` and
      `"docling":"ok"`.
