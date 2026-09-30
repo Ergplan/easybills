@@ -35,6 +35,29 @@ variable "vm_external_ip" {
   default     = ""
 }
 
+variable "own_vm" {
+  description = "Create EkBill's own VM (named ekbill), with its own service account and static IP. See docs/own-vm.md."
+  type        = bool
+  default     = false
+}
+
+variable "own_vm_machine_type" {
+  description = "4 vCPU / 16 GB: room for Docling's photo reading next to the app, Postgres and PDFs."
+  type        = string
+  default     = "e2-standard-4"
+}
+
+variable "own_vm_disk_gb" {
+  type    = number
+  default = 50
+}
+
+variable "old_vm_access" {
+  description = "Whether the tariff-order VM still reads EkBill's secrets and bucket. Set false once EkBill has moved."
+  type        = bool
+  default     = true
+}
+
 variable "backup_retention_days" {
   description = "How long nightly database dumps are kept."
   type        = number

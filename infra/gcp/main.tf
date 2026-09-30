@@ -1,6 +1,7 @@
 # EkBill's Google Cloud resources, next to the tariff product in the same project and never
-# touching it.  Everything is named ekbill-* and labelled app=ekbill.  The VM itself, its disk,
-# service account and the product's resources are not managed here.
+# touching it.  Everything is named ekbill-* and labelled app=ekbill.  The tariff-order VM, its
+# disk, service account and the product's resources are not managed here; EkBill's own VM is
+# (own_vm.tf).
 
 locals {
   labels    = { app = "ekbill", managed_by = "terraform" }
@@ -64,14 +65,14 @@ resource "google_secret_manager_secret" "operator" {
 }
 
 resource "google_secret_manager_secret_iam_member" "vm_reads_generated" {
-  for_each  = google_secret_manager_secret.generated
+  for_each  = { for k, v in google_secret_manager_secret.generated : k => v if var.old_vm_access }
   secret_id = each.value.id
   role      = "roles/secretmanager.secretAccessor"
   member    = local.vm_sa
 }
 
 resource "google_secret_manager_secret_iam_member" "vm_reads_operator" {
-  for_each  = google_secret_manager_secret.operator
+  for_each  = { for k, v in google_secret_manager_secret.operator : k => v if var.old_vm_access }
   secret_id = each.value.id
   role      = "roles/secretmanager.secretAccessor"
   member    = local.vm_sa
@@ -98,9 +99,16 @@ resource "google_storage_bucket" "backups" {
 }
 
 resource "google_storage_bucket_iam_member" "vm_writes_backups" {
+  count  = var.old_vm_access ? 1 : 0
   bucket = google_storage_bucket.backups.name
   role   = "roles/storage.objectAdmin"
   member = local.vm_sa
+}
+
+# The grant above gained a count so it can be switched off after the move; same binding, new address.
+moved {
+  from = google_storage_bucket_iam_member.vm_writes_backups
+  to   = google_storage_bucket_iam_member.vm_writes_backups[0]
 }
 
 # ------------------------------------------------------------------ the public address

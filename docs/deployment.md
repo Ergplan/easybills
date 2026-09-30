@@ -1,5 +1,8 @@
 # Deploying EkBill on the tariff-order VM
 
+> **Moving to its own VM:** EkBill is moving off the shared tariff-order VM to a VM of its own
+> (`ekbill`). Follow [own-vm.md](own-vm.md); the everyday commands below work the same there.
+
 EkBill runs as a Docker Compose stack on the existing `tariff-order` VM (project
 `tariff-order-parsing`, zone `asia-south2-b`), next to the tariff product and never touching it.
 
@@ -86,6 +89,7 @@ deploy/vm/up.sh
 | Add or change the OpenAI key | `deploy/vm/set-openai-key.sh` |
 | Restart without rebuilding (low disk, or only the address changed) | `EKBILL_NO_BUILD=1 deploy/vm/up.sh` |
 | Free EkBill's own old images (never the product's) | `deploy/vm/free-space.sh` |
+| Restore the newest backup | `deploy/vm/restore.sh latest --replace && EKBILL_NO_BUILD=1 deploy/vm/up.sh` |
 | Back up now | `deploy/vm/backup.sh` |
 | psql | `docker compose -p ekbill exec db psql -U ekbill` |
 | From your laptop without the public address | `gcloud compute ssh tariff-order --zone asia-south2-b --project tariff-order-parsing -- -N -L 8080:localhost:8080`, then http://localhost:8080 |

@@ -17,6 +17,19 @@ secret() {
   gcloud secrets versions access latest --secret="$1" --project="$PROJECT" 2>/dev/null || true
 }
 
+# The running container of one EkBill service (db, app, docling, caddy), found by compose's own
+# labels. Scripts that only need to reach a running container use this with plain `docker`,
+# because `docker compose -f ...` refuses to load the file without the secrets in the environment
+# -- which is exactly the situation under cron.
+container_of() {
+  docker ps -q --filter "label=com.docker.compose.project=ekbill" --filter "label=com.docker.compose.service=$1" | head -1
+}
+
+# This VM's name, from the metadata server.
+instance_name() {
+  curl -fsS -H 'Metadata-Flavor: Google' 'http://metadata.google.internal/computeMetadata/v1/instance/name' 2>/dev/null || true
+}
+
 external_ip() {
   curl -fsS -H 'Metadata-Flavor: Google' \
     'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip' \
