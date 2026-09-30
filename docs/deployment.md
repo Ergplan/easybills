@@ -84,12 +84,27 @@ deploy/vm/up.sh
 | Logs | `docker compose -p ekbill logs -f app` (or `docling`, `caddy`, `db`) |
 | Stop | `docker compose -p ekbill -f deploy/docker-compose.yml down` (keeps the data volume) |
 | Add or change the OpenAI key | `deploy/vm/set-openai-key.sh` |
+| Restart without rebuilding (low disk, or only the address changed) | `EKBILL_NO_BUILD=1 deploy/vm/up.sh` |
+| Free EkBill's own old images (never the product's) | `deploy/vm/free-space.sh` |
 | Back up now | `deploy/vm/backup.sh` |
 | psql | `docker compose -p ekbill exec db psql -U ekbill` |
 | From your laptop without the public address | `gcloud compute ssh tariff-order --zone asia-south2-b --project tariff-order-parsing -- -N -L 8080:localhost:8080`, then http://localhost:8080 |
 
 Never run `docker system prune` or `docker volume prune` on this VM: the product's build cache
 and volumes live there too.
+
+## When the VM's IP changes
+
+The sslip.io name is built from the IP, so a new IP (something replaced the VM's network
+interface, e.g. an apply of the product's Terraform) makes the old link time out while the app
+keeps running. Reserve the new IP and point Caddy at it, without a build:
+
+```bash
+cd ~/easybills && git pull && EKBILL_NO_BUILD=1 deploy/vm/setup.sh
+```
+
+The plan releases the old reserved address and reserves the current one; nothing else should be
+in it. A real domain name (below) keeps the link the same; only its A record changes.
 
 ## /api/health
 

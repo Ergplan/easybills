@@ -20,8 +20,14 @@ EKBILL_DOMAIN="$(domain)"
 export EKBILL_DB_PASSWORD OPENAI_API_KEY EKBILL_GATE_HASH EKBILL_DOMAIN
 echo "domain: $EKBILL_DOMAIN"
 
-say "Build and start (compose project ekbill)"
-"${COMPOSE[@]}" up -d --build --remove-orphans
+if [ "${EKBILL_NO_BUILD:-}" = "1" ]; then
+  # Low on disk, or only the address or a secret changed: keep the app image that is there.
+  say "Start without building (EKBILL_NO_BUILD=1; compose project ekbill)"
+  "${COMPOSE[@]}" up -d --no-build --remove-orphans
+else
+  say "Build and start (compose project ekbill)"
+  "${COMPOSE[@]}" up -d --build --remove-orphans
+fi
 "${COMPOSE[@]}" ps
 
 say "Waiting for the app"

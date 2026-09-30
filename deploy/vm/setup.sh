@@ -4,6 +4,7 @@
 # compose project or files).
 #
 #   cd ~/easybills && deploy/vm/setup.sh
+#   EKBILL_NO_BUILD=1 deploy/vm/setup.sh   # everything except rebuilding the app image (low disk)
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 say "Where we are"
@@ -18,16 +19,37 @@ for port in 80 443 5441 8080; do
   fi
 done
 free_gb="$(df -BG --output=avail / | tail -1 | tr -dc 0-9)"
-[ "$free_gb" -ge 30 ] || { echo "Only ${free_gb}G free; EkBill needs ~10G and the product's builds need 20G. Stop and ask."; exit 1; }
+if [ "$free_gb" -lt 30 ]; then
+  if [ "${EKBILL_NO_BUILD:-}" = "1" ]; then
+    # Nothing is built, so nothing much is written: carry on, but say so.
+    echo "Only ${free_gb}G free. Carrying on because EKBILL_NO_BUILD=1 (no image is built)."
+  else
+    echo "Only ${free_gb}G free; EkBill needs ~10G and the product's builds need 20G. Stop and ask."
+    echo "To update the address or settings without building: EKBILL_NO_BUILD=1 deploy/vm/setup.sh"
+    echo "To free EkBill's own leftovers: deploy/vm/free-space.sh"
+    exit 1
+  fi
+fi
 
 say "Terraform (state: gs://tarifforderstudio_tfstate/ekbill/dev)"
 ip="$(external_ip)"
 cd "$REPO_DIR/infra/gcp" || exit 1
 terraform init -input=false -backend-config=envs/dev.backend.hcl
 terraform plan -input=false -var-file=envs/dev.tfvars -var "vm_external_ip=$ip" -out=ekbill.tfplan
-if terraform show -json ekbill.tfplan | grep -q '"actions":\["delete"'; then
-  echo "The plan deletes something. Not applying; show it to the operator."; exit 1
-fi
+# Nothing may be deleted, with one exception: the reserved address follows the VM's IP. When the
+# VM's IP has changed (something replaced its network interface), the old reservation is released
+# and the new IP reserved -- a delete and a create of ekbill-ip, and nothing else.
+deletes="$(terraform show -json ekbill.tfplan | python3 -c '
+import json, sys
+plan = json.load(sys.stdin)
+print(" ".join(c["address"] for c in plan.get("resource_changes", []) if "delete" in c["change"]["actions"]))
+')"
+for address in $deletes; do
+  case "$address" in
+    'google_compute_address.vm[0]') echo "Note: the VM's IP changed, so the reserved address moves to $ip (the old one is released)." ;;
+    *) echo "The plan deletes $address. Not applying; show it to the operator."; exit 1 ;;
+  esac
+done
 read -rp "Apply this plan? Only ekbill-* resources should appear above. [y/N] " yes
 [ "${yes:-}" = "y" ] || { echo "Not applied."; exit 1; }
 terraform apply -input=false ekbill.tfplan
