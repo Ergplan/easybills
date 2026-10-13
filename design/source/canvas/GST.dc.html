@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<title>EkBill · GST ka hisaab</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#16170F;text-decoration:none}a:hover{color:#000}
+.dot{font-family:'Urbanist',system-ui,sans-serif;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</helmet>
+<div style="width: 390px; height: 1260px; position: relative; overflow: hidden; box-sizing: border-box; font-family: 'Urbanist', system-ui, sans-serif; color: #16170F; background-color: #EEEEEA; background-image: radial-gradient(rgba(22,23,15,.07) 1px, transparent 1.3px); background-size: 9px 9px">
+
+  <header style="padding: 26px 22px 0">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px">
+      <div>
+        <h1 style="margin: 0; font-size: 34px; line-height: 1.06; font-weight: 300; letter-spacing: -.025em">GST ka <span style="font-weight: 600">hisaab</span></h1>
+        <p style="margin: 8px 0 0; font-size: 14px; color: #5F6057">Jul – Sep 2026 · CA ke liye</p>
+      </div>
+      <button type="button" style="height: 44px; padding: 0 14px 0 16px; border: 0; border-radius: 999px; background: #FFFFFF; color: #16170F; font: 500 14px 'Urbanist', sans-serif; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 10px 20px -14px rgba(22,23,15,.5); white-space: nowrap">Is quarter
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px"><path d="M6 9l6 6 6-6"/></svg></button>
+    </div>
+  </header>
+
+  <main style="display: flex; flex-direction: column; gap: 12px; padding: 20px 12px 0">
+
+    <!-- teal hero -->
+    <section aria-label="Quarter summary" style="position: relative; border-radius: 34px; padding: 22px 20px 20px; overflow: hidden; color: #FFFFFF; background: radial-gradient(90% 60% at 100% 0%, #123E44 0%, rgba(18,62,68,0) 65%), radial-gradient(70% 55% at 0% 100%, #DCEBB8 0%, rgba(220,235,184,0) 70%), linear-gradient(165deg, #1C565D 0%, #2A7880 36%, #5FA8A2 66%, #A9D3B5 88%, #E2EDC4 100%); box-shadow: 0 24px 40px -28px rgba(20,80,90,.8)">
+      <svg aria-hidden="true" viewBox="0 0 360 100" style="position: absolute; left: 0; bottom: 64px; width: 100%; opacity: .3; fill: none; stroke: #FFFFFF; stroke-width: .8"><path d="M0 60 C60 20 110 90 180 50 S300 20 360 60"/><path d="M0 72 C70 40 120 100 190 62 S310 40 360 74"/></svg>
+      <span class="dot" style="position: relative; font-size: 13px; font-weight: 700; letter-spacing: .08em">Q2 · FY 26–27</span>
+      <div style="position: relative; margin-top: 16px; font-size: 14px; font-weight: 500">Bikri (taxable)</div>
+      <div style="position: relative; display: flex; align-items: baseline; gap: 2px"><span style="font-size: 28px; font-weight: 300">₹</span><span class="dot" style="font-size: 50px; line-height: 1.05">1,12,400</span></div>
+      <div style="position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 18px">
+        <div style="padding: 12px 14px; border-radius: 20px; background: rgba(255,255,255,.88); color: #16170F"><div style="font-size: 12px; color: #5F6057">Bills</div><div class="dot" style="font-size: 26px; line-height: 1.2">14</div></div>
+        <div style="padding: 12px 14px; border-radius: 20px; background: rgba(255,255,255,.88); color: #16170F"><div style="font-size: 12px; color: #5F6057">GST</div><div style="display: flex; align-items: baseline; gap: 1px"><span style="font-size: 16px; font-weight: 300">₹</span><span class="dot" style="font-size: 26px; line-height: 1.2">19,392</span></div></div>
+      </div>
+    </section>
+
+    <!-- rate split -->
+    <section aria-labelledby="rates" style="border-radius: 30px; padding: 20px 18px 14px; background: #FFFFFF; box-shadow: 0 1px 0 rgba(0,0,0,.03), 0 18px 30px -26px rgba(22,23,15,.35)">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <h2 id="rates" style="margin: 0; font-size: 17px; font-weight: 500">Rate ke hisaab se</h2>
+        <span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 50%; background: #F1F1EC; display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24"><path d="M6 18L18 6"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span>
+      </div>
+      <!-- split bar -->
+      <div role="img" aria-label="18% rate is 88% of sales, 12% rate is 12%" style="display: flex; gap: 4px; height: 12px; margin: 16px 0 6px">
+        <span style="flex: 98400; border-radius: 999px; background: linear-gradient(90deg, #2A7880, #5FA8A2)"></span>
+        <span style="flex: 14000; border-radius: 999px; background: #FFB020"></span>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px">
+        <thead><tr style="font-size: 12px; color: #5F6057"><th style="text-align: left; font-weight: 500; padding: 8px 0">Rate</th><th style="text-align: right; font-weight: 500; padding: 8px 0">Bikri</th><th style="text-align: right; font-weight: 500; padding: 8px 0">CGST</th><th style="text-align: right; font-weight: 500; padding: 8px 0">SGST</th></tr></thead>
+        <tbody class="num">
+          <tr style="border-top: 1px solid #EFEFEA"><td style="padding: 12px 0; font-weight: 600"><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #2A7880; margin-right: 8px"></span>18%</td><td style="text-align: right">98,400</td><td style="text-align: right">8,856</td><td style="text-align: right">8,856</td></tr>
+          <tr style="border-top: 1px solid #EFEFEA"><td style="padding: 12px 0; font-weight: 600"><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #D98A0B; margin-right: 8px"></span>12%</td><td style="text-align: right">14,000</td><td style="text-align: right">840</td><td style="text-align: right">840</td></tr>
+          <tr style="border-top: 1px solid #16170F"><td style="padding: 12px 0; font-weight: 700">Total</td><td style="text-align: right; font-weight: 700">1,12,400</td><td style="text-align: right; font-weight: 700">9,696</td><td style="text-align: right; font-weight: 700">9,696</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- B2B -->
+    <section aria-labelledby="b2b" style="border-radius: 30px; padding: 20px 14px 14px; background: radial-gradient(80% 60% at 100% 0%, rgba(255,255,255,.9) 0%, rgba(255,255,255,0) 70%), linear-gradient(170deg, #CFCBF5 0%, #ECE8FA 40%, #F7F2F7 70%, #F2D7EC 100%); box-shadow: 0 22px 36px -30px rgba(120,80,170,.7)">
+      <div style="padding: 0 4px">
+        <h2 id="b2b" style="margin: 0; font-size: 17px; font-weight: 500">Company bills (B2B)</h2>
+        <p style="margin: 4px 0 12px; font-size: 13px; color: #45463E">GST number waale customers · 6 bills</p>
+      </div>
+      <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+        <li style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 20px; background: rgba(255,255,255,.85)">
+          <span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: linear-gradient(140deg, #FFE6C7, #FDB27A)">M</span>
+          <div style="flex: 1; min-width: 0"><div style="font-size: 15px; font-weight: 500">Mehta Traders</div><div class="num" style="font-size: 12px; color: #5F6057">27AAPFU0939F1ZV · 3 bills</div></div>
+          <span class="num" style="font-size: 15px; font-weight: 600">₹18,600</span>
+        </li>
+        <li style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 20px; background: rgba(255,255,255,.85)">
+          <span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: linear-gradient(140deg, #E5E3FA, #B9B3F0)">G</span>
+          <div style="flex: 1; min-width: 0"><div style="font-size: 15px; font-weight: 500">Green Park Society</div><div class="num" style="font-size: 12px; color: #5F6057">27AABCG1234H1Z3 · 3 bills</div></div>
+          <span class="num" style="font-size: 15px; font-weight: 600">₹28,350</span>
+        </li>
+      </ul>
+      <p style="margin: 12px 4px 0; font-size: 13px; color: #45463E">Baaki 8 bills bina GST number waale customers ko gaye (B2C).</p>
+    </section>
+
+    <!-- CA CTA -->
+    <div style="padding: 4px 0 0">
+      <a href="#" style="display: flex; align-items: center; justify-content: space-between; height: 62px; padding: 0 8px 0 24px; border-radius: 999px; background: #FFB020; font-size: 17px; font-weight: 600; box-shadow: 0 20px 30px -18px rgba(200,110,10,.7)">CA ko bhejo
+        <span style="width: 48px; height: 48px; border-radius: 50%; background: #16170F; color: #FFB020; display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 1.9"><path d="M4 12l16-8-6 16-2-7z"/></svg></span></a>
+      <p style="margin: 10px 0 0; text-align: center; font-size: 13px; color: #5F6057">Excel + saare bills ki PDF, WhatsApp ya email se.</p>
+    </div>
+  </main>
+
+  <!-- tab bar -->
+  <nav aria-label="Main" style="position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); display: flex; gap: 4px; padding: 6px; border-radius: 999px; background: rgba(255,255,255,.88); box-shadow: 0 18px 40px -18px rgba(22,23,15,.45), inset 0 0 0 1px rgba(22,23,15,.05)">
+    <a href="Main.dc.html" style="display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 18px; border-radius: 999px; font-size: 14px; font-weight: 500; color: #45463E">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg>Ghar</a>
+    <a href="GST.dc.html" aria-current="page" style="display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px; border-radius: 999px; background: #FFB020; font-size: 14px; font-weight: 600">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>GST</a>
+    <a href="Profile.dc.html" style="display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 18px; border-radius: 999px; font-size: 14px; font-weight: 500; color: #45463E">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Aap</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1260}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

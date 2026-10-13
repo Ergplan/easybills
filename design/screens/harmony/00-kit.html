@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en" data-theme="harmony">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EkBill · Dark Harmony kit</title>
+<!-- EkBill reference screen (harmony). Static snapshot of the design canvas. Values are literal here;
+     in the app every colour/radius/shadow comes from design/tokens/themes.css and every string from design/copy. -->
+<link rel="stylesheet" href="../../tokens/fonts.css">
+<style>
+body{margin:0}
+a{color:#F2F5F2;text-decoration:none}a:hover{color:#FFFFFF}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.fold{position:relative;width:230px;height:176px}
+.fold .back{position:absolute;inset:0;border-radius:16px}
+.fold .paper{position:absolute;top:-22px;width:150px;height:130px;border-radius:8px;background:#FFFFFF;padding:16px 14px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.fold .paper i{display:block;height:7px;border-radius:4px;background:#DCDFDD}
+.fold .front{position:absolute;left:0;right:0;bottom:0;height:120px;border-radius:8px 8px 16px 16px;backdrop-filter:blur(4px)}
+.fold .usr{position:absolute;left:16px;bottom:16px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center}
+.hex{position:absolute;padding:12px 18px;border-radius:999px;font-size:20px;font-weight:500;color:#0B0E0D;background:#FFFFFF;letter-spacing:.01em}
+.code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:#9AA39C}
+.h{margin:0;font-size:13px;font-weight:700;letter-spacing:.12em;color:#9AA39C}
+.k{border-radius:30px;padding:26px;background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+</style>
+<style>body{background:#2a2a2a;display:flex;justify-content:center;padding:0}</style>
+</head>
+<body>
+<div style="width: 1240px; height: 1180px; box-sizing: border-box; font-family: 'Urbanist', system-ui, sans-serif; color: #F2F5F2; background-color: #0B0E0D; background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 1.2px); background-size: 14px 14px; padding: 24px; display: flex; flex-direction: column; gap: 24px">
+
+  <!-- hero palette -->
+  <section aria-labelledby="pal" style="position: relative; height: 560px; border-radius: 36px; overflow: hidden; background: radial-gradient(70% 60% at 50% 110%, #3E8A4C 0%, rgba(62,138,76,0) 70%), radial-gradient(60% 50% at 0% 100%, #4A7F45 0%, rgba(74,127,69,0) 70%), linear-gradient(180deg, #0A0D0C 0%, #12241A 45%, #24502D 100%)">
+    <span style="position: absolute; left: 50%; top: 34px; transform: translateX(-50%); padding: 12px 22px; border-radius: 999px; background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); font-size: 16px">Colours</span>
+
+    <!-- Blue charcoal -->
+    <div aria-hidden="true" class="fold" style="position: absolute; left: 270px; top: 200px; transform: rotate(-12deg)">
+      <div class="back" style="background: #0E1A2B"></div>
+      <div class="paper" style="left: 20px; transform: rotate(-4deg)"><i></i><i style="width: 70%"></i><i></i></div>
+      <div class="paper" style="left: 40px; transform: rotate(3deg)"><i></i><i></i><i style="width: 60%"></i><i></i></div>
+      <div class="front" style="background: linear-gradient(180deg, rgba(60,72,92,.85), rgba(0,11,26,.96))"></div>
+      <span class="usr" style="background: rgba(255,255,255,.25); color: #FFFFFF"><svg class="ico" viewBox="0 0 24 24" style="width: 16px; height: 16px"><circle cx="12" cy="9" r="3"/><path d="M6.5 18c1.2-2.2 3.2-3.2 5.5-3.2s4.3 1 5.5 3.2"/></svg></span>
+    </div>
+    <span class="hex" style="left: 200px; top: 360px">#000B1A</span>
+    <span style="position: absolute; left: 340px; top: 400px; transform: rotate(-12deg); font-size: 20px; font-weight: 300">Blue Charcoal</span>
+
+    <!-- Harmony green -->
+    <div aria-hidden="true" class="fold" style="position: absolute; left: 505px; top: 186px">
+      <div class="back" style="background: #49B56A"></div>
+      <div class="paper" style="left: 20px; transform: rotate(-3deg)"><i></i><i style="width: 70%"></i><i></i></div>
+      <div class="paper" style="left: 44px; transform: rotate(2deg)"><i></i><i></i><i style="width: 60%"></i><i></i></div>
+      <div class="front" style="background: linear-gradient(180deg, rgba(150,240,175,.85), rgba(104,231,142,.95)); box-shadow: inset 0 1px 0 rgba(255,255,255,.5)"></div>
+      <span class="usr" style="background: rgba(11,14,13,.6); color: #FFFFFF"><svg class="ico" viewBox="0 0 24 24" style="width: 16px; height: 16px"><circle cx="12" cy="9" r="3"/><path d="M6.5 18c1.2-2.2 3.2-3.2 5.5-3.2s4.3 1 5.5 3.2"/></svg></span>
+    </div>
+    <span class="hex" style="left: 750px; top: 168px; background: #68E78E">#68E78E</span>
+    <span style="position: absolute; left: 538px; top: 384px; font-size: 20px; font-weight: 300">Harmony Green</span>
+
+    <!-- White -->
+    <div aria-hidden="true" class="fold" style="position: absolute; left: 760px; top: 240px; transform: rotate(14deg)">
+      <div class="back" style="background: #D4D8D6"></div>
+      <div class="paper" style="left: 20px; transform: rotate(-4deg)"><i></i><i style="width: 70%"></i><i></i></div>
+      <div class="paper" style="left: 44px; transform: rotate(3deg)"><i></i><i></i><i style="width: 60%"></i><i></i></div>
+      <div class="front" style="background: linear-gradient(180deg, rgba(255,255,255,.88), rgba(240,242,241,.98))"></div>
+      <span class="usr" style="background: rgba(11,14,13,.55); color: #FFFFFF"><svg class="ico" viewBox="0 0 24 24" style="width: 16px; height: 16px"><circle cx="12" cy="9" r="3"/><path d="M6.5 18c1.2-2.2 3.2-3.2 5.5-3.2s4.3 1 5.5 3.2"/></svg></span>
+    </div>
+    <span class="hex" style="left: 960px; top: 450px">#FFFFFF</span>
+    <span style="position: absolute; left: 800px; top: 450px; transform: rotate(14deg); font-size: 20px; font-weight: 300">White</span>
+
+    <h2 id="pal" style="position: absolute; left: 0; right: 0; bottom: 30px; margin: 0; text-align: center; font-size: 56px; font-weight: 300; letter-spacing: -.03em">Colour palette</h2>
+  </section>
+
+  <!-- kit -->
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
+    <section class="k" aria-labelledby="k1">
+      <h3 id="k1" class="h">SURFACES · TEXT</h3>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px">
+        <div style="display: flex; align-items: center; gap: 12px"><span style="width: 44px; height: 44px; border-radius: 12px; background: #0B0E0D; box-shadow: inset 0 0 0 1px rgba(255,255,255,.15)"></span><div><div style="font-size: 14px">Ground + dot grid</div><div class="code">--b-ground #0B0E0D · dots 6% / 14px</div></div></div>
+        <div style="display: flex; align-items: center; gap: 12px"><span style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08)"></span><div><div style="font-size: 14px">Glass</div><div class="code">--b-glass white 6% + 1px 8% ring</div></div></div>
+        <div style="display: flex; align-items: center; gap: 12px"><span style="width: 44px; height: 44px; border-radius: 12px; background: #3E8650"></span><div><div style="font-size: 14px">Folder front</div><div class="code">--b-folder #3E8650 → #336F42</div></div></div>
+        <div style="display: flex; align-items: center; gap: 12px"><span style="width: 44px; height: 44px; border-radius: 12px; background: #27573A"></span><div><div style="font-size: 14px">Folder back</div><div class="code">--b-folder-back #27573A</div></div></div>
+        <div style="display: flex; align-items: center; gap: 12px"><span style="width: 44px; height: 44px; border-radius: 12px; background: #F2F5F2"></span><div><div style="font-size: 14px">Text / muted</div><div class="code">--b-text #F2F5F2 · --b-muted #9AA39C</div></div></div>
+      </div>
+    </section>
+
+    <section class="k" aria-labelledby="k2">
+      <h3 id="k2" class="h">COMPONENTS</h3>
+      <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 16px">
+        <a href="#" style="height: 60px; border-radius: 999px; display: grid; place-items: center; font-size: 16px; font-weight: 500; color: #FFFFFF; background: radial-gradient(60% 120% at 50% 50%, #1D3F26 0%, #2F6B3A 40%, #4FB36A 80%, #68E78E 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.25)">CTA · glow pill</a>
+        <div style="display: flex; gap: 8px; align-items: center">
+          <span style="display: inline-flex; align-items: center; height: 44px; padding: 0 16px; border-radius: 999px; background: #68E78E; color: #0B0E0D; font-size: 14px; font-weight: 600">Yaad dilao</span>
+          <span style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></span>
+          <span style="font-size: 12px; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.08)">09:00 AM</span>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap">
+          <span style="font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.08); color: #C9D0CB">Bheja</span>
+          <span style="font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(104,231,142,.14); color: #68E78E">Aa gaye</span>
+          <span style="font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(255,120,110,.14); color: #FF8A80">Baaki</span>
+        </div>
+        <div role="img" aria-label="Progress slider sample" style="position: relative; height: 14px">
+          <span style="position: absolute; left: 0; top: 6px; width: 64%; height: 2px; background: #FFFFFF"></span>
+          <span style="position: absolute; left: 64%; right: 0; top: 6px; height: 2px; background: repeating-linear-gradient(90deg, rgba(255,255,255,.7) 0 2px, transparent 2px 6px)"></span>
+          <svg viewBox="0 0 12 10" aria-hidden="true" style="position: absolute; left: calc(64% - 6px); top: 0; width: 12px; height: 10px"><path d="M0 0H12L6 10Z" fill="#FFFFFF"/></svg>
+        </div>
+        <div class="code">slider: solid = paid/elapsed, dotted = remaining, ▼ = now</div>
+      </div>
+    </section>
+
+    <section class="k" aria-labelledby="k3">
+      <h3 id="k3" class="h">FOLDER ANATOMY · RULES</h3>
+      <ol style="margin: 16px 0 0; padding-left: 20px; font-size: 14px; line-height: 1.5; color: #DCE2DD; display: flex; flex-direction: column; gap: 8px">
+        <li>Folder = back plate, 2–3 glass bills peeking (rotate −8° to 0°), front with a tab (radius 34) and an S-curve into the body.</li>
+        <li>One folder per screen. It holds the thing the screen is about: money owed, a customer, a message.</li>
+        <li>Harmony green #68E78E fills only the primary action, the active tone and paid states. Ink text on it.</li>
+        <li>Glow-pill CTA for the screen's main step; WhatsApp green only on WhatsApp.</li>
+        <li>Headline: Urbanist 300, key word 500 with green→white gradient.</li>
+        <li>Numbers: Urbanist, tabular, no display fonts.</li>
+      </ol>
+    </section>
+  </div>
+</div>
+</body>
+</html>

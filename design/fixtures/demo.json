@@ -1,0 +1,29 @@
+{
+  "_note": "Demo data used in every mock screen. Money is integer paise. Dates ISO. Use it for seeding, Storybook and screenshot tests.",
+  "business": { "name": "Sharma Electricals", "owner": "Sharma ji", "phone": "+919822012345", "gstin": "27AAAAA0000A1Z2", "upi": "sharma@upi", "city": "Nagpur, Maharashtra", "theme": "narangi", "lang": "hi-Latn" },
+  "today": "2026-09-26",
+  "customers": [
+    { "id": "mehta",   "name": "Mehta Traders",      "contact": "Mehta",  "gstin": "27AAPFU0939F1ZV", "avatar": 0 },
+    { "id": "priya",   "name": "Priya Boutique",     "contact": "Priya",  "gstin": null,              "avatar": 1 },
+    { "id": "kulkarni","name": "Dr. Kulkarni",       "contact": "Kulkarni","gstin": null,             "avatar": 2 },
+    { "id": "greenpark","name": "Green Park Society","contact": "Patil",  "gstin": "27AABCG1234H1Z3", "avatar": 3 }
+  ],
+  "bills": [
+    { "number": "INV-031", "customer": "mehta",    "date": "2026-07-25", "total": 620000, "status": "paid", "paidOn": "2026-07-30" },
+    { "number": "INV-036", "customer": "mehta",    "date": "2026-08-24", "total": 620000, "status": "paid", "paidOn": "2026-08-29", "method": "upi" },
+    { "number": "INV-039", "customer": "kulkarni", "date": "2026-09-17", "total": 285000, "status": "due" },
+    { "number": "INV-040", "customer": "greenpark","date": "2026-09-12", "total": 945000, "status": "due", "reminders": ["2026-09-20"] },
+    { "number": "INV-041", "customer": "priya",    "date": "2026-09-18", "total": 285000, "status": "paid" },
+    { "number": "INV-042", "customer": "mehta",    "date": "2026-09-22", "total": 620000, "status": "due", "sentVia": "whatsapp", "read": true,
+      "items": [ { "desc": "AMC visit — September", "qty": 1, "rate": 350000 }, { "desc": "Ceiling fan install", "qty": 2, "rate": 135000 } ] }
+  ],
+  "derived": {
+    "owedTotal": 1850000,
+    "owedPeople": 3,
+    "oldestDays": 24,
+    "sentThisMonth": 4,
+    "gstQuarter": { "label": "Jul – Sep 2026", "bills": 14, "taxable": 11240000, "gst": 1939200,
+      "byRate": [ { "rate": 18, "taxable": 9840000, "cgst": 885600, "sgst": 885600 }, { "rate": 12, "taxable": 1400000, "cgst": 84000, "sgst": 84000 } ],
+      "b2bBills": 6, "b2cBills": 8 }
+  }
+}

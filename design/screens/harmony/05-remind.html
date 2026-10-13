@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en-IN" data-theme="harmony">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EkBill · Yaad dilao (dark)</title>
+<!-- EkBill reference screen (harmony). Static snapshot of the design canvas. Values are literal here;
+     in the app every colour/radius/shadow comes from design/tokens/themes.css and every string from design/copy. -->
+<link rel="stylesheet" href="../../tokens/fonts.css">
+<style>
+body{margin:0}
+a{color:#F2F5F2;text-decoration:none}a:hover{color:#FFFFFF}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.peek{position:absolute;width:170px;height:96px;box-sizing:border-box;padding:12px 14px;border-radius:18px;color:#FFFFFF;background:linear-gradient(160deg,rgba(255,255,255,.30),rgba(255,255,255,.08));box-shadow:inset 0 0 0 1px rgba(255,255,255,.38);font-size:10px}
+</style>
+<style>body{background:#2a2a2a;display:flex;justify-content:center;padding:0}</style>
+</head>
+<body>
+<div style="width: 390px; height: 900px; position: relative; overflow: hidden; box-sizing: border-box; font-family: 'Urbanist', system-ui, sans-serif; color: #F2F5F2; background-color: #0B0E0D; background-image: radial-gradient(55% 40% at 30% 100%, rgba(104,231,142,.42) 0%, rgba(104,231,142,0) 70%), radial-gradient(35% 45% at 100% 70%, rgba(86,196,170,.28) 0%, rgba(86,196,170,0) 70%), radial-gradient(rgba(255,255,255,.05) 1px, transparent 1.2px); background-size: 100% 100%, 100% 100%, 14px 14px">
+
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 22px 18px 0">
+    <a href="02-home.html" aria-label="Back" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>
+    <span style="font-size: 13px; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08)">INV-040 · ₹9,450</span>
+  </header>
+
+  <section style="padding: 28px 22px 0">
+    <h1 style="margin: 0; font-size: 34px; line-height: 1.08; font-weight: 300; letter-spacing: -.03em">Green Park ko<br><span style="font-weight: 500; background: linear-gradient(90deg, #68E78E, #DDF7E4); -webkit-background-clip: text; background-clip: text; color: transparent">yaad dilayein?</span></h1>
+    <p style="margin: 10px 0 0; font-size: 14px; color: #9AA39C">12 Sep ko bheja · <span style="color: #FF8A80; font-weight: 600">24 din baaki</span></p>
+  </section>
+
+  <div role="radiogroup" aria-label="Tone" style="display: flex; gap: 4px; margin: 22px 18px 0; padding: 5px; border-radius: 999px; background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08)">
+    
+      <button type="button" role="radio" aria-checked="true" onClick="" style="flex: 1; height: 44px; border: 0; border-radius: 999px; font: 500 14px 'Urbanist', sans-serif; cursor: pointer; background: #68E78E; color: #0B0E0D">Pyaar se</button>
+    
+      <button type="button" role="radio" aria-checked="false" onClick="" style="flex: 1; height: 44px; border: 0; border-radius: 999px; font: 500 14px 'Urbanist', sans-serif; cursor: pointer; background: transparent; color: #C9D0CB">Seedha</button>
+    
+      <button type="button" role="radio" aria-checked="false" onClick="" style="flex: 1; height: 44px; border: 0; border-radius: 999px; font: 500 14px 'Urbanist', sans-serif; cursor: pointer; background: transparent; color: #C9D0CB">Doosri baar</button>
+    
+  </div>
+
+  <!-- folder with message -->
+  <section aria-label="Message preview" style="position: relative; margin: 22px 12px 0; height: 470px">
+    <div aria-hidden="true" style="position: absolute; inset: 0; border-radius: 32px; background: linear-gradient(180deg, #27573A, #1E4530)"></div>
+    <div aria-hidden="true" class="peek" style="left: 116px; top: 16px; transform: rotate(-7deg); opacity: .65"><div style="opacity: .85">Pichla reminder</div><div style="font-size: 12px; font-weight: 600; margin-top: 6px">20 Sep</div></div>
+    <div aria-hidden="true" class="peek" style="left: 172px; top: 22px"><div style="display: flex; justify-content: space-between"><span style="opacity: .85">Attachment</span><span style="font-weight: 800">PDF</span></div><div style="font-size: 12px; font-weight: 600; margin-top: 6px">INV-040.pdf</div><div style="margin-top: 3px; opacity: .85">Bill saath jaayega</div></div>
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 64px; width: 48%; height: 56px; border-radius: 32px 32px 0 0; background: #3E8650"></div>
+    <svg aria-hidden="true" viewBox="0 0 60 56" style="position: absolute; left: calc(48% - 1px); top: 64px; width: 60px; height: 56px"><path d="M0 0 C32 0 26 56 60 56 L0 56 Z" fill="#3E8650"/></svg>
+    <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 119px; bottom: 0; border-radius: 0 32px 32px 32px; background: radial-gradient(80% 30% at 85% 0%, rgba(255,255,255,.12) 0%, rgba(255,255,255,0) 70%), linear-gradient(180deg, #3E8650, #346F43)"></div>
+    <div style="position: absolute; left: 20px; right: 20px; top: 80px">
+      <div style="font-size: 18px; font-weight: 500">Patil ji ko message</div>
+      <div style="font-size: 12px; color: rgba(255,255,255,.85); margin-top: 2px">Yeh jaayega. Chahein toh badal lo.</div>
+      <p style="margin: 28px 0 0; font-size: 16px; line-height: 1.5; white-space: pre-line">Namaste Patil ji 🙏 Green Park Society ke bill no. INV-040 (₹9,450, 12 Sep) ka payment abhi baaki hai. Jab suvidha ho, UPI se bhej dijiye: sharma@upi.
+Dhanyavaad! — Sharma Electricals</p>
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 20px; padding: 10px 12px; border-radius: 20px; background: rgba(255,255,255,.10); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12)">
+        <span aria-hidden="true" style="width: 34px; height: 42px; border-radius: 8px; background: #F4F6F5; color: #B3261E; display: grid; place-items: center; font-size: 8px; font-weight: 800">PDF</span>
+        <div style="flex: 1"><div style="font-size: 14px; font-weight: 500">INV-040.pdf</div><div style="font-size: 12px; color: rgba(255,255,255,.85)">UPI: sharma@upi</div></div>
+        <button type="button" aria-label="Edit message" style="width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(11,14,13,.3); color: #FFFFFF; display: grid; place-items: center; cursor: pointer"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <a href="02-home.html" style="position: absolute; left: 18px; right: 18px; bottom: 28px; display: flex; align-items: center; justify-content: space-between; height: 64px; padding: 0 8px 0 24px; border-radius: 999px; background: #25D366; color: #0B2A16; font-size: 17px; font-weight: 700; box-shadow: 0 20px 34px -18px rgba(37,211,102,.6)">WhatsApp pe bhejo
+    <span style="width: 50px; height: 50px; border-radius: 50%; background: #0B2A16; color: #25D366; display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 1.9"><path d="M4 12l16-8-6 16-2-7z"/></svg></span></a>
+</div>
+</body>
+</html>

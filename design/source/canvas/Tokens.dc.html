@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>EkBill UI kit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#16170F;text-decoration:none}a:hover{color:#000}
+.dot{font-family:'Urbanist',system-ui,sans-serif;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:#45463E}
+.h{margin:0 0 4px;font-size:13px;font-weight:700;letter-spacing:.12em;color:#5F6057}
+.card{border-radius:32px;background:#FFFFFF;padding:28px;box-shadow:0 1px 0 rgba(0,0,0,.03),0 20px 34px -26px rgba(22,23,15,.35)}
+</style>
+</helmet>
+<div style="width: 1240px; height: 2080px; box-sizing: border-box; padding: 64px; font-family: 'Urbanist', system-ui, sans-serif; color: #16170F; background-color: #EEEEEA; background-image: radial-gradient(rgba(22,23,15,.07) 1px, transparent 1.3px); background-size: 9px 9px; display: flex; flex-direction: column; gap: 24px">
+
+  <!-- title -->
+  <header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 40px">
+    <div>
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div aria-hidden="true" style="width: 44px; height: 44px; border-radius: 14px; background: #16170F; display: grid; place-items: center"><span class="dot" style="color: #FFB020; font-size: 20px; line-height: 1">e₹</span></div>
+        <span class="dot" style="font-size: 14px; font-weight: 700; letter-spacing: .1em; color: #5F6057">UI KIT · V 1.0</span>
+      </div>
+      <h1 style="margin: 18px 0 0; font-size: 64px; line-height: 1; font-weight: 300; letter-spacing: -.035em">EkBill, <span style="font-weight: 600">in tokens</span></h1>
+    </div>
+    <p style="margin: 0; max-width: 420px; font-size: 16px; line-height: 1.5; color: #45463E">The reference for anyone building the app. Every value on the phone screens comes from this sheet. Use the token names as CSS variables; do not invent new colours, radii or copy keys.</p>
+  </header>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+
+    <!-- solid colours -->
+    <section class="card" aria-labelledby="t-col">
+      <h2 id="t-col" class="h">COLOUR · SOLIDS</h2>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 18px">
+        <div><div style="height: 72px; border-radius: 18px; background: #16170F"></div><div style="font-size: 14px; font-weight: 600; margin-top: 8px">Ink</div><div class="code">--eb-ink #16170F</div></div>
+        <div><div style="height: 72px; border-radius: 18px; background: #EEEEEA; box-shadow: inset 0 0 0 1px #E2E1DA"></div><div style="font-size: 14px; font-weight: 600; margin-top: 8px">Ground</div><div class="code">--eb-ground #EEEEEA</div></div>
+        <div><div style="height: 72px; border-radius: 18px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #E2E1DA"></div><div style="font-size: 14px; font-weight: 600; margin-top: 8px">Surface</div><div class="code">--eb-surface #FFFFFF</div></div>
+        <div><div style="height: 72px; border-radius: 18px; background: #F4F4F0; box-shadow: inset 0 0 0 1px #E2E1DA"></div><div style="font-size: 14px; font-weight: 600; margin-top: 8px">Field</div><div class="code">--eb-field #F4F4F0</div></div>
+        <div><div style="height: 72px; border-radius: 18px; background: #FFB020"></div><div style="font-size: 14px; font-weight: 600; margin-top: 8px">Saffron · the accent</div><div class="code">--eb-saffron #FFB020</div></div>
+        <div><div style="height: 72px; border-radius: 18px; background: #5F6057"></div><div style="font-size: 14px; font-weight: 600; margin-top: 8px">Muted text</div><div class="code">--eb-muted #5F6057</div></div>
+        <div><div style="height: 72px; border-radius: 18px; background: #E2E1DA"></div><div style="font-size: 14px; font-weight: 600; margin-top: 8px">Line</div><div class="code">--eb-line #E2E1DA</div></div>
+        <div><div style="height: 72px; border-radius: 18px; background: #25D366"></div><div style="font-size: 14px; font-weight: 600; margin-top: 8px">WhatsApp only</div><div class="code">--eb-wa #25D366 / #0B2A16</div></div>
+      </div>
+      <h3 class="h" style="margin-top: 26px">STATUS · ALWAYS WITH A WORD</h3>
+      <div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap">
+        <span style="font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: #EFEEE8; color: #45463E">Bheja · Sent</span>
+        <span style="font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: #E2F1DF; color: #1E6B3A">Aa gaye · Paid</span>
+        <span style="font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: #FBE5E1; color: #B3261E">Baaki · Due</span>
+      </div>
+      <div class="code" style="margin-top: 10px">--eb-sent #45463E on #EFEEE8 · --eb-paid #1E6B3A on #E2F1DF · --eb-due #B3261E on #FBE5E1</div>
+    </section>
+
+    <!-- gradients -->
+    <section class="card" aria-labelledby="t-grad">
+      <h2 id="t-grad" class="h">COLOUR · DEPTH (GRADIENT PANELS)</h2>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px">
+        <div>
+          <div style="height: 190px; border-radius: 26px; position: relative; overflow: hidden; background: radial-gradient(110% 70% at 100% 0%, #6B1F08 0%, rgba(107,31,8,0) 60%), radial-gradient(80% 60% at 0% 100%, #FFE2B8 0%, rgba(255,226,184,0) 70%), linear-gradient(170deg, #8A2C0B 0%, #C2410C 32%, #F2762E 62%, #FFA95C 86%, #FFE0BD 100%)"><span style="position: absolute; left: 14px; top: 14px; color: #FFFFFF; font-size: 15px; font-weight: 600">Narangi</span></div>
+          <div class="code" style="margin-top: 8px">--eb-g-narangi</div><div style="font-size: 13px; color: #45463E; margin-top: 2px">Action and voice: Kiska bill, Yaad dilao, Bill ban gaya, Login. White text on the dark top only.</div>
+        </div>
+        <div>
+          <div style="height: 190px; border-radius: 26px; position: relative; overflow: hidden; background: radial-gradient(90% 50% at 85% 0%, rgba(255,255,255,.9) 0%, rgba(255,255,255,0) 70%), linear-gradient(172deg, #A7A3EC 0%, #D8D3F7 26%, #F5EFF8 52%, #F4DDF0 78%, #EAB4DE 100%)"><span style="position: absolute; left: 14px; top: 14px; font-size: 15px; font-weight: 600">Lavender</span></div>
+          <div class="code" style="margin-top: 8px">--eb-g-lavender</div><div style="font-size: 13px; color: #45463E; margin-top: 2px">Money and memory: Paise aane hain, Pichle jaisa hi, B2B, Profile. Ink text.</div>
+        </div>
+        <div>
+          <div style="height: 190px; border-radius: 26px; position: relative; overflow: hidden; background: radial-gradient(90% 60% at 100% 0%, #123E44 0%, rgba(18,62,68,0) 65%), radial-gradient(70% 55% at 0% 100%, #DCEBB8 0%, rgba(220,235,184,0) 70%), linear-gradient(165deg, #1C565D 0%, #2A7880 36%, #5FA8A2 66%, #A9D3B5 88%, #E2EDC4 100%)"><span style="position: absolute; left: 14px; top: 14px; color: #FFFFFF; font-size: 15px; font-weight: 600">Teal</span></div>
+          <div class="code" style="margin-top: 8px">--eb-g-teal</div><div style="font-size: 13px; color: #45463E; margin-top: 2px">GST only. Appears when a GSTIN exists. White text on top.</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 14px; align-items: center; margin-top: 18px; padding: 14px; border-radius: 20px; background: #F4F4F0">
+        <div style="width: 72px; height: 56px; border-radius: 14px; flex: none; background-color: #EEEEEA; background-image: radial-gradient(rgba(22,23,15,.12) 1px, transparent 1.3px); background-size: 9px 9px; box-shadow: inset 0 0 0 1px #E2E1DA"></div>
+        <div><div style="font-size: 14px; font-weight: 600">Dot-grid texture on the ground</div><div class="code">radial-gradient(rgba(22,23,15,.07) 1px, transparent 1.3px) / 9px 9px</div></div>
+      </div>
+      <p style="margin: 12px 0 0; font-size: 13px; color: #45463E">Each gradient = a dark radial in the top-right corner + a pale radial bottom-left + a 5-stop linear at 165–172°. Optional: 3 thin white wave lines at 30–45% opacity.</p>
+    </section>
+
+    <!-- type -->
+    <section class="card" aria-labelledby="t-type">
+      <h2 id="t-type" class="h">TYPE</h2>
+      <div style="margin-top: 18px; font-size: 44px; line-height: 1.05; font-weight: 300; letter-spacing: -.025em">Chalo, <span style="font-weight: 600">bill banate hain</span></div>
+      <div class="code" style="margin-top: 8px">Urbanist · display 300 + emphasis 600 · tracking −0.025em</div>
+      <div style="display: grid; grid-template-columns: 110px 1fr; gap: 10px 16px; margin-top: 20px; align-items: baseline">
+        <span class="code">display 36/300</span><span style="font-size: 36px; font-weight: 300; letter-spacing: -.025em">Namaste, <b style="font-weight: 600">Sharma ji</b></span>
+        <span class="code">title 22/300</span><span style="font-size: 22px; font-weight: 300"><b style="font-weight: 600">Mehta Traders</b> ka bill</span>
+        <span class="code">card 17/500</span><span style="font-size: 17px; font-weight: 500">Bheje hue bills</span>
+        <span class="code">body 15/500</span><span style="font-size: 15px; font-weight: 500">Kiska bill? Naam pe tap karo.</span>
+        <span class="code">meta 13/400</span><span style="font-size: 13px; color: #5F6057">INV-042 · 22 Sep</span>
+        <span class="code">label 12/600</span><span style="font-size: 12px; font-weight: 600; color: #5F6057">Rate (₹)</span>
+      </div>
+      <div style="margin-top: 24px; padding: 18px 20px; border-radius: 22px; background: #F4F4F0; display: flex; align-items: center; justify-content: space-between; gap: 16px">
+        <div style="display: flex; align-items: baseline; gap: 3px"><span style="font-size: 32px; font-weight: 300">₹</span><span class="dot" style="font-size: 60px; line-height: 1">1,12,400</span></div>
+        <div style="font-size: 13px; color: #45463E; max-width: 230px">Figures: Urbanist 500, tracking −0.03em, for hero money and counts. ₹ in Urbanist 300 at ~55% size. Indian grouping, tabular digits. No dotted or display numerals.</div>
+      </div>
+    </section>
+
+    <!-- shape -->
+    <section class="card" aria-labelledby="t-shape">
+      <h2 id="t-shape" class="h">SHAPE · SPACE · DEPTH</h2>
+      <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 18px; align-items: end">
+        <div><div style="height: 90px; border-radius: 36px; background: #16170F"></div><div class="code" style="margin-top: 8px">hero 36</div></div>
+        <div><div style="height: 90px; border-radius: 32px; background: #45463E"></div><div class="code" style="margin-top: 8px">card 30–34</div></div>
+        <div><div style="height: 70px; border-radius: 22px; background: #7D7E74"></div><div class="code" style="margin-top: 8px">row 20–22</div></div>
+        <div><div style="height: 50px; border-radius: 16px; background: #B9B8AE"></div><div class="code" style="margin-top: 8px">field 16</div></div>
+        <div><div style="height: 44px; border-radius: 999px; background: #FFB020"></div><div class="code" style="margin-top: 8px">pill 999</div></div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 24px; font-size: 14px; color: #45463E; line-height: 1.6">
+        <div><b style="color: #16170F; font-weight: 600">Spacing</b><br>Screen gutter 12 (cards) / 20–22 (headings)<br>Card padding 20–22 · stack gap 12–14<br>Row gap 8 · chip gap 8</div>
+        <div><b style="color: #16170F; font-weight: 600">Touch</b><br>Every target ≥ 44px<br>Primary CTA 60–64px, full width<br>Tab bar floats 26px above bottom</div>
+      </div>
+      <div style="margin-top: 20px; padding: 14px; border-radius: 18px; background: #F4F4F0"><div style="font-size: 14px; font-weight: 600">Card shadow</div><div class="code">0 1px 0 rgba(0,0,0,.03), 0 18px 30px -26px rgba(22,23,15,.35)</div><div style="font-size: 14px; font-weight: 600; margin-top: 8px">Gradient panel shadow</div><div class="code">0 24px 40px -28px &lt;panel colour at .7&gt;</div></div>
+    </section>
+
+    <!-- components -->
+    <section class="card" aria-labelledby="t-comp" style="grid-column: span 2">
+      <h2 id="t-comp" class="h">COMPONENTS</h2>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; margin-top: 20px">
+        <div style="display: flex; flex-direction: column; gap: 12px">
+          <span class="code">button/primary (saffron, one per screen)</span>
+          <a href="#" style="display: flex; align-items: center; justify-content: space-between; height: 62px; padding: 0 8px 0 24px; border-radius: 999px; background: #FFB020; font-size: 17px; font-weight: 600">Bill banao · ₹6,200<span style="width: 48px; height: 48px; border-radius: 50%; background: #16170F; color: #FFB020; display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          <span class="code">button/whatsapp (the door)</span>
+          <a href="#" style="display: flex; align-items: center; justify-content: space-between; height: 62px; padding: 0 8px 0 24px; border-radius: 999px; background: #25D366; color: #0B2A16; font-size: 17px; font-weight: 700">WhatsApp pe bhejo<span style="width: 48px; height: 48px; border-radius: 50%; background: #0B2A16; color: #25D366; display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 1.9"><path d="M4 12l16-8-6 16-2-7z"/></svg></span></a>
+          <span class="code">button/ink · button/ghost</span>
+          <div style="display: flex; gap: 10px"><button type="button" style="flex: 1; height: 54px; border: 0; border-radius: 999px; background: #16170F; color: #FFFFFF; font: 600 15px 'Urbanist', sans-serif">Save karo</button><button type="button" style="flex: 1; height: 54px; border: 0; border-radius: 999px; background: #FFFFFF; color: #16170F; font: 600 15px 'Urbanist', sans-serif; box-shadow: inset 0 0 0 1px #E2E1DA">PDF share</button></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px">
+          <span class="code">chip/client · chip/new</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 16px; border-radius: 24px; background: linear-gradient(170deg, #C2410C 0%, #F2762E 60%, #FFA95C 100%)">
+            <span style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 6px; border-radius: 999px; background: rgba(255,255,255,.9); font-size: 14px; font-weight: 500"><span style="width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: linear-gradient(140deg, #FFE6C7, #FDB27A)">M</span>Mehta Traders</span>
+            <span style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px 6px 6px; border-radius: 999px; background: #16170F; color: #FFFFFF; font-size: 14px; font-weight: 500"><span style="width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: #FFB020; color: #16170F"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px; stroke-width: 2"><path d="M12 5v14M5 12h14"/></svg></span>Naya customer</span>
+          </div>
+          <span class="code">avatar tints (cycle by client index)</span>
+          <div style="display: flex; gap: 8px">
+            <span style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(140deg, #FFE6C7, #FDB27A)"></span>
+            <span style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(140deg, #F6DDF0, #D9B8F2)"></span>
+            <span style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(140deg, #D6F0EE, #9CCFD3)"></span>
+            <span style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(140deg, #E5E3FA, #B9B3F0)"></span>
+          </div>
+          <span class="code">row/owed (inside lavender)</span>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 14px; border-radius: 22px; background: #F4EEF8">
+            <div style="flex: 1"><div style="font-size: 15px; font-weight: 500">Green Park Society</div><div style="font-size: 13px; color: #B3261E; font-weight: 500">24 din ho gaye</div></div>
+            <span style="font-size: 15px; font-weight: 600">₹9,450</span>
+            <span style="display: inline-flex; align-items: center; height: 44px; padding: 0 14px; border-radius: 999px; background: #FFB020; font-size: 13px; font-weight: 600">Yaad dilao</span>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px">
+          <span class="code">tile/stat (icon chip top-right, large value)</span>
+          <div style="padding: 20px; border-radius: 28px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #ECECE6">
+            <div style="display: flex; justify-content: space-between"><span style="font-size: 15px; font-weight: 500">Bheje hue bills</span><span style="width: 40px; height: 40px; border-radius: 50%; background: #F1F1EC; display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg></span></div>
+            <div style="display: flex; align-items: baseline; gap: 8px"><span class="dot" style="font-size: 42px; line-height: 1">04</span><span style="font-size: 13px; color: #5F6057">is mahine</span></div>
+          </div>
+          <span class="code">nav/tabbar (Ghar · GST* · Aap)</span>
+          <div style="display: inline-flex; align-self: flex-start; gap: 4px; padding: 6px; border-radius: 999px; background: #FFFFFF; box-shadow: 0 18px 40px -18px rgba(22,23,15,.45), inset 0 0 0 1px rgba(22,23,15,.05)">
+            <span style="display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px; border-radius: 999px; background: #FFB020; font-size: 14px; font-weight: 600"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg>Ghar</span>
+            <span style="display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 16px; font-size: 14px; font-weight: 500; color: #45463E"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>GST</span>
+            <span style="display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 16px; font-size: 14px; font-weight: 500; color: #45463E"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Aap</span>
+          </div>
+          <span style="font-size: 12px; color: #5F6057">* GST tab renders only when profile.gstin is set.</span>
+          <span class="code">icons: 24px grid, 1.6 stroke, round caps, currentColor</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- copy dictionary -->
+    <section class="card" aria-labelledby="t-copy">
+      <h2 id="t-copy" class="h">COPY DICTIONARY (ONE FILE, TWO REGISTERS)</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px">
+        <thead><tr style="text-align: left; font-size: 12px; color: #5F6057"><th style="font-weight: 600; padding: 8px 0">key</th><th style="font-weight: 600; padding: 8px 0">hi-Latn (default)</th><th style="font-weight: 600; padding: 8px 0">en</th></tr></thead>
+        <tbody>
+          <tr style="border-top: 1px solid #EFEFEA"><td class="code" style="padding: 9px 0">home.bill.title</td><td>Chalo, bill banate hain</td><td>Let's make a bill</td></tr>
+          <tr style="border-top: 1px solid #EFEFEA"><td class="code" style="padding: 9px 0">home.sent.title</td><td>Bheje hue bills</td><td>Bills sent</td></tr>
+          <tr style="border-top: 1px solid #EFEFEA"><td class="code" style="padding: 9px 0">home.owed.title</td><td>Kiske paise aane hain</td><td>Money to collect</td></tr>
+          <tr style="border-top: 1px solid #EFEFEA"><td class="code" style="padding: 9px 0">bill.repeat</td><td>Pichle jaisa hi?</td><td>Same as last time?</td></tr>
+          <tr style="border-top: 1px solid #EFEFEA"><td class="code" style="padding: 9px 0">bill.done</td><td>Bill ban gaya!</td><td>Bill ready!</td></tr>
+          <tr style="border-top: 1px solid #EFEFEA"><td class="code" style="padding: 9px 0">action.whatsapp</td><td>WhatsApp pe bhejo</td><td>Send on WhatsApp</td></tr>
+          <tr style="border-top: 1px solid #EFEFEA"><td class="code" style="padding: 9px 0">action.remind</td><td>Yaad dilao</td><td>Remind</td></tr>
+          <tr style="border-top: 1px solid #EFEFEA"><td class="code" style="padding: 9px 0">status.sent / paid / due</td><td>Bheja / Aa gaye / Baaki</td><td>Sent / Paid / Due</td></tr>
+          <tr style="border-top: 1px solid #EFEFEA"><td class="code" style="padding: 9px 0">gst.send</td><td>CA ko bhejo</td><td>Send to CA</td></tr>
+          <tr style="border-top: 1px solid #EFEFEA"><td class="code" style="padding: 9px 0">nav.home / gst / you</td><td>Ghar / GST / Aap</td><td>Home / GST / You</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- rules -->
+    <section class="card" aria-labelledby="t-rules" style="background: #16170F; color: #FFFFFF">
+      <h2 id="t-rules" class="h" style="color: #FFB020">RULES FOR BUILDERS</h2>
+      <ol style="margin: 16px 0 0; padding-left: 22px; font-size: 15px; line-height: 1.55; display: flex; flex-direction: column; gap: 10px">
+        <li>Home has three cards and nothing else: Kiska bill · Bheje hue bills · Kiske paise aane hain.</li>
+        <li>One gradient hero per screen, at most one secondary panel. Everything else is white on the dot-grid ground.</li>
+        <li>Saffron is for the single primary action and the active tab. Nowhere else.</li>
+        <li>Hero money = Urbanist 500 figures with a lighter ₹ (300). Lists and tables use 15/600 tabular figures.</li>
+        <li>Red always comes with a word (Baaki, 24 din). Never colour alone.</li>
+        <li>WhatsApp green appears only on the WhatsApp button.</li>
+        <li>The app speaks Hinglish. The bill PDF speaks formal English: no gradients, no Doto, no Hinglish.</li>
+        <li>Every string comes from the copy dictionary. No hard-coded labels.</li>
+        <li>Touch targets ≥ 44px. Text on gradients meets 4.5:1, or 3:1 at 24px+.</li>
+      </ol>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1240,"height":2080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

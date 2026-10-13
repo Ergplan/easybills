@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en-IN" data-theme="harmony">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EkBill · Swagat (dark)</title>
+<!-- EkBill reference screen (harmony). Static snapshot of the design canvas. Values are literal here;
+     in the app every colour/radius/shadow comes from design/tokens/themes.css and every string from design/copy. -->
+<link rel="stylesheet" href="../../tokens/fonts.css">
+<style>
+body{margin:0}
+a{color:#F2F5F2;text-decoration:none}a:hover{color:#FFFFFF}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.tile{position:absolute;width:86px;height:80px;border-radius:14px;background:linear-gradient(160deg,#FFFFFF,#E4E7E5);box-shadow:0 18px 30px -16px rgba(0,0,0,.8);display:grid;place-items:center;color:#0B0E0D}
+.tab{position:absolute;left:0;top:-9px;width:40px;height:14px;border-radius:7px 9px 0 0;background:#F4F6F5}
+.badge{position:absolute;width:30px;height:30px;border-radius:50%;background:#FFFFFF;color:#0B0E0D;display:grid;place-items:center;font-size:12px;font-weight:700;box-shadow:0 6px 14px -6px rgba(0,0,0,.6)}
+.line{height:5px;border-radius:3px;background:#DADDDB}
+</style>
+<style>body{background:#2a2a2a;display:flex;justify-content:center;padding:0}</style>
+</head>
+<body>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; box-sizing: border-box; font-family: 'Urbanist', system-ui, sans-serif; color: #F2F5F2; background-color: #0B0E0D; background-image: radial-gradient(45% 25% at 52% 46%, rgba(104,231,142,.16) 0%, rgba(104,231,142,0) 70%), radial-gradient(rgba(255,255,255,.07) 1px, transparent 1.2px); background-size: 100% 100%, 14px 14px">
+
+  <!-- connector lines -->
+  <svg aria-hidden="true" viewBox="0 0 390 460" style="position: absolute; left: 0; top: 0; width: 390px; height: 460px; fill: none; stroke: rgba(255,255,255,.22); stroke-width: 1.2">
+    <path d="M163 196 V368 Q163 384 179 384 H200"/>
+    <path d="M343 268 V372 Q343 390 325 390 H262"/>
+    <path d="M70 362 H96 Q114 362 114 380 V418 Q114 434 130 434 H200"/>
+    <circle cx="163" cy="196" r="3" fill="#FFFFFF" stroke="none"/>
+    <circle cx="343" cy="268" r="3" fill="#FFFFFF" stroke="none"/>
+    <circle cx="262" cy="390" r="3" fill="#68E78E" stroke="none"/>
+    <circle cx="130" cy="434" r="3" fill="#68E78E" stroke="none"/>
+  </svg>
+
+  <!-- floating tiles -->
+  <div aria-hidden="true" class="tile" style="left: 120px; top: 110px"><span class="tab"></span>
+    <svg class="ico" viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: #0B0E0D; stroke: none"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3.4" fill="#FFFFFF"/><path d="M5.8 18.3c1.4-2.3 3.6-3.3 6.2-3.3s4.8 1 6.2 3.3" fill="#FFFFFF"/></svg>
+    <span class="badge" style="right: -18px; bottom: -14px">M</span></div>
+  <div aria-hidden="true" class="tile" style="left: 304px; top: 186px; width: 104px"><span class="tab" style="left: auto; right: 30px"></span>
+    <span class="badge" style="left: -42px; top: 22px">G</span></div>
+  <div aria-hidden="true" class="tile" style="left: -38px; top: 300px; width: 92px; height: 104px"><span class="tab" style="left: 40px"></span>
+    <span style="position: absolute; left: 44px; top: 18px; display: flex; flex-direction: column; gap: 5px; width: 34px"><span class="line"></span><span class="line" style="width: 70%"></span><span class="line"></span></span>
+    <span class="badge" style="right: -18px; top: 40px; background: #68E78E">P</span></div>
+  <span aria-hidden="true" style="position: absolute; left: 6px; top: 420px; font-size: 13px; color: #C9D0CB">Purane bills</span>
+
+  <!-- central folder -->
+  <div aria-hidden="true" style="position: absolute; left: 140px; top: 330px; width: 124px; height: 110px">
+    <div style="position: absolute; inset: 0; border-radius: 14px; background: #2F6B3A"></div>
+    <div style="position: absolute; left: 12px; top: -12px; width: 92px; height: 82px; border-radius: 6px; background: #E9ECEA; transform: rotate(-4deg)"></div>
+    <div style="position: absolute; left: 18px; top: -16px; width: 92px; height: 86px; border-radius: 6px; background: #F4F6F5; transform: rotate(2deg); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px"><span class="line" style="width: 60%; background: #C6CBC8"></span><span class="line"></span><span class="line"></span><span class="line" style="width: 80%"></span></div>
+    <div style="position: absolute; left: 24px; top: -20px; width: 92px; height: 90px; border-radius: 6px; background: #FFFFFF; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 4px 10px rgba(0,0,0,.15)"><span style="font-size: 8px; font-weight: 700; color: #0B0E0D">INV-043</span><span class="line"></span><span class="line" style="width: 70%"></span><span class="line"></span></div>
+    <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 66px; border-radius: 6px 6px 14px 14px; background: linear-gradient(180deg, rgba(104,231,142,.82), rgba(63,138,78,.95)); box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 18px 34px -10px rgba(104,231,142,.35); backdrop-filter: blur(3px)"></div>
+  </div>
+
+  <!-- prompt box -->
+  <div style="position: absolute; left: 28px; right: 28px; top: 462px; padding: 16px 16px 12px 18px; border-radius: 24px; background: linear-gradient(180deg, rgba(30,35,33,.92), rgba(16,19,18,.92)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), 0 24px 40px -20px rgba(0,0,0,.9)">
+    <label for="first" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Pehla bill</label>
+    <input id="first" value="Mehta Traders ka AMC bill" style="width: 100%; border: 0; background: transparent; color: #F2F5F2; font: 400 15px 'Urbanist', sans-serif; padding: 0; outline: none">
+    <div style="display: flex; align-items: center; gap: 8px; margin-top: 18px">
+      <button type="button" aria-label="Add item" style="width: 30px; height: 30px; border: 0; border-radius: 50%; background: rgba(255,255,255,.1); color: #C9D0CB; display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 15px; height: 15px"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button type="button" aria-label="Attach photo" style="width: 30px; height: 30px; border: 0; border-radius: 50%; background: rgba(255,255,255,.1); color: #C9D0CB; display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 15px; height: 15px"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg></button>
+      <span style="display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 12px; border-radius: 999px; background: rgba(255,255,255,.1); font-size: 12px; color: #C9D0CB">Pichle jaisa<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 12px; height: 12px"><path d="M9 6l6 6-6 6"/></svg></span>
+      <button type="button" aria-label="Send" style="margin-left: auto; width: 32px; height: 32px; border: 0; border-radius: 50%; background: #FFFFFF; color: #0B0E0D; display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px; stroke-width: 2.2"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+    </div>
+  </div>
+
+  <!-- copy -->
+  <section style="position: absolute; left: 28px; right: 24px; top: 606px">
+    <h1 style="margin: 0; font-size: 36px; line-height: 1.06; font-weight: 300; letter-spacing: -.03em">Bill banane ke liye <span style="font-weight: 500; background: linear-gradient(90deg, #68E78E 0%, #BFF3CF 60%, #FFFFFF 100%); -webkit-background-clip: text; background-clip: text; color: transparent">taiyaar</span> ho?</h1>
+    <p style="margin: 10px 0 0; font-size: 14px; color: #9AA39C">Ek baar profile bharo, phir har bill ek tap.</p>
+  </section>
+
+  <!-- CTA -->
+  <a href="02-home.html" style="position: absolute; left: 24px; right: 24px; bottom: 34px; height: 64px; border-radius: 999px; display: grid; place-items: center; font-size: 17px; font-weight: 500; color: #FFFFFF; background: radial-gradient(60% 120% at 50% 50%, #1D3F26 0%, #2F6B3A 40%, #4FB36A 80%, #68E78E 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 20px 40px -18px rgba(104,231,142,.6)">Shuru karein</a>
+</div>
+</body>
+</html>

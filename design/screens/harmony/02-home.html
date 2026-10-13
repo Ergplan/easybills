@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en-IN" data-theme="harmony">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EkBill · Ghar (dark)</title>
+<!-- EkBill reference screen (harmony). Static snapshot of the design canvas. Values are literal here;
+     in the app every colour/radius/shadow comes from design/tokens/themes.css and every string from design/copy. -->
+<link rel="stylesheet" href="../../tokens/fonts.css">
+<style>
+body{margin:0}
+a{color:#F2F5F2;text-decoration:none}a:hover{color:#FFFFFF}
+.num{font-variant-numeric:tabular-nums}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.glass{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.peek{position:absolute;width:196px;height:128px;box-sizing:border-box;padding:14px 16px;border-radius:22px;color:#FFFFFF;background:linear-gradient(160deg,rgba(255,255,255,.30),rgba(255,255,255,.08));box-shadow:inset 0 0 0 1px rgba(255,255,255,.38);backdrop-filter:blur(6px);font-size:10px}
+.ticks{width:2px;background:repeating-linear-gradient(180deg,rgba(255,255,255,.45) 0 1px,transparent 1px 7px)}
+</style>
+<style>body{background:#2a2a2a;display:flex;justify-content:center;padding:0}</style>
+</head>
+<body>
+<div style="width: 390px; height: 1360px; position: relative; overflow: hidden; box-sizing: border-box; font-family: 'Urbanist', system-ui, sans-serif; color: #F2F5F2; background-color: #0B0E0D; background-image: radial-gradient(70% 28% at 100% 0%, rgba(104,231,142,.16) 0%, rgba(104,231,142,0) 70%), radial-gradient(rgba(255,255,255,.06) 1px, transparent 1.2px); background-size: 100% 100%, 14px 14px">
+
+  <!-- header -->
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 22px 18px 0">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <span aria-hidden="true" class="glass" style="width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 16px; color: #68E78E">e₹</span>
+      <span style="font-size: 18px; font-weight: 500">EkBill</span>
+    </div>
+    <div style="display: flex; gap: 8px">
+      <button aria-label="Search" class="glass" style="width: 44px; height: 44px; border: 0; border-radius: 50%; color: #F2F5F2; display: grid; place-items: center; cursor: pointer"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></button>
+      <button aria-label="Notifications" class="glass" style="width: 44px; height: 44px; border: 0; border-radius: 50%; color: #F2F5F2; display: grid; place-items: center; cursor: pointer"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></button>
+    </div>
+  </header>
+
+  <!-- greeting -->
+  <section style="padding: 28px 22px 0">
+    <h1 style="margin: 0; font-size: 36px; line-height: 1.08; font-weight: 300; letter-spacing: -.03em">Namaste, <span style="font-weight: 500; background: linear-gradient(90deg, #68E78E, #DDF7E4); -webkit-background-clip: text; background-clip: text; color: transparent">Sharma ji</span></h1>
+    <p style="margin: 8px 0 0; font-size: 14px; color: #9AA39C">Sharma Electricals · Nagpur · Shukra, 26 Sep</p>
+  </section>
+
+  <!-- who do I bill -->
+  <section aria-labelledby="kb" style="padding: 24px 12px 0">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 0 10px">
+      <h2 id="kb" style="margin: 0; font-size: 17px; font-weight: 400">Chalo, <span style="font-weight: 600">bill banate hain</span></h2>
+      <span style="font-size: 12px; color: #9AA39C">Naam pe tap karo</span>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px">
+      <a href="03-customer.html" class="glass" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; padding: 5px 14px 5px 5px; border-radius: 999px; font-size: 14px; font-weight: 500"><span style="width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #0B0E0D; background: linear-gradient(140deg, #DDF7E4, #68E78E)">M</span>Mehta Traders</a>
+      <a href="03-customer.html" class="glass" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; padding: 5px 14px 5px 5px; border-radius: 999px; font-size: 14px; font-weight: 500"><span style="width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #0B0E0D; background: linear-gradient(140deg, #FFFFFF, #BFC9C2)">P</span>Priya Boutique</a>
+      <a href="03-customer.html" class="glass" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; padding: 5px 14px 5px 5px; border-radius: 999px; font-size: 14px; font-weight: 500"><span style="width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #0B0E0D; background: linear-gradient(140deg, #CFF3E6, #7FD1B4)">K</span>Dr. Kulkarni</a>
+      <a href="03-customer.html" class="glass" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; padding: 5px 14px 5px 5px; border-radius: 999px; font-size: 14px; font-weight: 500"><span style="width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #0B0E0D; background: linear-gradient(140deg, #E8F6C9, #A9D97A)">G</span>Green Park Society</a>
+      <a href="03-customer.html" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; padding: 5px 16px 5px 5px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #0B0E0D; background: #68E78E"><span style="width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: #0B0E0D; color: #68E78E"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px; stroke-width: 2"><path d="M12 5v14M5 12h14"/></svg></span>Naya customer</a>
+    </div>
+  </section>
+
+  <!-- FOLDER: who owes me -->
+  <section aria-labelledby="owe" style="position: relative; height: 560px; margin: 26px 12px 0">
+    <!-- back plate -->
+    <div aria-hidden="true" style="position: absolute; inset: 0; border-radius: 34px; background: linear-gradient(180deg, #24502D 0%, #1C4024 100%)"></div>
+    <!-- peeking bills -->
+    <div aria-hidden="true" class="peek" style="left: 112px; top: 16px; transform: rotate(-7deg); opacity: .7"><div style="opacity: .8">Bill</div><div style="font-size: 12px; font-weight: 600; margin-top: 6px">Dr. Kulkarni</div><div style="margin-top: 4px; opacity: .8">INV-039 · 17 Sep</div></div>
+    <div aria-hidden="true" class="peek" style="left: 148px; top: 22px; transform: rotate(-3deg); opacity: .85"><div style="opacity: .8">Bill</div><div style="font-size: 12px; font-weight: 600; margin-top: 6px">Mehta Traders</div><div style="margin-top: 4px; opacity: .8">INV-042 · 22 Sep</div></div>
+    <div aria-hidden="true" class="peek" style="left: 176px; top: 30px"><div style="display: flex; justify-content: space-between"><span style="opacity: .8">Bill</span><span style="width: 14px; height: 14px; border-radius: 50%; background: #FFFFFF; color: #24502D; display: grid; place-items: center; font-size: 9px; font-weight: 800">!</span></div><div style="font-size: 12px; font-weight: 600; margin-top: 6px">Green Park Society</div><div style="margin-top: 4px; opacity: .8">INV-040 · 12 Sep</div><div style="font-size: 13px; font-weight: 600; margin-top: 8px">₹9,450</div></div>
+    <!-- front: tab + connector + body -->
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 64px; width: 54%; height: 58px; border-radius: 34px 34px 0 0; background: #3B8247"></div>
+    <svg aria-hidden="true" viewBox="0 0 60 58" style="position: absolute; left: calc(54% - 1px); top: 64px; width: 60px; height: 58px"><path d="M0 0 C32 0 26 58 60 58 L0 58 Z" fill="#3B8247"/></svg>
+    <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 121px; bottom: 0; border-radius: 0 34px 34px 34px; background: radial-gradient(70% 40% at 80% 0%, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 70%), linear-gradient(180deg, #3B8247 0%, #3A7F46 60%, #33733F 100%); box-shadow: 0 30px 50px -30px rgba(104,231,142,.45)"></div>
+
+    <!-- content -->
+    <div style="position: absolute; left: 22px; top: 82px; right: 22px">
+      <h2 id="owe" style="margin: 0; font-size: 21px; font-weight: 400; letter-spacing: -.01em">Kiske paise aane hain</h2>
+      <p style="margin: 2px 0 0; font-size: 13px; color: rgba(255,255,255,.82)">3 logon se · abhi tak</p>
+
+      <div style="display: flex; align-items: baseline; gap: 2px; margin-top: 22px"><span style="font-size: 26px; font-weight: 300">₹</span><span class="num" style="font-size: 48px; font-weight: 400; letter-spacing: -.03em; line-height: 1">18,500</span></div>
+
+      <div style="display: flex; justify-content: space-between; margin-top: 18px; font-size: 13px"><span>Sabse purana: Green Park</span><span style="font-weight: 600">24 din</span></div>
+      <div role="img" aria-label="Oldest unpaid bill is 24 of 30 days old" style="position: relative; height: 14px; margin-top: 8px">
+        <span style="position: absolute; left: 0; top: 6px; width: 72%; height: 2px; border-radius: 2px; background: #FFFFFF"></span>
+        <span style="position: absolute; left: 72%; right: 0; top: 6px; height: 2px; background: repeating-linear-gradient(90deg, rgba(255,255,255,.7) 0 2px, transparent 2px 6px)"></span>
+        <svg viewBox="0 0 12 10" style="position: absolute; left: calc(72% - 6px); top: 0; width: 12px; height: 10px" aria-hidden="true"><path d="M0 0H12L6 10Z" fill="#FFFFFF"/></svg>
+      </div>
+
+      <!-- timeline -->
+      <div style="display: flex; gap: 14px; margin-top: 20px">
+        <div aria-hidden="true" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 6px">
+          <span style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.12); display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" style="width: 17px; height: 17px"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h4"/></svg></span>
+          <span class="ticks" style="height: 210px"></span>
+        </div>
+        <ul style="flex: 1; min-width: 0; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+          <li style="padding: 14px; border-radius: 24px; background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12)">
+            <div style="display: flex; justify-content: space-between; align-items: center"><div><div style="font-size: 15px; font-weight: 500">Green Park Society</div><div style="font-size: 12px; color: rgba(255,255,255,.82)">INV-040 · 12 Sep</div></div><span class="num" style="font-size: 15px; font-weight: 600">₹9,450</span></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px">
+              <span style="font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 999px; background: rgba(11,14,13,.35)">24 din ho gaye</span>
+              <a href="05-remind.html" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 999px; background: #68E78E; color: #0B0E0D; font-size: 14px; font-weight: 600">Yaad dilao<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px; stroke-width: 2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </div>
+          </li>
+          <li style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 20px; background: rgba(255,255,255,.07)"><div><div style="font-size: 15px; font-weight: 500">Dr. Kulkarni</div><div style="font-size: 12px; color: rgba(255,255,255,.82)">9 din</div></div><span class="num" style="font-size: 15px; font-weight: 600">₹2,850</span></li>
+          <li style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 20px; background: rgba(255,255,255,.07)"><div><div style="font-size: 15px; font-weight: 500">Mehta Traders</div><div style="font-size: 12px; color: rgba(255,255,255,.82)">4 din</div></div><span class="num" style="font-size: 15px; font-weight: 600">₹6,200</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- sent bills -->
+  <section aria-labelledby="sent" class="glass" style="margin: 14px 12px 0; padding: 20px 18px 8px; border-radius: 32px">
+    <div style="display: flex; justify-content: space-between; align-items: center">
+      <h2 id="sent" style="margin: 0; font-size: 17px; font-weight: 400">Bheje hue bills</h2>
+      <span style="font-size: 13px; color: #9AA39C"><span class="num" style="font-size: 22px; color: #F2F5F2; font-weight: 500">4</span> is mahine</span>
+    </div>
+    <ul style="list-style: none; margin: 12px 0 0; padding: 0">
+      <li style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,.07)">
+        <span aria-hidden="true" style="width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #0B0E0D; background: linear-gradient(140deg, #DDF7E4, #68E78E)">M</span>
+        <div style="flex: 1"><div style="font-size: 15px; font-weight: 500">Mehta Traders</div><div style="font-size: 12px; color: #9AA39C">INV-042 · 22 Sep</div></div>
+        <div style="text-align: right"><div class="num" style="font-size: 15px; font-weight: 600">₹6,200</div><span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.08); color: #C9D0CB">Bheja</span></div>
+      </li>
+      <li style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,.07)">
+        <span aria-hidden="true" style="width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #0B0E0D; background: linear-gradient(140deg, #FFFFFF, #BFC9C2)">P</span>
+        <div style="flex: 1"><div style="font-size: 15px; font-weight: 500">Priya Boutique</div><div style="font-size: 12px; color: #9AA39C">INV-041 · 18 Sep</div></div>
+        <div style="text-align: right"><div class="num" style="font-size: 15px; font-weight: 600">₹2,850</div><span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: rgba(104,231,142,.14); color: #68E78E">Aa gaye</span></div>
+      </li>
+      <li style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,.07)">
+        <span aria-hidden="true" style="width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #0B0E0D; background: linear-gradient(140deg, #E8F6C9, #A9D97A)">G</span>
+        <div style="flex: 1"><div style="font-size: 15px; font-weight: 500">Green Park Society</div><div style="font-size: 12px; color: #9AA39C">INV-040 · 12 Sep</div></div>
+        <div style="text-align: right"><div class="num" style="font-size: 15px; font-weight: 600">₹9,450</div><span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: rgba(255,120,110,.14); color: #FF8A80">Baaki</span></div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- nav -->
+  <nav aria-label="Main" style="position: absolute; left: 12px; right: 12px; bottom: 24px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 6px; border-radius: 999px; background: rgba(23,28,26,.92); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 20px 40px -16px rgba(0,0,0,.8); backdrop-filter: blur(14px)">
+    <a href="02-home.html" aria-current="page" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 52px; border-radius: 999px; background: rgba(255,255,255,.09); font-size: 14px; font-weight: 500"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg>Ghar</a>
+    <a href="03-customer.html" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 52px; border-radius: 999px; font-size: 14px; color: #B8C0BA"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Bills</a>
+    <a href="#" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 52px; border-radius: 999px; font-size: 14px; color: #B8C0BA"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Aap</a>
+  </nav>
+</div>
+</body>
+</html>

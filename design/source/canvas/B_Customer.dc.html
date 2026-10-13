@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<title>EkBill · Mehta Traders folder</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F2F5F2;text-decoration:none}a:hover{color:#FFFFFF}
+.num{font-variant-numeric:tabular-nums}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.gbtn{width:48px;height:48px;border:0;border-radius:50%;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);color:#F2F5F2;display:grid;place-items:center;cursor:pointer}
+.peek{position:absolute;width:200px;height:120px;box-sizing:border-box;padding:12px 14px;border-radius:20px;color:#FFFFFF;background:linear-gradient(160deg,rgba(255,255,255,.30),rgba(255,255,255,.08));box-shadow:inset 0 0 0 1px rgba(255,255,255,.38);font-size:10px}
+.ticks{width:2px;background:repeating-linear-gradient(180deg,rgba(255,255,255,.45) 0 1px,transparent 1px 7px)}
+.thumb{position:relative;width:62px;height:80px;border-radius:8px;background:#F4F6F5;padding:8px 7px;box-sizing:border-box;display:flex;flex-direction:column;gap:4px}
+.thumb i{display:block;height:3px;border-radius:2px;background:#D3D7D5}
+.eye{position:absolute;left:50%;top:50%;transform:translate(-50%,-30%);width:26px;height:26px;border-radius:50%;background:rgba(11,14,13,.12);display:grid;place-items:center;color:#0B0E0D}
+</style>
+</helmet>
+<div style="width: 390px; height: 1180px; position: relative; overflow: hidden; box-sizing: border-box; font-family: 'Urbanist', system-ui, sans-serif; color: #F2F5F2; background-color: #0B0E0D; background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1.2px); background-size: 14px 14px">
+
+  <!-- top bar -->
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 22px 18px 0">
+    <a href="B_Home.dc.html" aria-label="Back" class="gbtn"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>
+    <div style="display: flex; gap: 8px">
+      <button type="button" aria-label="WhatsApp chat" class="gbtn"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.3-4A8 8 0 1 1 8 19z"/><path d="M9 11h.01M12 11h.01M15 11h.01" stroke-width="2.4"/></svg></button>
+      <button type="button" aria-label="Customer details" class="gbtn"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h4"/></svg></button>
+      <button type="button" aria-label="Download all bills" class="gbtn"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></button>
+    </div>
+  </header>
+
+  <!-- FOLDER -->
+  <section aria-labelledby="cust" style="position: absolute; left: 10px; right: 10px; top: 96px; bottom: 112px">
+    <div aria-hidden="true" style="position: absolute; inset: 0; border-radius: 36px; background: linear-gradient(180deg, #27573A 0%, #1E4530 100%)"></div>
+    <div aria-hidden="true" class="peek" style="left: 104px; top: 22px; transform: rotate(-8deg); opacity: .6"><div style="opacity: .85">Jul</div><div style="font-size: 12px; font-weight: 600; margin-top: 6px">INV-031</div></div>
+    <div aria-hidden="true" class="peek" style="left: 140px; top: 26px; transform: rotate(-4deg); opacity: .8"><div style="opacity: .85">Aug</div><div style="font-size: 12px; font-weight: 600; margin-top: 6px">INV-036</div><div style="margin-top: 3px; opacity: .85">Aa gaye · UPI</div></div>
+    <div aria-hidden="true" class="peek" style="left: 168px; top: 32px"><div style="display: flex; justify-content: space-between"><span style="opacity: .85">Sep</span><span style="width: 14px; height: 14px; border-radius: 50%; background: #FFFFFF; color: #27573A; display: grid; place-items: center; font-size: 9px; font-weight: 800">?</span></div><div style="font-size: 12px; font-weight: 600; margin-top: 6px">INV-042</div><div style="margin-top: 3px; opacity: .85">AMC visit + 2 fans</div><div style="margin-top: 3px; opacity: .85">Bill to: Mehta Traders</div></div>
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 74px; width: 50%; height: 60px; border-radius: 36px 36px 0 0; background: #3E8650"></div>
+    <svg aria-hidden="true" viewBox="0 0 64 60" style="position: absolute; left: calc(50% - 1px); top: 74px; width: 64px; height: 60px"><path d="M0 0 C34 0 28 60 64 60 L0 60 Z" fill="#3E8650"/></svg>
+    <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 133px; bottom: 0; border-radius: 0 36px 36px 36px; background: radial-gradient(80% 30% at 85% 0%, rgba(255,255,255,.12) 0%, rgba(255,255,255,0) 70%), radial-gradient(60% 40% at 0% 60%, rgba(104,231,142,.14) 0%, rgba(104,231,142,0) 70%), linear-gradient(180deg, #3E8650 0%, #3A7E4B 50%, #336F42 100%)"></div>
+
+    <div style="position: absolute; left: 20px; right: 20px; top: 92px">
+      <h1 id="cust" style="margin: 0; font-size: 24px; font-weight: 400; letter-spacing: -.015em">Mehta Traders</h1>
+      <p style="margin: 2px 0 0; font-size: 13px; color: rgba(255,255,255,.85)">Saare bills · GSTIN 27AAPFU0939F1ZV</p>
+
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 30px; font-size: 14px">
+        <span>Jul – Sep · <span class="num" style="font-weight: 600">₹18,600</span></span>
+        <span>Baaki <span class="num" style="font-weight: 600">₹6,200</span></span>
+      </div>
+      <div role="img" aria-label="₹12,400 of ₹18,600 received" style="position: relative; height: 14px; margin-top: 10px">
+        <span style="position: absolute; left: 0; top: 6px; width: 67%; height: 2px; border-radius: 2px; background: #FFFFFF"></span>
+        <span style="position: absolute; left: 67%; right: 0; top: 6px; height: 2px; background: repeating-linear-gradient(90deg, rgba(255,255,255,.7) 0 2px, transparent 2px 6px)"></span>
+        <svg viewBox="0 0 12 10" aria-hidden="true" style="position: absolute; left: calc(67% - 6px); top: 0; width: 12px; height: 10px"><path d="M0 0H12L6 10Z" fill="#FFFFFF"/></svg>
+      </div>
+
+      <!-- timeline -->
+      <ol style="list-style: none; margin: 26px 0 0; padding: 0; display: flex; flex-direction: column; gap: 18px">
+        <li style="display: flex; gap: 12px">
+          <div aria-hidden="true" style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.12); display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" style="width: 17px; height: 17px"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg></span><span class="ticks" style="flex: 1"></span></div>
+          <div style="flex: 1; min-width: 0">
+            <div style="font-size: 16px; font-weight: 500">INV-042 · AMC + 2 fans</div>
+            <div style="font-size: 13px; color: rgba(255,255,255,.85)">22 Sep · <span class="num">₹6,200</span> · 4 din se baaki</div>
+            <div style="margin-top: 12px; padding: 14px; border-radius: 24px; background: rgba(255,255,255,.10); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12)">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.12); display: grid; place-items: center; color: #68E78E"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20l1.3-4A8 8 0 1 1 8 19z"/></svg></span>
+                <div style="flex: 1"><div style="font-size: 14px; font-weight: 500">WhatsApp pe gaya</div><div style="font-size: 12px; color: rgba(255,255,255,.85)">Padh liya · Patil ji</div></div>
+                <span style="font-size: 12px; padding: 6px 10px; border-radius: 999px; background: rgba(11,14,13,.3)">09:00 AM</span>
+              </div>
+              <div style="display: flex; gap: 6px; margin-top: 12px">
+                <div class="thumb"><span style="font-size: 6px; font-weight: 800; color: #0B0E0D">INVOICE</span><i></i><i style="width: 70%"></i><i></i><span class="eye"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg></span></div>
+                <a href="B_Remind.dc.html" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 18px; background: #68E78E; color: #0B0E0D; font-size: 14px; font-weight: 600">Yaad dilao<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px; stroke-width: 2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li style="display: flex; gap: 12px">
+          <div aria-hidden="true" style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.12); display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" style="width: 17px; height: 17px"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg></span><span class="ticks" style="flex: 1"></span></div>
+          <div style="flex: 1; min-width: 0">
+            <div style="font-size: 16px; font-weight: 500">INV-036 · AMC + 2 fans</div>
+            <div style="font-size: 13px; color: rgba(255,255,255,.85)">24 Aug · <span class="num">₹6,200</span></div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 12px 14px; border-radius: 22px; background: rgba(255,255,255,.08)">
+              <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 50%; background: #68E78E; color: #0B0E0D; display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" style="width: 16px; height: 16px; stroke-width: 2.4"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>
+              <div style="flex: 1"><div style="font-size: 14px; font-weight: 500">Aa gaye · UPI</div><div style="font-size: 12px; color: rgba(255,255,255,.85)">29 Aug · 5 din mein</div></div>
+            </div>
+          </div>
+        </li>
+        <li style="display: flex; gap: 12px">
+          <div aria-hidden="true"><span style="width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.12); display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" style="width: 17px; height: 17px"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg></span></div>
+          <div style="flex: 1; min-width: 0">
+            <div style="font-size: 16px; font-weight: 500">INV-031 · AMC visit</div>
+            <div style="font-size: 13px; color: rgba(255,255,255,.85)">25 Jul · <span class="num">₹6,200</span> · Aa gaye</div>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <a href="NewBill.dc.html" style="position: absolute; left: 18px; right: 18px; bottom: 30px; height: 64px; border-radius: 999px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 17px; font-weight: 500; color: #FFFFFF; background: radial-gradient(60% 120% at 50% 50%, #1D3F26 0%, #2F6B3A 40%, #4FB36A 80%, #68E78E 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 20px 40px -18px rgba(104,231,142,.6)">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/></svg>Naya bill · pichle jaisa</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

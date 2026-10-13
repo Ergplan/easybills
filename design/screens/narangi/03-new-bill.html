@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en-IN" data-theme="narangi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EkBill · Naya bill</title>
+<!-- EkBill reference screen (narangi). Static snapshot of the design canvas. Values are literal here;
+     in the app every colour/radius/shadow comes from design/tokens/themes.css and every string from design/copy. -->
+<link rel="stylesheet" href="../../tokens/fonts.css">
+<style>
+body{margin:0}
+a{color:#16170F;text-decoration:none}a:hover{color:#000}
+.dot{font-family:'Urbanist',system-ui,sans-serif;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.fld{width:100%;box-sizing:border-box;height:48px;padding:0 14px;border:0;border-radius:16px;background:#F4F4F0;font:500 15px 'Urbanist',sans-serif;color:#16170F}
+.fld:focus{outline:2px solid #16170F;outline-offset:1px;background:#FFFFFF}
+.lbl{display:block;font-size:12px;font-weight:600;color:#5F6057;margin:0 0 6px 2px}
+</style>
+<style>body{background:#2a2a2a;display:flex;justify-content:center;padding:0}</style>
+</head>
+<body>
+<div style="width: 390px; height: 1120px; position: relative; overflow: hidden; box-sizing: border-box; font-family: 'Urbanist', system-ui, sans-serif; color: #16170F; background-color: #EEEEEA; background-image: radial-gradient(rgba(22,23,15,.07) 1px, transparent 1.3px); background-size: 9px 9px">
+
+  <!-- header -->
+  <header style="display: flex; align-items: center; gap: 12px; padding: 22px 18px 0">
+    <a href="02-home.html" aria-label="Back to home" style="width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,.85); display: grid; place-items: center; flex: none">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>
+    <div style="flex: 1; min-width: 0">
+      <h1 style="margin: 0; font-size: 22px; line-height: 1.15; font-weight: 300; letter-spacing: -.02em"><span style="font-weight: 600">Mehta Traders</span> ka bill</h1>
+      <p style="margin: 2px 0 0; font-size: 13px; color: #5F6057">INV-043 · aaj, 26 Sep</p>
+    </div>
+    <span aria-hidden="true" style="width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 16px; background: linear-gradient(140deg, #FFE6C7, #FDB27A); flex: none">M</span>
+  </header>
+
+  <main style="display: flex; flex-direction: column; gap: 12px; padding: 20px 12px 0">
+
+    <!-- same as last time -->
+    <section aria-labelledby="pj" style="position: relative; border-radius: 30px; padding: 20px 18px 18px; overflow: hidden; background: radial-gradient(80% 60% at 100% 0%, rgba(255,255,255,.85) 0%, rgba(255,255,255,0) 70%), linear-gradient(165deg, #A7A3EC 0%, #DAD5F8 34%, #F6F0F8 64%, #EFC6E7 100%); box-shadow: 0 22px 36px -28px rgba(120,80,170,.7)">
+      <div style="display: flex; align-items: center; gap: 8px">
+        <span aria-hidden="true" style="width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,.75); display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" style="width: 16px; height: 16px"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/></svg></span>
+        <h2 id="pj" style="margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.01em">Pichle jaisa hi?</h2>
+      </div>
+      <p style="margin: 10px 0 14px; font-size: 14px; color: #3B3C34">Aug ka bill: AMC visit + 2 fans · <span class="num" style="font-weight: 600">₹6,200</span></p>
+      <div style="display: flex; gap: 8px">
+        <button type="button" style="flex: 1; height: 46px; border: 0; border-radius: 999px; background: #FFFFFF; color: #16170F; font: 600 14px 'Urbanist', sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer">✓ Bhar diya</button>
+        <button type="button" style="height: 46px; padding: 0 18px; border: 0; border-radius: 999px; background: rgba(255,255,255,.75); color: #16170F; font: 500 14px 'Urbanist', sans-serif; cursor: pointer">Naya likho</button>
+      </div>
+    </section>
+
+    <!-- items -->
+    <section aria-label="Kaam ki list" style="display: flex; flex-direction: column; gap: 10px">
+      
+        <div style="border-radius: 28px; padding: 16px 16px 16px; background: #FFFFFF; box-shadow: 0 1px 0 rgba(0,0,0,.03), 0 18px 30px -26px rgba(22,23,15,.35)">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px">
+            <span class="dot" style="font-size: 13px; font-weight: 700; letter-spacing: .08em; color: #5F6057">KAAM 01</span>
+            <button type="button" aria-label="Remove item" onClick="" style="width: 36px; height: 36px; border: 0; border-radius: 50%; background: #F4F4F0; color: #5F6057; display: grid; place-items: center; cursor: pointer"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          </div>
+          <label class="lbl" for="d0">Kya kiya?</label>
+          <input id="d0" class="fld" value="AMC visit — September" onChange="" placeholder="Jaise: AMC visit, wiring, fan install">
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; align-items: end">
+            <div><label class="lbl" for="q0">Kitna</label><input id="q0" class="fld num" inputmode="numeric" value="1" onChange=""></div>
+            <div><label class="lbl" for="r0">Rate (₹)</label><input id="r0" class="fld num" inputmode="numeric" value="3500" onChange=""></div>
+            <div style="height: 48px; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; padding-right: 4px"><span style="font-size: 11px; color: #5F6057">Rakam</span><span class="num" style="font-size: 17px; font-weight: 600">₹3,500</span></div>
+          </div>
+        </div>
+      
+        <div style="border-radius: 28px; padding: 16px 16px 16px; background: #FFFFFF; box-shadow: 0 1px 0 rgba(0,0,0,.03), 0 18px 30px -26px rgba(22,23,15,.35)">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px">
+            <span class="dot" style="font-size: 13px; font-weight: 700; letter-spacing: .08em; color: #5F6057">KAAM 02</span>
+            <button type="button" aria-label="Remove item" onClick="" style="width: 36px; height: 36px; border: 0; border-radius: 50%; background: #F4F4F0; color: #5F6057; display: grid; place-items: center; cursor: pointer"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          </div>
+          <label class="lbl" for="d1">Kya kiya?</label>
+          <input id="d1" class="fld" value="Ceiling fan install" onChange="" placeholder="Jaise: AMC visit, wiring, fan install">
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; align-items: end">
+            <div><label class="lbl" for="q1">Kitna</label><input id="q1" class="fld num" inputmode="numeric" value="2" onChange=""></div>
+            <div><label class="lbl" for="r1">Rate (₹)</label><input id="r1" class="fld num" inputmode="numeric" value="1350" onChange=""></div>
+            <div style="height: 48px; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; padding-right: 4px"><span style="font-size: 11px; color: #5F6057">Rakam</span><span class="num" style="font-size: 17px; font-weight: 600">₹2,700</span></div>
+          </div>
+        </div>
+      
+      <button type="button" style="height: 54px; border-radius: 22px; border: 1.5px dashed #B9B8AE; background: rgba(255,255,255,.45); color: #16170F; font: 600 15px 'Urbanist', sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px; stroke-width: 2"><path d="M12 5v14M5 12h14"/></svg>Aur kaam jodo</button>
+    </section>
+
+    <!-- total -->
+    <section aria-label="Total" style="border-radius: 30px; padding: 20px 20px 18px; background: #FFFFFF; box-shadow: 0 1px 0 rgba(0,0,0,.03), 0 18px 30px -26px rgba(22,23,15,.35)">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end">
+        <div>
+          <div style="font-size: 14px; color: #5F6057">Total</div>
+          <div style="display: flex; align-items: baseline; gap: 2px; margin-top: 4px"><span style="font-size: 24px; font-weight: 300">₹</span><span class="dot" style="font-size: 44px; line-height: 1">6,200</span></div>
+        </div>
+        <span style="font-size: 12px; color: #5F6057; text-align: right">2 kaam</span>
+      </div>
+      <p style="display: flex; align-items: center; gap: 8px; margin: 16px 0 0; padding: 10px 12px; border-radius: 16px; background: #F4F4F0; font-size: 13px; color: #3B3C34">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px; flex: none"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.5 2.5 13.5 0 16M12 4c-2.5 2.5-2.5 13.5 0 16"/></svg>
+        Bill English mein banega, customer ke liye.</p>
+    </section>
+  </main>
+
+  <!-- CTA -->
+  <div style="position: absolute; left: 12px; right: 12px; bottom: 24px">
+    <a href="04-bill-done.html" style="display: flex; align-items: center; justify-content: space-between; height: 62px; padding: 0 8px 0 24px; border-radius: 999px; background: #FFB020; font-size: 17px; font-weight: 600; box-shadow: 0 20px 30px -18px rgba(200,110,10,.7)">
+      <span>Bill banao · <span class="num">₹6,200</span></span>
+      <span style="width: 48px; height: 48px; border-radius: 50%; background: #16170F; color: #FFB020; display: grid; place-items: center"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+  </div>
+</div>
+</body>
+</html>
